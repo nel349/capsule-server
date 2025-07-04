@@ -13,7 +13,7 @@ pub use errors::*;
 pub use constants::*;
 
 // Program ID - Replace with your actual program ID
-declare_id!("CapsXRyMKrR8KcCKFZHqJrHJDyUiG5jLJW6jJrHJDyUi");
+declare_id!("J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH");
 
 #[program]
 pub mod capsulex {
