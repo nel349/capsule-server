@@ -22,17 +22,19 @@ pub mod capsulex {
     // Time Capsule Instructions
     pub fn create_capsule(
         ctx: Context<CreateCapsule>,
-        content_hash: String,
+        encrypted_content: String,
+        content_storage: ContentStorage,
         reveal_date: i64,
         is_gamified: bool,
     ) -> Result<()> {
-        instructions::create_capsule(ctx, content_hash, reveal_date, is_gamified)
+        instructions::create_capsule(ctx, encrypted_content, content_storage, reveal_date, is_gamified)
     }
 
     pub fn reveal_capsule(
         ctx: Context<RevealCapsule>,
+        reveal_date: i64,
     ) -> Result<()> {
-        instructions::reveal_capsule(ctx)
+        instructions::reveal_capsule(ctx, reveal_date)
     }
 
     pub fn mint_capsule_nft(

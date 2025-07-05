@@ -22,6 +22,10 @@ pub const MAX_GUESS_CONTENT_LENGTH: usize = 280; // Twitter length
 pub const MAX_METADATA_URI_LENGTH: usize = 200;
 pub const MAX_BADGE_TYPE_LENGTH: usize = 32;
 
+// Content storage tiers
+pub const MAX_ONCHAIN_CONTENT_LENGTH: usize = 280; // Twitter-sized content stored on-chain
+pub const MAX_IPFS_HASH_LENGTH: usize = 64; // IPFS hash for larger content
+
 // Time constraints
 pub const MIN_REVEAL_DELAY: i64 = 3600; // 1 hour minimum
 pub const MAX_REVEAL_DELAY: i64 = 31536000; // 1 year maximum
@@ -30,12 +34,15 @@ pub const MAX_REVEAL_DELAY: i64 = 31536000; // 1 year maximum
 pub const CAPSULE_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // creator
     32 + // nft_mint
-    64 + // content_hash
+    4 + 280 + // encrypted_content (String with max 280 chars for on-chain)
+    1 + // content_storage (enum: OnChain vs IPFS)
     8 + // reveal_date
     8 + // created_at
     1 + // is_gamified
     1 + // is_revealed
     1 + // is_active
+    32 + // key_vault
+    1 + // bump
     32; // padding
 
 pub const GAME_ACCOUNT_SIZE: usize = 8 + // discriminator
@@ -68,11 +75,21 @@ pub const LEADERBOARD_ACCOUNT_SIZE: usize = 8 + // discriminator
     8 + // total_rewards_earned
     32; // padding
 
+pub const KEY_VAULT_ACCOUNT_SIZE: usize = 8 + // discriminator
+    32 + // capsule_id
+    32 + // encryption_key (256-bit AES key)
+    8 + // reveal_date
+    32 + // creator
+    1 + // is_retrieved
+    1 + // bump
+    32; // padding
+
 // Seeds for PDAs
 pub const CAPSULE_SEED: &[u8] = b"capsule";
 pub const GAME_SEED: &[u8] = b"game";
 pub const GUESS_SEED: &[u8] = b"guess";
 pub const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 pub const VAULT_SEED: &[u8] = b"vault";
+pub const KEY_VAULT_SEED: &[u8] = b"key_vault";
 pub const BADGE_MINT_SEED: &[u8] = b"badge_mint";
 pub const TROPHY_MINT_SEED: &[u8] = b"trophy_mint"; 

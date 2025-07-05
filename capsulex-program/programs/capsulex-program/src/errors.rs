@@ -5,11 +5,14 @@ pub enum CapsuleXError {
     #[msg("Invalid reveal date. Must be between 1 hour and 1 year from now.")]
     InvalidRevealDate,
     
-    #[msg("Content hash is too long. Maximum length is 64 characters.")]
+    #[msg("Content hash is too long. Maximum length is 280 characters.")]
     ContentHashTooLong,
     
     #[msg("Capsule is not yet ready to be revealed.")]
     CapsuleNotReady,
+    
+    #[msg("Encryption key is not yet ready to be retrieved.")]
+    KeyNotReady,
     
     #[msg("Capsule has already been revealed.")]
     CapsuleAlreadyRevealed,

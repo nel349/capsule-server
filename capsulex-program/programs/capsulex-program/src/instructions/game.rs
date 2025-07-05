@@ -245,7 +245,7 @@ pub fn verify_guess(
     
     // This is a simplified verification - in practice, you'd implement
     // proper content comparison logic based on your encryption scheme
-    let is_correct = verify_guess_content(&guess.guess_content, &capsule.content_hash);
+    let is_correct = verify_guess_content(&guess.guess_content, &capsule.encrypted_content);
     
     if is_correct {
         // Mark guess as correct
@@ -353,13 +353,16 @@ pub fn distribute_rewards(ctx: Context<DistributeRewards>) -> Result<()> {
 
 // Helper function to verify guess content
 // This is a simplified implementation - you'd implement proper verification logic
-fn verify_guess_content(guess: &str, content_hash: &str) -> bool {
+fn verify_guess_content(guess: &str, encrypted_content: &str) -> bool {
     // In a real implementation, you'd:
     // 1. Decrypt the content using the capsule's decryption key
     // 2. Compare the decrypted content with the guess
     // 3. Return true if they match
     
-    // For demo purposes, we'll do a simple hash comparison
+    // For demo purposes, we'll do a simple comparison
+    // Note: This is not realistic with encrypted content - the game logic
+    // would need to access the decryption key, which breaks the time-lock concept
+    // This needs architectural rethinking for production
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     
@@ -367,7 +370,7 @@ fn verify_guess_content(guess: &str, content_hash: &str) -> bool {
     guess.hash(&mut hasher);
     let guess_hash = hasher.finish().to_string();
     
-    guess_hash == *content_hash
+    guess_hash == *encrypted_content
 }
 
 #[event]

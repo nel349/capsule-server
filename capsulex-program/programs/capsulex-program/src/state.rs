@@ -1,16 +1,24 @@
 use anchor_lang::prelude::*;
 use crate::constants::*;
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum ContentStorage {
+    OnChain,  // Content stored directly in encrypted_content field
+    IPFS,     // IPFS hash stored in encrypted_content field, actual content on IPFS
+}
+
 #[account]
 pub struct Capsule {
     pub creator: Pubkey,
     pub nft_mint: Pubkey,
-    pub content_hash: String,
+    pub encrypted_content: String, // Either encrypted content OR IPFS hash
+    pub content_storage: ContentStorage, // OnChain or IPFS
     pub reveal_date: i64,
     pub created_at: i64,
     pub is_gamified: bool,
     pub is_revealed: bool,
     pub is_active: bool,
+    pub key_vault: Pubkey, // Reference to time-locked key storage
     pub bump: u8,
 }
 
@@ -20,9 +28,11 @@ impl Capsule {
     pub fn new(
         creator: Pubkey,
         nft_mint: Pubkey,
-        content_hash: String,
+        encrypted_content: String,
+        content_storage: ContentStorage,
         reveal_date: i64,
         is_gamified: bool,
+        key_vault: Pubkey,
         bump: u8,
     ) -> Self {
         let clock = Clock::get().unwrap();
@@ -30,12 +40,14 @@ impl Capsule {
         Self {
             creator,
             nft_mint,
-            content_hash,
+            encrypted_content,
+            content_storage,
             reveal_date,
             created_at: clock.unix_timestamp,
             is_gamified,
             is_revealed: false,
             is_active: true,
+            key_vault,
             bump,
         }
     }
@@ -218,5 +230,45 @@ impl ProgramVault {
     
     pub fn add_rewards_distributed(&mut self, amount: u64) {
         self.total_rewards_distributed += amount;
+    }
+}
+
+#[account]
+pub struct KeyVault {
+    pub capsule_id: Pubkey,
+    pub encryption_key: [u8; 32], // AES-256 key
+    pub reveal_date: i64,
+    pub creator: Pubkey,
+    pub is_retrieved: bool,
+    pub bump: u8,
+}
+
+impl KeyVault {
+    pub const LEN: usize = KEY_VAULT_ACCOUNT_SIZE;
+    
+    pub fn new(
+        capsule_id: Pubkey,
+        encryption_key: [u8; 32],
+        reveal_date: i64,
+        creator: Pubkey,
+        bump: u8,
+    ) -> Self {
+        Self {
+            capsule_id,
+            encryption_key,
+            reveal_date,
+            creator,
+            is_retrieved: false,
+            bump,
+        }
+    }
+    
+    pub fn can_retrieve(&self) -> bool {
+        let clock = Clock::get().unwrap();
+        clock.unix_timestamp >= self.reveal_date && !self.is_retrieved
+    }
+    
+    pub fn mark_retrieved(&mut self) {
+        self.is_retrieved = true;
     }
 } 

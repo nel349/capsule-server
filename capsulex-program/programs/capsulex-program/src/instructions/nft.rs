@@ -158,7 +158,7 @@ pub fn mint_capsule_nft(
     let seeds = &[
         CAPSULE_SEED,
         capsule.creator.as_ref(),
-        capsule.content_hash.as_bytes(),
+        capsule.encrypted_content.as_bytes(),
         &bump_seed,
     ];
     let signer_seeds = &[&seeds[..]];
