@@ -4,6 +4,7 @@ import { Capsulex } from "../target/types/capsulex";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { describe, before, it } from "mocha";
 import { expect } from "chai";
+import { VAULT_SEED, CAPSULE_SEED, CAPSULE_MINT_SEED } from "./constants";
 
 describe("capsulex-program", () => {
   // Configure the client to use the local cluster.
@@ -11,10 +12,6 @@ describe("capsulex-program", () => {
   anchor.setProvider(provider);
 
   const program = anchor.workspace.capsulex as Program<Capsulex>;
-  
-  // Define seeds for PDAs
-  const VAULT_SEED = "vault";
-  const CAPSULE_SEED = "capsule";
   
   let vaultPda: PublicKey;
   let vaultBump: number;
@@ -65,7 +62,7 @@ describe("capsulex-program", () => {
     // Find the NFT mint PDA
     const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
       [
-        Buffer.from("capsule_mint"),
+        Buffer.from(CAPSULE_MINT_SEED),
         capsulePda.toBuffer()
       ],
       program.programId
@@ -98,5 +95,6 @@ describe("capsulex-program", () => {
     expect(capsule.isGamified).to.be.equal(false);
     expect(capsule.isRevealed).to.be.equal(false);
     expect(capsule.contentHash).to.be.equal(contentHash);
+    console.log("Capsule content hash:", capsule.contentHash);
   });
 });
