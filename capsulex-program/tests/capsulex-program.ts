@@ -97,11 +97,11 @@ describe("capsulex-program", () => {
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     } as any).rpc();
     
-    console.log("Capsule Created", tx);
+    // console.log("Capsule Created", tx);
 
     // Lets check if the capsule is created
     const capsule = await program.account.capsule.fetch(capsulePda);
-    console.log("Capsule", capsule);
+    // console.log("Capsule", capsule);
 
     // Check state, creator, reveal date, is gamified
     expect(capsule.isActive).to.be.equal(true);
@@ -110,7 +110,7 @@ describe("capsulex-program", () => {
     expect(capsule.isGamified).to.be.equal(false);
     expect(capsule.isRevealed).to.be.equal(false);
     expect(capsule.encryptedContent).to.be.equal(encryptedContent);
-    console.log("Capsule encrypted content:", capsule.encryptedContent);
+    // console.log("Capsule encrypted content:", capsule.encryptedContent);
   });
 
   it("Creates a realistic encrypted time capsule with AES encryption", async () => {
@@ -127,9 +127,9 @@ describe("capsulex-program", () => {
     // Encrypt the content using AES
     const encryptedContent = CryptoJS.AES.encrypt(actualContent, encryptionKey).toString();
     
-    console.log(`Creating time capsule with content: "${actualContent.substring(0, 280)}..."`);
-    console.log(`Encrypted content length: ${encryptedContent.length} characters`);
-    console.log(`To be revealed on: ${new Date(revealDate.toNumber() * 1000).toLocaleDateString()} (in 30 days)`);
+    // console.log(`Creating time capsule with content: "${actualContent.substring(0, 280)}..."`);
+    // console.log(`Encrypted content length: ${encryptedContent.length} characters`);
+    // console.log(`To be revealed on: ${new Date(revealDate.toNumber() * 1000).toLocaleDateString()} (in 30 days)`);
     
     // Find the capsule PDA using reveal_date (timestamp-based addressing)
     const [capsulePda, capsuleBump] = PublicKey.findProgramAddressSync(
@@ -175,20 +175,20 @@ describe("capsulex-program", () => {
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     } as any).rpc();
     
-    console.log("Realistic time capsule created:", tx);
+    // console.log("Realistic time capsule created:", tx);
 
     // Verify the capsule was created with correct data
     const capsule = await program.account.capsule.fetch(capsulePda);
-    console.log("Time capsule details:", {
-      creator: capsule.creator.toBase58(),
-      keyVault: capsule.keyVault.toBase58(), // Key vault storing encryption key
-      storedContent: capsule.encryptedContent.substring(0, 60) + "...", // Encrypted content stored
-      actualContent: actualContent.substring(0, 60) + "...", // Original content (before encryption)
-      revealDate: new Date(capsule.revealDate.toNumber() * 1000).toLocaleDateString(),
-      isGamified: capsule.isGamified,
-      isRevealed: capsule.isRevealed,
-      isActive: capsule.isActive
-    });
+    // console.log("Time capsule details:", {
+    //   creator: capsule.creator.toBase58(),
+    //   keyVault: capsule.keyVault.toBase58(), // Key vault storing encryption key
+    //   storedContent: capsule.encryptedContent.substring(0, 60) + "...", // Encrypted content stored
+    //   actualContent: actualContent.substring(0, 60) + "...", // Original content (before encryption)
+    //   revealDate: new Date(capsule.revealDate.toNumber() * 1000).toLocaleDateString(),
+    //   isGamified: capsule.isGamified,
+    //   isRevealed: capsule.isRevealed,
+    //   isActive: capsule.isActive
+    // });
 
     // Validate the realistic scenario
     expect(capsule.isActive).to.be.equal(true);
@@ -207,115 +207,51 @@ describe("capsulex-program", () => {
     try {
       const decryptedBytes = CryptoJS.AES.decrypt(encryptedContent, encryptionKey);
       const decryptedContent = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      console.log(`✅ Encryption/Decryption demo successful!`);
-      console.log(`📝 Original: "${actualContent.substring(0, 40)}..."`);
-      console.log(`🔒 Encrypted: "${encryptedContent.substring(0, 40)}..."`);
-      console.log(`🔓 Decrypted: "${decryptedContent.substring(0, 40)}..."`);
+      // console.log(`✅ Encryption/Decryption demo successful!`);
+      // console.log(`📝 Original: "${actualContent.substring(0, 40)}..."`);
+      // console.log(`🔒 Encrypted: "${encryptedContent.substring(0, 40)}..."`);
+      // console.log(`🔓 Decrypted: "${decryptedContent.substring(0, 40)}..."`);
       expect(decryptedContent).to.equal(actualContent);
     } catch (error) {
       console.log("Decryption demo failed:", error);
       throw error; // Re-throw to see the actual error
     }
     
-    console.log(`📅 Time capsule sealed for ${Math.round((revealDate.toNumber() - currentTime) / (24 * 60 * 60))} days`);
-    console.log(`🔑 Encryption key safely stored in KeyVault: ${keyVaultPda.toBase58()}`);
-    console.log(`💰 Storage type: ${capsule.contentStorage.onChain ? 'OnChain' : 'IPFS'} (fee: ${capsule.contentStorage.onChain ? '2x' : '1x'})`);
+    // console.log(`📅 Time capsule sealed for ${Math.round((revealDate.toNumber() - currentTime) / (24 * 60 * 60))} days`);
+    // console.log(`🔑 Encryption key safely stored in KeyVault: ${keyVaultPda.toBase58()}`);
+    // console.log(`💰 Storage type: ${capsule.contentStorage.onChain ? 'OnChain' : 'IPFS'} (fee: ${capsule.contentStorage.onChain ? '2x' : '1x'})`);
   });
 
-  it("Creates a capsule with long content using on-chain storage", async () => {
-    const longContent = "This is a very long prediction about the future of blockchain technology that exceeds 280 characters and should be stored on IPFS instead of directly on-chain to save costs. This content would normally be encrypted and uploaded to IPFS, with only the hash stored on-chain, making it much more cost-effective for large content.";
-    const encryptedContent = CryptoJS.AES.encrypt(longContent, "longkey123").toString();
-    
-    const revealDate = new anchor.BN(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
-    const [capsulePda, capsuleBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(CAPSULE_SEED),
-        provider.wallet.publicKey.toBuffer(),
-        Buffer.from(revealDate.toArray('le', 8))
-      ],
-      program.programId
-    );
-    // Find the key vault PDA
-    const [keyVaultPda, keyVaultBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(KEY_VAULT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
+  // --- Helper Functions ---
+  function getCapsulePda(creator: PublicKey, revealDate: anchor.BN, programId: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(CAPSULE_SEED), creator.toBuffer(), Buffer.from(revealDate.toArray('le', 8))],
+      programId
+    )[0];
+  }
 
-    // Find the NFT mint PDA
-    const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(CAPSULE_MINT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
+  function getKeyVaultPda(capsulePda: PublicKey, programId: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(KEY_VAULT_SEED), capsulePda.toBuffer()],
+      programId
+    )[0];
+  }
 
-    try {
-      await program.methods.createCapsule(
-        encryptedContent,
-        { onChain: {} },
-        revealDate,
-        false
-      ).accounts({
-        creator: provider.wallet.publicKey,
-        capsule: capsulePda,
-        keyVault: keyVaultPda,
-        nftMint: nftMintPda,
-        vault: vaultPda,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      } as any).rpc();
-    } catch (error) {
-      expect(error).to.be.an.instanceOf(Error);
-      expect(error.message).to.include("Content hash is too long. Maximum length is 280 characters.");
-    }
-  });
+  function getNftMintPda(capsulePda: PublicKey, programId: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(CAPSULE_MINT_SEED), capsulePda.toBuffer()],
+      programId
+    )[0];
+  }
 
-  it("Creates a capsule with long content using IPFS storage", async () => {
-    // Simulate long content and IPFS upload
-    // Simulate IPFS upload: hash is a mock value (in real app, would be returned by IPFS)
-    const ipfsHash = "Qm" + "a".repeat(44); // Valid mock IPFS hash (46 chars)
-    
-    // Use a unique reveal date to avoid PDA collision
-    const currentTime = Math.floor(Date.now() / 1000);
-    const revealDate = new anchor.BN(currentTime + 7200); // 2 hours from now
-    
-    // Find the capsule PDA using reveal_date (timestamp-based addressing)
-    const [capsulePda, capsuleBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(CAPSULE_SEED),
-        provider.wallet.publicKey.toBuffer(),
-        Buffer.from(revealDate.toArray('le', 8))
-      ],
-      program.programId
-    );
-    // Find the key vault PDA
-    const [keyVaultPda, keyVaultBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(KEY_VAULT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
-    // Find the NFT mint PDA
-    const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(CAPSULE_MINT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
-    // Actually create the capsule with the IPFS hash as encrypted_content
-    const tx = await program.methods.createCapsule(
-      ipfsHash, // Store only the IPFS hash on-chain
-      { ipfs: {} },
-      revealDate,
-      false // isGamified
-    ).accounts({
+  function getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda }: {
+    provider: anchor.AnchorProvider,
+    capsulePda: PublicKey,
+    keyVaultPda: PublicKey,
+    nftMintPda: PublicKey,
+    vaultPda: PublicKey
+  }) {
+    return {
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
       keyVault: keyVaultPda,
@@ -324,24 +260,52 @@ describe("capsulex-program", () => {
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-    } as any).rpc();
-    
-    console.log("\nIPFS Capsule Created", tx);
-    // Fetch the capsule
+    };
+  }
+
+  it("Creates a capsule with long content using on-chain storage", async () => {
+    const longContent = "This is a very long prediction about the future of blockchain technology that exceeds 280 characters and should be stored on IPFS instead of directly on-chain to save costs. This content would normally be encrypted and uploaded to IPFS, with only the hash stored on-chain, making it much more cost-effective for large content.";
+    const encryptedContent = CryptoJS.AES.encrypt(longContent, "longkey123").toString();
+    const revealDate = new anchor.BN(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
+    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
+    const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    try {
+      await program.methods.createCapsule(
+        encryptedContent,
+        { onChain: {} },
+        revealDate,
+        false
+      ).accounts(accounts as any).rpc();
+    } catch (error) {
+      expect(error).to.be.an.instanceOf(Error);
+      expect(error.message).to.include("Content hash is too long. Maximum length is 280 characters.");
+    }
+  });
+
+  it("Creates a capsule with long content using IPFS storage", async () => {
+    const ipfsHash = "Qm" + "a".repeat(44); // Valid mock IPFS hash (46 chars)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const revealDate = new anchor.BN(currentTime + 7200); // 2 hours from now
+    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
+    const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const tx = await program.methods.createCapsule(
+      ipfsHash, // Store only the IPFS hash on-chain
+      { ipfs: {} },
+      revealDate,
+      false // isGamified
+    ).accounts(accounts as any).rpc();
+    // console.log("\nIPFS Capsule Created", tx);
     const capsule = await program.account.capsule.fetch(capsulePda);
-    console.log("IPFS Capsule", capsule);
-    // Assert storage type is IPFS
+    // console.log("IPFS Capsule", capsule);
     expect(capsule.contentStorage.ipfs).to.exist;
-    // Assert encryptedContent matches the hash
     expect(capsule.encryptedContent).to.equal(ipfsHash);
-    // Assert the capsule is active and not revealed
     expect(capsule.isActive).to.be.true;
     expect(capsule.isRevealed).to.be.false;
-    // Assert the reveal date matches
     expect(capsule.revealDate.toNumber()).to.equal(revealDate.toNumber());
-    // Assert the keyVault is set
     expect(capsule.keyVault.toBase58()).to.equal(keyVaultPda.toBase58());
-    // Print a success message
-    console.log("✅ Capsule with long content stored via IPFS hash created and verified!");
   });
 });
