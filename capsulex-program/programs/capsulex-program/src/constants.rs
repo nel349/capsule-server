@@ -27,7 +27,7 @@ pub const MAX_ONCHAIN_CONTENT_LENGTH: usize = 280; // Twitter-sized content stor
 pub const MAX_IPFS_HASH_LENGTH: usize = 64; // IPFS hash for larger content
 
 // Time constraints
-pub const MIN_REVEAL_DELAY: i64 = 5; // 5 seconds minimum (for testing)
+pub const MIN_REVEAL_DELAY: i64 = 1; // 1 second minimum (for testing)
 pub const MAX_REVEAL_DELAY: i64 = 31536000; // 1 year maximum
 
 // Account size constants

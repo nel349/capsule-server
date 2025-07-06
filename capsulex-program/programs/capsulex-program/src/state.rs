@@ -54,7 +54,7 @@ impl Capsule {
     
     pub fn can_reveal(&self) -> bool {
         let clock = Clock::get().unwrap();
-        clock.unix_timestamp >= self.reveal_date && self.is_active && !self.is_revealed
+        clock.unix_timestamp >= self.reveal_date && self.is_active
     }
     
     pub fn reveal(&mut self) {
