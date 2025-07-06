@@ -64,7 +64,8 @@ pub const GUESS_ACCOUNT_SIZE: usize = 8 + // discriminator
     8 + // timestamp
     1 + // is_paid
     1 + // is_correct
-    32; // padding
+    1 + // is_anonymous
+    31; // padding (reduced by 1 byte for is_anonymous)
 
 pub const LEADERBOARD_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // user

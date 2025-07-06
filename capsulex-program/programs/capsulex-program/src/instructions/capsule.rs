@@ -203,6 +203,44 @@ pub fn reveal_capsule(ctx: Context<RevealCapsule>, reveal_date: i64) -> Result<(
     Ok(())
 }
 
+#[derive(Accounts)]
+#[instruction(reveal_date: i64)]
+pub struct RetrieveEncryptionKey<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    
+    #[account(
+        seeds = [CAPSULE_SEED, user.key().as_ref(), &reveal_date.to_le_bytes()],
+        bump = capsule.bump,
+        constraint = capsule.creator == user.key() @ CapsuleXError::UnauthorizedCreator,
+        constraint = capsule.is_revealed @ CapsuleXError::CapsuleNotReady
+    )]
+    pub capsule: Account<'info, Capsule>,
+    
+    #[account(
+        seeds = [KEY_VAULT_SEED, capsule.key().as_ref()],
+        bump = key_vault.bump,
+        constraint = key_vault.is_retrieved @ CapsuleXError::KeyNotReady
+    )]
+    pub key_vault: Account<'info, KeyVault>,
+}
+
+pub fn retrieve_encryption_key(
+    ctx: Context<RetrieveEncryptionKey>,
+    _reveal_date: i64,
+) -> Result<()> {
+    let key_vault = &ctx.accounts.key_vault;
+    
+    emit!(EncryptionKeyRetrieved {
+        capsule_id: ctx.accounts.capsule.key(),
+        user: ctx.accounts.user.key(),
+        encryption_key: key_vault.encryption_key,
+        retrieved_at: Clock::get()?.unix_timestamp,
+    });
+    
+    Ok(())
+}
+
 #[event]
 pub struct CapsuleCreated {
     pub capsule_id: Pubkey,
@@ -220,4 +258,12 @@ pub struct CapsuleRevealed {
     pub creator: Pubkey,
     pub reveal_time: i64,
     pub encryption_key: [u8; 32],
+}
+
+#[event]
+pub struct EncryptionKeyRetrieved {
+    pub capsule_id: Pubkey,
+    pub user: Pubkey,
+    pub encryption_key: [u8; 32],
+    pub retrieved_at: i64,
 } 

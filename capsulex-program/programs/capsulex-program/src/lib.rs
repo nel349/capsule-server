@@ -37,6 +37,13 @@ pub mod capsulex {
         instructions::reveal_capsule(ctx, reveal_date)
     }
 
+    pub fn retrieve_encryption_key(
+        ctx: Context<RetrieveEncryptionKey>,
+        reveal_date: i64,
+    ) -> Result<()> {
+        instructions::retrieve_encryption_key(ctx, reveal_date)
+    }
+
     pub fn mint_capsule_nft(
         ctx: Context<MintCapsuleNft>,
         name: String,
@@ -60,15 +67,17 @@ pub mod capsulex {
         ctx: Context<SubmitGuess>,
         guess_content: String,
         is_paid: bool,
+        is_anonymous: bool,
     ) -> Result<()> {
-        instructions::submit_guess(ctx, guess_content, is_paid)
+        instructions::submit_guess(ctx, guess_content, is_paid, is_anonymous)
     }
 
     pub fn verify_guess(
         ctx: Context<VerifyGuess>,
-        guess_id: Pubkey,
+        decrypted_content: String,
+        verification_window_hours: Option<u8>,
     ) -> Result<()> {
-        instructions::verify_guess(ctx, guess_id)
+        instructions::verify_guess(ctx, decrypted_content, verification_window_hours)
     }
 
     pub fn distribute_rewards(

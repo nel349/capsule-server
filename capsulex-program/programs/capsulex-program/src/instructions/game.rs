@@ -31,7 +31,7 @@ pub struct InitializeGame<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(guess_content: String, is_paid: bool)]
+#[instruction(guess_content: String, is_paid: bool, is_anonymous: bool)]
 pub struct SubmitGuess<'info> {
     #[account(mut)]
     pub guesser: Signer<'info>,
@@ -62,7 +62,7 @@ pub struct SubmitGuess<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(guess_id: Pubkey)]
+#[instruction(decrypted_content: String, verification_window_hours: Option<u8>)]
 pub struct VerifyGuess<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -75,7 +75,6 @@ pub struct VerifyGuess<'info> {
     
     #[account(
         mut,
-        constraint = game.is_active @ CapsuleXError::GameNotActive,
         constraint = !game.winner_found @ CapsuleXError::WinnerAlreadyFound
     )]
     pub game: Account<'info, Game>,
@@ -173,6 +172,7 @@ pub fn submit_guess(
     ctx: Context<SubmitGuess>,
     guess_content: String,
     is_paid: bool,
+    is_anonymous: bool,
 ) -> Result<()> {
     // Validate guess content length
     require!(
@@ -215,6 +215,7 @@ pub fn submit_guess(
         ctx.accounts.guesser.key(),
         guess_content.clone(),
         is_paid,
+        is_anonymous,
         ctx.bumps.guess,
     );
     
@@ -227,6 +228,7 @@ pub fn submit_guess(
         guesser: ctx.accounts.guesser.key(),
         guess_content,
         is_paid,
+        is_anonymous,
     });
     
     Ok(())
@@ -234,20 +236,33 @@ pub fn submit_guess(
 
 pub fn verify_guess(
     ctx: Context<VerifyGuess>,
-    _guess_id: Pubkey,
+    decrypted_content: String,
+    verification_window_hours: Option<u8>,
 ) -> Result<()> {
     let guess = &mut ctx.accounts.guess;
     let game = &mut ctx.accounts.game;
     let capsule = &ctx.accounts.capsule;
     
+    // Ensure the capsule has been revealed
+    require!(capsule.is_revealed, CapsuleXError::CapsuleNotReady);
+    
+    // Check if we're within the verification window
+    let clock = Clock::get()?;
+    let window_hours = verification_window_hours.unwrap_or(1) as i64;
+    let verification_deadline = capsule.reveal_date + (window_hours * 3600); // hours after reveal
+    
+    require!(
+        clock.unix_timestamp <= verification_deadline,
+        CapsuleXError::GameNotEnded
+    );
+    
     // Only paid guesses can win
     require!(guess.is_paid, CapsuleXError::OnlyPaidGuessesEligible);
     
-    // This is a simplified verification - in practice, you'd implement
-    // proper content comparison logic based on your encryption scheme
-    let is_correct = verify_guess_content(&guess.guess_content, &capsule.encrypted_content);
+    // Verify the guess against the decrypted content
+    let is_correct = guess.guess_content.trim().to_lowercase() == decrypted_content.trim().to_lowercase();
     
-    if is_correct {
+    if is_correct && !game.winner_found {
         // Mark guess as correct
         guess.mark_correct();
         
@@ -351,27 +366,6 @@ pub fn distribute_rewards(ctx: Context<DistributeRewards>) -> Result<()> {
     Ok(())
 }
 
-// Helper function to verify guess content
-// This is a simplified implementation - you'd implement proper verification logic
-fn verify_guess_content(guess: &str, encrypted_content: &str) -> bool {
-    // In a real implementation, you'd:
-    // 1. Decrypt the content using the capsule's decryption key
-    // 2. Compare the decrypted content with the guess
-    // 3. Return true if they match
-    
-    // For demo purposes, we'll do a simple comparison
-    // Note: This is not realistic with encrypted content - the game logic
-    // would need to access the decryption key, which breaks the time-lock concept
-    // This needs architectural rethinking for production
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    
-    let mut hasher = DefaultHasher::new();
-    guess.hash(&mut hasher);
-    let guess_hash = hasher.finish().to_string();
-    
-    guess_hash == *encrypted_content
-}
 
 #[event]
 pub struct GameInitialized {
@@ -389,6 +383,7 @@ pub struct GuessSubmitted {
     pub guesser: Pubkey,
     pub guess_content: String,
     pub is_paid: bool,
+    pub is_anonymous: bool,
 }
 
 #[event]

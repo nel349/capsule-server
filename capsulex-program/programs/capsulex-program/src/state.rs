@@ -129,6 +129,7 @@ pub struct Guess {
     pub timestamp: i64,
     pub is_paid: bool,
     pub is_correct: bool,
+    pub is_anonymous: bool,
     pub bump: u8,
 }
 
@@ -140,6 +141,7 @@ impl Guess {
         guesser: Pubkey,
         guess_content: String,
         is_paid: bool,
+        is_anonymous: bool,
         bump: u8,
     ) -> Self {
         let clock = Clock::get().unwrap();
@@ -151,6 +153,7 @@ impl Guess {
             timestamp: clock.unix_timestamp,
             is_paid,
             is_correct: false,
+            is_anonymous,
             bump,
         }
     }
