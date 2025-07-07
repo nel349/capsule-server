@@ -58,18 +58,16 @@ pub mod capsulex {
         ctx: Context<InitializeGame>,
         capsule_id: Pubkey,
         max_guesses: u32,
-        guess_fee: u64,
     ) -> Result<()> {
-        instructions::initialize_game(ctx, capsule_id, max_guesses, guess_fee)
+        instructions::initialize_game(ctx, capsule_id, max_guesses)
     }
 
     pub fn submit_guess(
         ctx: Context<SubmitGuess>,
         guess_content: String,
-        is_paid: bool,
         is_anonymous: bool,
     ) -> Result<()> {
-        instructions::submit_guess(ctx, guess_content, is_paid, is_anonymous)
+        instructions::submit_guess(ctx, guess_content, is_anonymous)
     }
 
     pub fn verify_guess(
@@ -80,10 +78,10 @@ pub mod capsulex {
         instructions::verify_guess(ctx, decrypted_content, verification_window_hours)
     }
 
-    pub fn distribute_rewards(
-        ctx: Context<DistributeRewards>,
+    pub fn complete_game(
+        ctx: Context<CompleteGame>,
     ) -> Result<()> {
-        instructions::distribute_rewards(ctx)
+        instructions::complete_game(ctx)
     }
 
     // NFT Badge Instructions

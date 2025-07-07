@@ -68,8 +68,7 @@ pub struct Game {
     pub creator: Pubkey,
     pub max_guesses: u32,
     pub current_guesses: u32,
-    pub guess_fee: u64,
-    pub total_fees_collected: u64,
+    pub total_participants: u32, // Track total participants for points
     pub is_active: bool,
     pub winner_found: bool,
     pub winner: Option<Pubkey>,
@@ -83,7 +82,6 @@ impl Game {
         capsule_id: Pubkey,
         creator: Pubkey,
         max_guesses: u32,
-        guess_fee: u64,
         bump: u8,
     ) -> Self {
         Self {
@@ -91,8 +89,7 @@ impl Game {
             creator,
             max_guesses,
             current_guesses: 0,
-            guess_fee,
-            total_fees_collected: 0,
+            total_participants: 0,
             is_active: true,
             winner_found: false,
             winner: None,
@@ -104,11 +101,9 @@ impl Game {
         self.is_active && !self.winner_found && self.current_guesses < self.max_guesses
     }
     
-    pub fn add_guess(&mut self, is_paid: bool) {
+    pub fn add_guess(&mut self) {
         self.current_guesses += 1;
-        if is_paid {
-            self.total_fees_collected += self.guess_fee;
-        }
+        self.total_participants += 1;
     }
     
     pub fn set_winner(&mut self, winner: Pubkey) {
@@ -191,15 +186,17 @@ impl LeaderboardEntry {
     
     pub fn add_points(&mut self, points: u64) {
         self.total_points += points;
+        self.total_rewards_earned += points;
     }
     
     pub fn add_game_played(&mut self) {
         self.games_played += 1;
     }
     
-    pub fn add_game_won(&mut self, reward_amount: u64) {
+    pub fn add_game_won(&mut self, points: u64) {
         self.games_won += 1;
-        self.total_rewards_earned += reward_amount;
+        self.total_points += points;
+        self.total_rewards_earned += points;
     }
     
     pub fn add_capsule_created(&mut self) {

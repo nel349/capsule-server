@@ -3,17 +3,17 @@
 // Program constants based on Helius fee analysis
 pub const SOLANA_BASE_FEE: u64 = 5000; // 0.000005 SOL in lamports
 
-// Fee structure (multipliers of base fee)
+// Fee structure (multipliers of base fee) - Service fees only, no gambling
 pub const CAPSULE_CREATION_FEE: u64 = SOLANA_BASE_FEE * 10; // 0.00005 SOL
-pub const GUESSING_FEE: u64 = SOLANA_BASE_FEE * 2; // 0.00001 SOL
+pub const SERVICE_FEE: u64 = SOLANA_BASE_FEE * 1; // 0.000005 SOL - Small service fee per guess
 pub const PREMIUM_FEATURE_FEE: u64 = SOLANA_BASE_FEE * 5; // 0.000025 SOL
 pub const BADGE_MINT_FEE: u64 = SOLANA_BASE_FEE * 5; // 0.000025 SOL
 pub const TROPHY_MINT_FEE: u64 = SOLANA_BASE_FEE * 2; // 0.00001 SOL
 
-// Reward distribution percentages
-pub const WINNER_REWARD_PERCENTAGE: u8 = 50; // 50% to winner
-pub const CREATOR_REWARD_PERCENTAGE: u8 = 20; // 20% to creator
-pub const APP_FEE_PERCENTAGE: u8 = 30; // 30% to app
+// Points-based reward system (no monetary rewards)
+pub const WINNER_POINTS: u64 = 100; // Points for correct guess
+pub const PARTICIPATION_POINTS: u64 = 5; // Points for participating
+pub const CREATOR_BONUS_POINTS: u64 = 50; // Points for creator when someone wins their game
 
 // Game constraints
 pub const MAX_GUESSES_PER_GAME: u32 = 100;
@@ -50,8 +50,7 @@ pub const GAME_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // creator
     4 + // max_guesses
     4 + // current_guesses
-    8 + // guess_fee
-    8 + // total_fees_collected
+    4 + // total_participants
     1 + // is_active
     1 + // winner_found
     32 + // winner (optional)

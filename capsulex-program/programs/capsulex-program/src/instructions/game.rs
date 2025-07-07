@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(capsule_id: Pubkey, max_guesses: u32, guess_fee: u64)]
+#[instruction(capsule_id: Pubkey, max_guesses: u32)]
 pub struct InitializeGame<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -31,7 +31,7 @@ pub struct InitializeGame<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(guess_content: String, is_paid: bool, is_anonymous: bool)]
+#[instruction(guess_content: String, is_anonymous: bool)]
 pub struct SubmitGuess<'info> {
     #[account(mut)]
     pub guesser: Signer<'info>,
@@ -94,37 +94,22 @@ pub struct VerifyGuess<'info> {
 }
 
 #[derive(Accounts)]
-pub struct DistributeRewards<'info> {
+pub struct CompleteGame<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     
     #[account(
         mut,
-        constraint = game.winner_found @ CapsuleXError::GameNotEnded,
-        constraint = game.total_fees_collected > 0 @ CapsuleXError::NoFeesToDistribute
+        constraint = game.winner_found || game.current_guesses >= game.max_guesses @ CapsuleXError::GameNotEnded
     )]
     pub game: Account<'info, Game>,
     
     #[account(
-        constraint = capsule.key() == game.capsule_id,
-        constraint = capsule.creator == creator.key()
-    )]
-    pub capsule: Account<'info, Capsule>,
-    
-    /// CHECK: This is the creator account for reward distribution
-    #[account(mut)]
-    pub creator: AccountInfo<'info>,
-    
-    /// CHECK: This is the winner account for reward distribution
-    #[account(mut)]
-    pub winner: AccountInfo<'info>,
-    
-    #[account(
         mut,
-        seeds = [VAULT_SEED],
+        seeds = [LEADERBOARD_SEED, game.creator.as_ref()],
         bump
     )]
-    pub vault: Account<'info, ProgramVault>,
+    pub creator_leaderboard: Account<'info, LeaderboardEntry>,
     
     pub system_program: Program<'info, System>,
 }
@@ -133,17 +118,10 @@ pub fn initialize_game(
     ctx: Context<InitializeGame>,
     capsule_id: Pubkey,
     max_guesses: u32,
-    guess_fee: u64,
 ) -> Result<()> {
     // Validate max guesses
     require!(
         max_guesses > 0 && max_guesses <= MAX_GUESSES_PER_GAME,
-        CapsuleXError::InvalidFeeAmount
-    );
-    
-    // Validate guess fee
-    require!(
-        guess_fee >= GUESSING_FEE,
         CapsuleXError::InvalidFeeAmount
     );
     
@@ -153,7 +131,6 @@ pub fn initialize_game(
         capsule_id,
         ctx.accounts.creator.key(),
         max_guesses,
-        guess_fee,
         ctx.bumps.game,
     );
     
@@ -162,7 +139,6 @@ pub fn initialize_game(
         capsule_id,
         creator: ctx.accounts.creator.key(),
         max_guesses,
-        guess_fee,
     });
     
     Ok(())
@@ -171,7 +147,6 @@ pub fn initialize_game(
 pub fn submit_guess(
     ctx: Context<SubmitGuess>,
     guess_content: String,
-    is_paid: bool,
     is_anonymous: bool,
 ) -> Result<()> {
     // Validate guess content length
@@ -185,28 +160,26 @@ pub fn submit_guess(
     // Check if game can accept more guesses
     require!(game.can_accept_guess(), CapsuleXError::MaxGuessesReached);
     
-    // Handle paid guess
-    if is_paid {
-        let fee_amount = game.guess_fee;
-        
-        // Transfer guess fee to vault
-        let transfer_instruction = anchor_lang::solana_program::system_instruction::transfer(
-            &ctx.accounts.guesser.key(),
-            &ctx.accounts.vault.key(),
-            fee_amount,
-        );
-        
-        anchor_lang::solana_program::program::invoke(
-            &transfer_instruction,
-            &[
-                ctx.accounts.guesser.to_account_info(),
-                ctx.accounts.vault.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
-            ],
-        )?;
-        
-        ctx.accounts.vault.add_fees(fee_amount);
-    }
+    // Charge small service fee (covers gas + platform costs)
+    let service_fee_amount = SERVICE_FEE;
+    
+    // Transfer service fee to vault
+    let transfer_instruction = anchor_lang::solana_program::system_instruction::transfer(
+        &ctx.accounts.guesser.key(),
+        &ctx.accounts.vault.key(),
+        service_fee_amount,
+    );
+    
+    anchor_lang::solana_program::program::invoke(
+        &transfer_instruction,
+        &[
+            ctx.accounts.guesser.to_account_info(),
+            ctx.accounts.vault.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+    )?;
+    
+    ctx.accounts.vault.add_fees(service_fee_amount);
     
     // Initialize guess
     let guess = &mut ctx.accounts.guess;
@@ -214,20 +187,20 @@ pub fn submit_guess(
         game.key(),
         ctx.accounts.guesser.key(),
         guess_content.clone(),
-        is_paid,
+        true, // All guesses are service-fee paid (no gambling)
         is_anonymous,
         ctx.bumps.guess,
     );
     
     // Update game
-    game.add_guess(is_paid);
+    game.add_guess();
     
     emit!(GuessSubmitted {
         guess_id: guess.key(),
         game_id: game.key(),
         guesser: ctx.accounts.guesser.key(),
         guess_content,
-        is_paid,
+        is_paid: true, // Always true now (service fee)
         is_anonymous,
     });
     
@@ -256,11 +229,13 @@ pub fn verify_guess(
         CapsuleXError::GameNotEnded
     );
     
-    // Only paid guesses can win
-    require!(guess.is_paid, CapsuleXError::OnlyPaidGuessesEligible);
-    
     // Verify the guess against the decrypted content
     let is_correct = guess.guess_content.trim().to_lowercase() == decrypted_content.trim().to_lowercase();
+    
+    // Update leaderboard for participation
+    let leaderboard = &mut ctx.accounts.leaderboard;
+    leaderboard.add_game_played();
+    leaderboard.add_points(PARTICIPATION_POINTS);
     
     if is_correct && !game.winner_found {
         // Mark guess as correct
@@ -269,9 +244,8 @@ pub fn verify_guess(
         // Set winner in game
         game.set_winner(guess.guesser);
         
-        // Update leaderboard
-        let leaderboard = &mut ctx.accounts.leaderboard;
-        leaderboard.add_game_played();
+        // Award winner points
+        leaderboard.add_game_won(WINNER_POINTS);
         
         emit!(WinnerFound {
             game_id: game.key(),
@@ -279,88 +253,57 @@ pub fn verify_guess(
             guess_id: guess.key(),
             winning_guess: guess.guess_content.clone(),
         });
+        
+        emit!(PointsAwarded {
+            user: guess.guesser,
+            game_id: game.key(),
+            points: WINNER_POINTS,
+            reason: "Winner".to_string(),
+        });
+    } else {
+        emit!(PointsAwarded {
+            user: guess.guesser,
+            game_id: game.key(),
+            points: PARTICIPATION_POINTS,
+            reason: "Participation".to_string(),
+        });
     }
     
     Ok(())
 }
 
-pub fn distribute_rewards(ctx: Context<DistributeRewards>) -> Result<()> {
+pub fn complete_game(ctx: Context<CompleteGame>) -> Result<()> {
     let game = &mut ctx.accounts.game;
-    let vault = &mut ctx.accounts.vault;
     
-    let total_fees = game.total_fees_collected;
-    
-    // Calculate reward amounts
-    let winner_reward = total_fees
-        .checked_mul(WINNER_REWARD_PERCENTAGE as u64)
-        .unwrap()
-        .checked_div(100)
-        .unwrap();
-    
-    let creator_reward = total_fees
-        .checked_mul(CREATOR_REWARD_PERCENTAGE as u64)
-        .unwrap()
-        .checked_div(100)
-        .unwrap();
-    
-    // Transfer rewards to winner
-    if let Some(winner_key) = game.winner {
-        require!(
-            winner_key == ctx.accounts.winner.key(),
-            CapsuleXError::InvalidAccountOwner
-        );
-        
-        let winner_transfer = anchor_lang::solana_program::system_instruction::transfer(
-            &vault.key(),
-            &ctx.accounts.winner.key(),
-            winner_reward,
-        );
-        
-        let vault_seeds = &[VAULT_SEED, &[vault.bump]];
-        let vault_signer = &[&vault_seeds[..]];
-        
-        anchor_lang::solana_program::program::invoke_signed(
-            &winner_transfer,
-            &[
-                vault.to_account_info(),
-                ctx.accounts.winner.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
-            ],
-            vault_signer,
-        )?;
-    }
-    
-    // Transfer rewards to creator
-    let creator_transfer = anchor_lang::solana_program::system_instruction::transfer(
-        &vault.key(),
-        &ctx.accounts.creator.key(),
-        creator_reward,
+    // Ensure game has ended (winner found or max guesses reached)
+    require!(
+        game.winner_found || game.current_guesses >= game.max_guesses,
+        CapsuleXError::GameNotEnded
     );
     
-    let vault_seeds = &[VAULT_SEED, &[vault.bump]];
-    let vault_signer = &[&vault_seeds[..]];
+    // Award bonus points to capsule creator for engagement
+    if game.total_participants > 0 {
+        // Creator gets bonus points based on participation
+        let creator_leaderboard = &mut ctx.accounts.creator_leaderboard;
+        let bonus_points = CREATOR_BONUS_POINTS * (game.total_participants as u64);
+        creator_leaderboard.add_points(bonus_points);
+        
+        emit!(PointsAwarded {
+            user: game.creator,
+            game_id: game.key(),
+            points: bonus_points,
+            reason: "Creator Engagement Bonus".to_string(),
+        });
+    }
     
-    anchor_lang::solana_program::program::invoke_signed(
-        &creator_transfer,
-        &[
-            vault.to_account_info(),
-            ctx.accounts.creator.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        vault_signer,
-    )?;
-    
-    // Update vault
-    vault.add_rewards_distributed(winner_reward + creator_reward);
-    
-    // End game
+    // End the game
     game.end_game();
     
-    emit!(RewardsDistributed {
+    emit!(GameCompleted {
         game_id: game.key(),
-        winner_reward,
-        creator_reward,
-        total_distributed: winner_reward + creator_reward,
+        total_participants: game.total_participants,
+        winner_found: game.winner_found,
+        winner: game.winner,
     });
     
     Ok(())
@@ -373,7 +316,6 @@ pub struct GameInitialized {
     pub capsule_id: Pubkey,
     pub creator: Pubkey,
     pub max_guesses: u32,
-    pub guess_fee: u64,
 }
 
 #[event]
@@ -395,9 +337,17 @@ pub struct WinnerFound {
 }
 
 #[event]
-pub struct RewardsDistributed {
+pub struct PointsAwarded {
+    pub user: Pubkey,
     pub game_id: Pubkey,
-    pub winner_reward: u64,
-    pub creator_reward: u64,
-    pub total_distributed: u64,
+    pub points: u64,
+    pub reason: String,
+}
+
+#[event]
+pub struct GameCompleted {
+    pub game_id: Pubkey,
+    pub total_participants: u32,
+    pub winner_found: bool,
+    pub winner: Option<Pubkey>,
 } 
