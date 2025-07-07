@@ -418,118 +418,133 @@ describe("CapsuleX Game Instructions", () => {
     console.log("✅ Delayed verification working correctly");
   });
 
-  // it("Game: Distribute rewards after winner found", async () => {
-  //   const currentTime = Math.floor(Date.now() / 1000);
-  //   const revealDate = new anchor.BN(currentTime + 3); // Short for testing
-  //   const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-  //   const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
-  //   const nftMintPda = getNftMintPda(capsulePda, program.programId);
-  //   const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+  it("Game: Distribute rewards after winner found", async () => {
+    const slot = await provider.connection.getSlot();
+    const blockTime = await provider.connection.getBlockTime(slot);
+    const currentTime = blockTime || Math.floor(Date.now() / 1000);
+    const revealDate = new anchor.BN(currentTime + 3); // Short for testing
+    // const currentTime = Math.floor(Date.now() / 1000);
+    // const revealDate = new anchor.BN(currentTime + 3); // Short for testing
+    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
+    const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
     
-  //   // Create gamified capsule
-  //   await program.methods.createCapsule("reward test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+    // Create gamified capsule
+    await program.methods.createCapsule("reward test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
     
-  //   // Initialize game with higher fees for testing
-  //   const [gamePda] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("game"), capsulePda.toBuffer()],
-  //     program.programId
-  //   );
+    // Initialize game with higher fees for testing
+    const [gamePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("game"), capsulePda.toBuffer()],
+      program.programId
+    );
     
-  //   await program.methods.initializeGame(capsulePda, 5).accounts({
-  //     creator: provider.wallet.publicKey,
-  //     capsule: capsulePda,
-  //     game: gamePda,
-  //     vault: vaultPda,
-  //     systemProgram: SystemProgram.programId,
-  //   } as any).rpc();
+    await program.methods.initializeGame(capsulePda, 5).accounts({
+      creator: provider.wallet.publicKey,
+      capsule: capsulePda,
+      game: gamePda,
+      vault: vaultPda,
+      systemProgram: SystemProgram.programId,
+    } as any).rpc();
     
-  //   // Create winner
-  //   const winner = anchor.web3.Keypair.generate();
-  //   await provider.connection.requestAirdrop(winner.publicKey, 1000000000);
-  //   await new Promise(resolve => setTimeout(resolve, 1000));
+    // Create winner
+    const winner = anchor.web3.Keypair.generate();
+    await provider.connection.requestAirdrop(winner.publicKey, 1000000000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-  //   // Submit winning guess
-  //   const [guessPda] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("guess"), gamePda.toBuffer(), winner.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
-  //     program.programId
-  //   );
+    // Submit winning guess
+    const [guessPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("guess"), gamePda.toBuffer(), winner.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
+      program.programId
+    );
     
-  //   await program.methods.submitGuess("reward test", true).accounts({
-  //     guesser: winner.publicKey,
-  //     game: gamePda,
-  //     guess: guessPda,
-  //     vault: vaultPda,
-  //     systemProgram: SystemProgram.programId,
-  //   } as any)
-  //   .signers([winner])
-  //   .rpc();
+    await program.methods.submitGuess("reward test", true).accounts({
+      guesser: winner.publicKey,
+      game: gamePda,
+      guess: guessPda,
+      vault: vaultPda,
+      systemProgram: SystemProgram.programId,
+    } as any)
+    .signers([winner])
+    .rpc();
     
-  //   // Wait and reveal
-  //   await new Promise(resolve => setTimeout(resolve, 4000));
-  //   await program.methods.revealCapsule(revealDate).accounts({
-  //     creator: provider.wallet.publicKey,
-  //     capsule: capsulePda,
-  //     keyVault: keyVaultPda,
-  //   } as any).rpc();
+    // Wait and reveal
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    await program.methods.revealCapsule(revealDate).accounts({
+      creator: provider.wallet.publicKey,
+      capsule: capsulePda,
+      keyVault: keyVaultPda,
+    } as any).rpc();
     
-  //   // Initialize leaderboard and verify guess
-  //   const [leaderboardPda] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("leaderboard"), winner.publicKey.toBuffer()],
-  //     program.programId
-  //   );
+    // Initialize leaderboard and verify guess
+    const [leaderboardPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("leaderboard"), winner.publicKey.toBuffer()],
+      program.programId
+    );
     
-  //   await program.methods.initializeLeaderboard(winner.publicKey).accounts({
-  //     authority: provider.wallet.publicKey,
-  //     user: winner.publicKey,
-  //     leaderboard: leaderboardPda,
-  //     systemProgram: SystemProgram.programId,
-  //   } as any).rpc();
+    await program.methods.initializeLeaderboard(winner.publicKey).accounts({
+      authority: provider.wallet.publicKey,
+      user: winner.publicKey,
+      leaderboard: leaderboardPda,
+      systemProgram: SystemProgram.programId,
+    } as any).rpc();
     
-  //   await program.methods.verifyGuess("reward test", null).accounts({
-  //     authority: provider.wallet.publicKey,
-  //     guess: guessPda,
-  //     game: gamePda,
-  //     capsule: capsulePda,
-  //     leaderboard: leaderboardPda,
-  //   } as any).rpc();
+    await program.methods.verifyGuess("reward test", null).accounts({
+      authority: provider.wallet.publicKey,
+      guess: guessPda,
+      game: gamePda,
+      capsule: capsulePda,
+      leaderboard: leaderboardPda,
+    } as any).rpc();
     
-  //   // Get balances before reward distribution
-  //   const vaultBalanceBefore = await provider.connection.getBalance(vaultPda);
-  //   const winnerBalanceBefore = await provider.connection.getBalance(winner.publicKey);
-  //   const creatorBalanceBefore = await provider.connection.getBalance(provider.wallet.publicKey);
+    // Get balances before reward distribution
+    const vaultBalanceBefore = await provider.connection.getBalance(vaultPda);
+    const winnerBalanceBefore = await provider.connection.getBalance(winner.publicKey);
+    const creatorBalanceBefore = await provider.connection.getBalance(provider.wallet.publicKey);
     
-  //   // Distribute rewards
-  //   await program.methods.completeGame().accounts({
-  //     authority: provider.wallet.publicKey,
-  //     game: gamePda,
-  //     creator_leaderboard: leaderboardPda,
-  //     systemProgram: SystemProgram.programId,
-  //   } as any).rpc();
+    // Initialize creator leaderboard for complete game
+    const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("leaderboard"), provider.wallet.publicKey.toBuffer()],
+      program.programId
+    );
     
-  //   // Verify game state after rewards
-  //   const finalGame = await program.account.game.fetch(gamePda);
-  //   expect(finalGame.isActive).to.be.false;
+    try {
+      await program.methods.initializeLeaderboard(provider.wallet.publicKey).accounts({
+        authority: provider.wallet.publicKey,
+        user: provider.wallet.publicKey,
+        leaderboard: creatorLeaderboardPda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+    } catch (error) {
+      // Creator leaderboard might already exist
+      console.log("Creator leaderboard already exists, continuing...");
+    }
+
+    // Complete game and distribute rewards to only the winner
+    await program.methods.completeGame().accounts({
+      authority: provider.wallet.publicKey,
+      game: gamePda,
+      creator_leaderboard: creatorLeaderboardPda,
+      systemProgram: SystemProgram.programId,
+    } as any).rpc();
     
-  //   // Get balances after reward distribution
-  //   const vaultBalanceAfter = await provider.connection.getBalance(vaultPda);
-  //   const winnerBalanceAfter = await provider.connection.getBalance(winner.publicKey);
-  //   const creatorBalanceAfter = await provider.connection.getBalance(provider.wallet.publicKey);
+    // Verify game state after rewards
+    // rewards are now points
+    const finalGame = await program.account.game.fetch(gamePda);
+    expect(finalGame.isActive).to.be.false;
+
+    // Verify final leaderboard state for the winner
+    const leaderboard = await program.account.leaderboardEntry.fetch(leaderboardPda);
     
-  //   // Calculate expected rewards (50% to winner, 20% to creator, 30% to app)
-  //   const totalFees = 20000; // 1 guess * 20000 fee
-  //   const expectedWinnerReward = Math.floor(totalFees * 0.5);
-  //   const expectedCreatorReward = Math.floor(totalFees * 0.2);
-  //   const expectedAppReward = totalFees - expectedWinnerReward - expectedCreatorReward;
+    // The winner should get 5 (participation) + 100 (winner) = 105 points
+    expect(leaderboard.totalPoints.toNumber()).to.equal(105);
+    expect(leaderboard.gamesWon).to.be.equal(1);
+    expect(leaderboard.gamesPlayed).to.be.equal(1);
+    expect(leaderboard.capsulesCreated).to.be.equal(0);
     
-  //   // Verify rewards were distributed correctly
-  //   expect(winnerBalanceAfter).to.be.greaterThan(winnerBalanceBefore);
-  //   expect(creatorBalanceAfter).to.be.greaterThan(creatorBalanceBefore);
-  //   expect(vaultBalanceAfter).to.be.lessThan(vaultBalanceBefore);
     
-  //   console.log("✅ Rewards distributed successfully");
-  //   console.log(`Winner received: ${winnerBalanceAfter - winnerBalanceBefore} lamports`);
-  //   console.log(`Creator received: ${creatorBalanceAfter - creatorBalanceBefore} lamports`);
-  // });
+
+  });
 
   // it("Retrieve encryption key after reveal", async () => {
   //   const currentTime = Math.floor(Date.now() / 1000);

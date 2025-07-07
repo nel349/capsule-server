@@ -11,9 +11,9 @@ This document provides a complete overview of the CapsuleX Anchor program struct
 3. **Trophy NFTs**: Achievement-based NFTs for leaderboard milestones
 
 ### ❌ **WHERE SPL Tokens are NOT Used:**
-1. **Payment Currency**: All fees and rewards use SOL directly
+1. **Payment Currency**: Service fees use SOL, rewards are points-based
 2. **Custom Tokens**: No custom fungible tokens are created
-3. **Game Economics**: Pure SOL-based reward system
+3. **Game Economics**: Points-based reward system (no gambling)
 
 ## Program Architecture
 
@@ -29,26 +29,27 @@ pub struct Capsule {
     // ... other fields
 }
 
-// Game state with SOL-based fees
+// Game state with points-based rewards
 pub struct Game {
     pub capsule_id: Pubkey,
-    pub guess_fee: u64,          // Fee in lamports (SOL)
-    pub total_fees_collected: u64, // SOL collected
+    pub max_guesses: u32,
+    pub total_participants: u32,  // Participants for points calculation
     pub winner: Option<Pubkey>,
     // ... other fields
 }
 ```
 
-### Fee Structure (SOL-based)
+### Fee Structure (Service Fees Only)
 - **Base Fee**: 0.000005 SOL (5000 lamports)
 - **Capsule Creation**: 0.00005 SOL (10x base)
-- **Guessing Fee**: 0.00001 SOL (2x base)
+- **Service Fee per Guess**: 0.000005 SOL (1x base) - covers gas + platform costs
 - **Premium Features**: 0.000025 SOL (5x base)
 
-### Reward Distribution (SOL-based)
-- **50%** to game winner
-- **20%** to capsule creator  
-- **30%** to app operations
+### Reward Distribution (Points-Based)
+- **100 points** to game winner (correct guess)
+- **5 points** to all participants
+- **50 points per participant** to capsule creator (engagement bonus)
+- **No monetary gambling** - entertainment only
 
 ### Hybrid Storage Validation Update (2024-06)
 - The program now supports both on-chain and IPFS storage for encrypted capsule content.
@@ -83,24 +84,23 @@ pub fn mint_capsule_nft(
 
 ### 2. Game Operations
 ```rust
-// Initialize game with SOL-based fees
+// Initialize game with participant limits only
 pub fn initialize_game(
     ctx: Context<InitializeGame>,
     capsule_id: Pubkey,
-    max_guesses: u32,
-    guess_fee: u64,  // SOL amount
+    max_guesses: u32,  // No gambling fees
 ) -> Result<()>
 
-// Submit guess with SOL payment
+// Submit guess with small service fee
 pub fn submit_guess(
     ctx: Context<SubmitGuess>,
     guess_content: String,
-    is_paid: bool,
+    is_anonymous: bool,  // User privacy control
 ) -> Result<()>
 
-// Distribute SOL rewards
-pub fn distribute_rewards(
-    ctx: Context<DistributeRewards>,
+// Complete game and award points
+pub fn complete_game(
+    ctx: Context<CompleteGame>,
 ) -> Result<()>
 ```
 
@@ -145,10 +145,10 @@ idl-build = [
 5. Optional: Initialize guessing game
 
 ### 2. Guessing Game Flow
-1. Creator initializes game with SOL-based fees
-2. Users submit guesses (free or paid in SOL)
-3. Program verifies correct guesses
-4. Rewards distributed in SOL (50% winner, 20% creator, 30% app)
+1. Creator initializes game with participant limits
+2. Users submit guesses (small service fee covers gas + platform costs)
+3. Program verifies correct guesses after capsule reveal
+4. Points awarded: 100 to winner, 5 to all participants, 50 per participant to creator
 5. Winner receives NFT badge (using anchor-spl)
 
 ### 3. Achievement System
@@ -191,7 +191,7 @@ programs/capsulex/
 
 ## Summary
 
-Your CapsuleX project uses SPL tokens **exclusively for NFT functionality** (capsules, badges, trophies) through the `anchor-spl` crate. The core game economics run on SOL for all fees and rewards, making it simple and gas-efficient. This design perfectly balances functionality with simplicity - you get the benefits of NFT ownership without the complexity of custom token economics.
+Your CapsuleX project uses SPL tokens **exclusively for NFT functionality** (capsules, badges, trophies) through the `anchor-spl` crate. The core game economics use a **points-based reward system** with minimal service fees (no gambling), making it legally compliant and focused on entertainment. This design perfectly balances functionality with legal safety - you get engaging gameplay without gambling concerns.
 
 The program is now complete and ready for integration with your React Native mobile app and off-chain services (IPFS, X API, ElevenLabs, etc.). 
 

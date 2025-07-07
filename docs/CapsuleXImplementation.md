@@ -30,19 +30,21 @@
 ### 2. Gamified Guessing Game
 - **Functionality**:
   - Two modes: **Locked** (no guessing) or **Gamified** (hints shared on X, guessing enabled).
-  - Free guesses allowed via X replies; paid guesses (~0.00001 SOL (2x base fee per Helius)) qualify for rewards (tokens or NFT badges).
-  - First correct guess wins 50% of the fee pool (e.g., 0.00005 SOL for 10 guessers) and an NFT badge.
-  - Capsule creators get 20% of fees (~0.00002 SOL for 10 guessers).
+  - All guesses require small service fee (~0.000005 SOL) to cover gas + platform costs (no gambling).
+  - First correct guess wins **100 points** and an NFT badge.
+  - All participants get **5 points** for playing.
+  - Capsule creators get **50 points per participant** as engagement bonus.
 - **Implementation**:
   - **Hint Sharing**: Users create text/emoji hints or use ElevenLabs API for AI audio hints, posted to X via `@x-api-sdk/core` with a clickable Blink URL.
   - **Guess Tracking**: Use X API to monitor replies to hint posts; verify guesses against the capsule's decrypted content (stored in the Anchor program).
-  - **Reward System**: Anchor program logs paid guesses, verifies the first correct one, and distributes SOL rewards and NFT badges.
+  - **Reward System**: Anchor program logs guesses, verifies correct ones, and awards points to leaderboard.
   - **Program Instructions**:
-    - `initialize_game()` - Set up guessing game parameters
-    - `submit_guess()` - Record paid guesses with verification  
-    - `distribute_rewards()` - Automated payout to winners
+    - `initialize_game()` - Set up guessing game with participant limits
+    - `submit_guess()` - Record guesses with small service fee
+    - `verify_guess()` - Check correct guesses and award points
+    - `complete_game()` - Finalize game and award creator bonus points
     - `mint_badge()` - Create NFT badges for winners
-  - **Fee Collection**: Charge ~0.00001 SOL (2x base fee per Helius) per paid guess via Solana Pay; 30% covers app costs, 20% goes to creators, 50% to winners.
+  - **Service Fee**: Small ~0.000005 SOL (1x base fee) covers gas + platform costs (not gambling).
 - **Tech Stack**:
   - Solana: `@solana/web3.js`, Solana Pay
   - X API: `@x-api-sdk/core` for OAuth and reply tracking
@@ -94,25 +96,26 @@
 
 ### 6. Monetization and Rewards
 - **Functionality**:
-  - **Capsule Creation Fee**: ~0.02 SOL for NFT minting and Filecoin pinning.
-  - **Gamified Mode Fee**: ~0.00001 SOL (2x base fee per Helius) to enable guessing and hints.
-  - **Guessing Fee**: ~0.00001 SOL (2x base fee per Helius) per paid guess; free guesses allowed but no rewards.
+  - **Capsule Creation Fee**: ~0.00005 SOL for NFT minting and IPFS storage.
+  - **Service Fee**: ~0.000005 SOL (1x base fee) per guess covers gas + platform costs.
   - **Premium Features**: ~0.000025 SOL (5x base fee per Helius) for AR hints, custom reveal themes, or NFT badges.
-  - **Rewards**: 50% of guess fees to winners (~0.00005 SOL for 10 guessers), 20% to creators (~0.02 SOL), 30% to app.
-  - **NFT Badges**: Winners get tradeable NFTs; creators pay ~0.000025 SOL (5x base fee per Helius) to mint them.
+  - **Points-Based Rewards**: 100 points for winners, 5 points for participants, 50 points per participant to creators.
+  - **NFT Badges**: Winners get tradeable NFTs; automatic minting for game winners.
+  - **Legal Compliance**: Points-based system avoids gambling regulations while maintaining engagement.
 - **Implementation**:
-  - **Payments**: Use Solana Pay for fee collection, processed via `@solana/web3.js`.
-  - **Reward Distribution**: Smart contract handles payouts, using Alpenglow for instant transfers.
-  - **Fee Management**: Store fee splits in the Anchor program; use Solana's low fees (~0.000005 SOL per tx) for efficiency.
+  - **Service Fees**: Use Solana Pay for minimal service fee collection via `@solana/web3.js`.
+  - **Points Distribution**: Smart contract handles points awards to leaderboard accounts.
+  - **Fee Management**: Minimal service fees cover operational costs; focus on user engagement over revenue.
 - **Tech Stack**:
   - Solana: `@solana/web3.js`, Solana Pay
   - NFT: `@solana/spl-token`
 
 ### 7. Engagement Features
 - **Functionality**:
-  - **Leaderboard**: Tracks top guessers/creators (based on X likes, guesses) with Solana-minted NFT trophies (~0.00001 SOL (2x base fee per Helius) to mint).
+  - **Leaderboard**: Tracks top guessers/creators by points earned with Solana-minted NFT trophies (~0.00001 SOL to mint).
   - **Capsule Vault**: Users browse past capsules, share stats on X for ~0.000025 SOL (5x base fee per Helius) (premium designs).
   - **Push Notifications**: Firebase alerts for new hints, guesses, or reveals.
+  - **Achievement System**: Milestone rewards encourage continued engagement through points collection.
 - **Implementation**:
   - **Leaderboard**: Store stats in a Solana program for transparency; mint trophies via `@solana/spl-token`.
   - **Vault**: Build a React Native UI with `expo` to display capsule history; use Tailwind CSS for styling.
@@ -173,7 +176,7 @@
 ### Pricing Structure (Based on Helius Fee Analysis)
 **Solana Base Fee**: 0.000005 SOL (~$0.00077 at $153/SOL)
 - **Capsule Creation**: 0.00005 SOL (~$0.008) - 10x base fee
-- **Guessing**: 0.00001 SOL (~$0.0015) - 2x base fee  
+- **Service Fee per Guess**: 0.000005 SOL (~$0.00077) - 1x base fee (gas + platform)
 - **Premium Features**: 0.000025 SOL (~$0.004) - 5x base fee
 
 ### Package Updates (2025 Current)
@@ -183,12 +186,12 @@
 - **Solana Program**: `@coral-xyz/anchor` framework required
 
 ### Major Corrections Made
-1. **Realistic pricing**: Reduced fees by 99% for $100+ SOL environment
+1. **Legal compliance**: Switched from gambling model to points-based entertainment
 2. **Updated deprecated packages**: Modern alternatives for IPFS/Filecoin
 3. **Fixed X API**: Correct package, removed unsupported audio uploads  
 4. **Added Solana program details**: Anchor framework, instructions, account structure
 5. **Timeline clarifications**: Noted when features become available
-6. **Fee structure based on Helius analysis**: All fees are multiples of 0.000005 SOL base fee
+6. **Service fee structure**: Minimal fees cover operational costs, no gambling
 
 **Source**: [Solana Fees in Theory and Practice - Helius](https://www.helius.dev/blog/solana-fees-in-theory-and-practice)
 
