@@ -41,9 +41,8 @@ pub const CAPSULE_ACCOUNT_SIZE: usize = 8 + // discriminator
     1 + // is_gamified
     1 + // is_revealed
     1 + // is_active
-    32 + // key_vault
     1 + // bump
-    32; // padding
+    64; // padding (increased since we removed key_vault field)
 
 pub const GAME_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // capsule_id
@@ -75,14 +74,6 @@ pub const LEADERBOARD_ACCOUNT_SIZE: usize = 8 + // discriminator
     8 + // total_rewards_earned
     32; // padding
 
-pub const KEY_VAULT_ACCOUNT_SIZE: usize = 8 + // discriminator
-    32 + // capsule_id
-    32 + // encryption_key (256-bit AES key)
-    8 + // reveal_date
-    32 + // creator
-    1 + // is_retrieved
-    1 + // bump
-    32; // padding
 
 // Seeds for PDAs
 pub const CAPSULE_SEED: &[u8] = b"capsule";
@@ -90,6 +81,6 @@ pub const GAME_SEED: &[u8] = b"game";
 pub const GUESS_SEED: &[u8] = b"guess";
 pub const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 pub const VAULT_SEED: &[u8] = b"vault";
-pub const KEY_VAULT_SEED: &[u8] = b"key_vault";
+pub const CAPSULE_MINT_SEED: &[u8] = b"capsule_mint";
 pub const BADGE_MINT_SEED: &[u8] = b"badge_mint";
 pub const TROPHY_MINT_SEED: &[u8] = b"trophy_mint"; 

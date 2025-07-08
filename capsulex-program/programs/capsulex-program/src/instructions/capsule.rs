@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::{
     constants::*, 
     errors::CapsuleXError, 
-    state::{Capsule, ProgramVault, KeyVault, ContentStorage}
+    state::{Capsule, ProgramVault, ContentStorage}
 };
 
 #[derive(Accounts)]
@@ -24,18 +24,9 @@ pub struct CreateCapsule<'info> {
     #[account(
         init,
         payer = creator,
-        space = KeyVault::LEN,
-        seeds = [KEY_VAULT_SEED, capsule.key().as_ref()],
-        bump
-    )]
-    pub key_vault: Account<'info, KeyVault>,
-    
-    #[account(
-        init,
-        payer = creator,
         mint::decimals = 0,
         mint::authority = capsule,
-        seeds = [b"capsule_mint", capsule.key().as_ref()],
+        seeds = [CAPSULE_MINT_SEED, capsule.key().as_ref()],
         bump
     )]
     pub nft_mint: Account<'info, Mint>,
@@ -66,14 +57,6 @@ pub struct RevealCapsule<'info> {
         constraint = capsule.can_reveal() @ CapsuleXError::CapsuleNotReady
     )]
     pub capsule: Account<'info, Capsule>,
-    
-    #[account(
-        mut,
-        seeds = [KEY_VAULT_SEED, capsule.key().as_ref()],
-        bump = key_vault.bump,
-        constraint = key_vault.can_retrieve() @ CapsuleXError::KeyNotReady
-    )]
-    pub key_vault: Account<'info, KeyVault>,
 }
 
 pub fn create_capsule(
@@ -109,15 +92,6 @@ pub fn create_capsule(
         CapsuleXError::InvalidRevealDate
     );
     
-    // Generate random encryption key (32 bytes for AES-256)
-    let mut encryption_key = [0u8; 32];
-    let key_seed = [
-        ctx.accounts.creator.key().as_ref(),
-        &reveal_date.to_le_bytes(),
-        b"encryption_key",
-    ].concat();
-    anchor_lang::solana_program::keccak::hash(&key_seed).to_bytes()[0..32].copy_from_slice(&mut encryption_key);
-    
     // Calculate fee based on storage type
     let fee_amount = match content_storage {
         ContentStorage::OnChain => CAPSULE_CREATION_FEE * 2, // 2x fee for on-chain storage
@@ -142,17 +116,7 @@ pub fn create_capsule(
     // Update vault
     ctx.accounts.vault.add_fees(fee_amount);
     
-    // Initialize key vault
-    let key_vault = &mut ctx.accounts.key_vault;
-    **key_vault = KeyVault::new(
-        ctx.accounts.capsule.key(),
-        encryption_key,
-        reveal_date,
-        ctx.accounts.creator.key(),
-        ctx.bumps.key_vault,
-    );
-    
-    // Initialize capsule
+    // Initialize capsule (content is already encrypted on device)
     let capsule = &mut ctx.accounts.capsule;
     **capsule = Capsule::new(
         ctx.accounts.creator.key(),
@@ -161,7 +125,6 @@ pub fn create_capsule(
         content_storage,
         reveal_date,
         is_gamified,
-        ctx.accounts.key_vault.key(),
         ctx.bumps.capsule,
     );
     
@@ -178,68 +141,25 @@ pub fn create_capsule(
     Ok(())
 }
 
-pub fn reveal_capsule(ctx: Context<RevealCapsule>, reveal_date: i64) -> Result<()> {
+pub fn reveal_capsule(ctx: Context<RevealCapsule>, _reveal_date: i64) -> Result<()> {
     let capsule = &mut ctx.accounts.capsule;
-    let key_vault = &mut ctx.accounts.key_vault;
     
     // Check if capsule can be revealed
     require!(capsule.can_reveal(), CapsuleXError::CapsuleNotReady);
     require!(!capsule.is_revealed, CapsuleXError::CapsuleAlreadyRevealed);
-    require!(key_vault.can_retrieve(), CapsuleXError::KeyNotReady);
     
-    // Mark key as retrieved
-    key_vault.mark_retrieved();
-    
-    // Reveal the capsule
+    // Reveal the capsule (no key management needed - done on device)
     capsule.reveal();
     
     emit!(CapsuleRevealed {
         capsule_id: capsule.key(),
         creator: capsule.creator,
         reveal_time: Clock::get()?.unix_timestamp,
-        encryption_key: key_vault.encryption_key,
     });
     
     Ok(())
 }
 
-#[derive(Accounts)]
-#[instruction(reveal_date: i64)]
-pub struct RetrieveEncryptionKey<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-    
-    #[account(
-        seeds = [CAPSULE_SEED, user.key().as_ref(), &reveal_date.to_le_bytes()],
-        bump = capsule.bump,
-        constraint = capsule.creator == user.key() @ CapsuleXError::UnauthorizedCreator,
-        constraint = capsule.is_revealed @ CapsuleXError::CapsuleNotReady
-    )]
-    pub capsule: Account<'info, Capsule>,
-    
-    #[account(
-        seeds = [KEY_VAULT_SEED, capsule.key().as_ref()],
-        bump = key_vault.bump,
-        constraint = key_vault.is_retrieved @ CapsuleXError::KeyNotReady
-    )]
-    pub key_vault: Account<'info, KeyVault>,
-}
-
-pub fn retrieve_encryption_key(
-    ctx: Context<RetrieveEncryptionKey>,
-    _reveal_date: i64,
-) -> Result<()> {
-    let key_vault = &ctx.accounts.key_vault;
-    
-    emit!(EncryptionKeyRetrieved {
-        capsule_id: ctx.accounts.capsule.key(),
-        user: ctx.accounts.user.key(),
-        encryption_key: key_vault.encryption_key,
-        retrieved_at: Clock::get()?.unix_timestamp,
-    });
-    
-    Ok(())
-}
 
 #[event]
 pub struct CapsuleCreated {
@@ -257,13 +177,4 @@ pub struct CapsuleRevealed {
     pub capsule_id: Pubkey,
     pub creator: Pubkey,
     pub reveal_time: i64,
-    pub encryption_key: [u8; 32],
-}
-
-#[event]
-pub struct EncryptionKeyRetrieved {
-    pub capsule_id: Pubkey,
-    pub user: Pubkey,
-    pub encryption_key: [u8; 32],
-    pub retrieved_at: i64,
 } 

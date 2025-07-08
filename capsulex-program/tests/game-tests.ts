@@ -542,38 +542,7 @@ describe("CapsuleX Game Instructions", () => {
     expect(leaderboard.gamesPlayed).to.be.equal(1);
     expect(leaderboard.capsulesCreated).to.be.equal(0);
     
-    
-
   });
-
-  // it("Retrieve encryption key after reveal", async () => {
-  //   const currentTime = Math.floor(Date.now() / 1000);
-  //   const revealDate = new anchor.BN(currentTime + 3); // Short for testing
-  //   const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-  //   const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
-  //   const nftMintPda = getNftMintPda(capsulePda, program.programId);
-  //   const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
-    
-  //   // Create capsule
-  //   await program.methods.createCapsule("secret content", { onChain: {} }, revealDate, false).accounts(accounts as any).rpc();
-    
-  //   // Wait and reveal
-  //   await new Promise(resolve => setTimeout(resolve, 4000));
-  //   await program.methods.revealCapsule(revealDate).accounts({
-  //     creator: provider.wallet.publicKey,
-  //     capsule: capsulePda,
-  //     keyVault: keyVaultPda,
-  //   } as any).rpc();
-    
-  //   // Retrieve encryption key
-  //   await program.methods.retrieveEncryptionKey(revealDate).accounts({
-  //     user: provider.wallet.publicKey,
-  //     capsule: capsulePda,
-  //     keyVault: keyVaultPda,
-  //   } as any).rpc();
-    
-  //   console.log("✅ Encryption key retrieved successfully");
-  // });
 
   // it("Game: Error handling - Cannot verify guess before reveal", async () => {
   //   const testUser = anchor.web3.Keypair.generate();

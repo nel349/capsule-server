@@ -11,9 +11,6 @@ pub enum CapsuleXError {
     #[msg("Capsule is not yet ready to be revealed.")]
     CapsuleNotReady,
     
-    #[msg("Encryption key is not yet ready to be retrieved.")]
-    KeyNotReady,
-    
     #[msg("Capsule has already been revealed.")]
     CapsuleAlreadyRevealed,
     

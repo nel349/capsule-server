@@ -11,14 +11,13 @@ pub enum ContentStorage {
 pub struct Capsule {
     pub creator: Pubkey,
     pub nft_mint: Pubkey,
-    pub encrypted_content: String, // Either encrypted content OR IPFS hash
+    pub encrypted_content: String, // Encrypted with device key (OnChain) OR IPFS hash
     pub content_storage: ContentStorage, // OnChain or IPFS
     pub reveal_date: i64,
     pub created_at: i64,
     pub is_gamified: bool,
     pub is_revealed: bool,
     pub is_active: bool,
-    pub key_vault: Pubkey, // Reference to time-locked key storage
     pub bump: u8,
 }
 
@@ -32,7 +31,6 @@ impl Capsule {
         content_storage: ContentStorage,
         reveal_date: i64,
         is_gamified: bool,
-        key_vault: Pubkey,
         bump: u8,
     ) -> Self {
         let clock = Clock::get().unwrap();
@@ -47,7 +45,6 @@ impl Capsule {
             is_gamified,
             is_revealed: false,
             is_active: true,
-            key_vault,
             bump,
         }
     }
@@ -233,42 +230,4 @@ impl ProgramVault {
     }
 }
 
-#[account]
-pub struct KeyVault {
-    pub capsule_id: Pubkey,
-    pub encryption_key: [u8; 32], // AES-256 key
-    pub reveal_date: i64,
-    pub creator: Pubkey,
-    pub is_retrieved: bool,
-    pub bump: u8,
-}
-
-impl KeyVault {
-    pub const LEN: usize = KEY_VAULT_ACCOUNT_SIZE;
-    
-    pub fn new(
-        capsule_id: Pubkey,
-        encryption_key: [u8; 32],
-        reveal_date: i64,
-        creator: Pubkey,
-        bump: u8,
-    ) -> Self {
-        Self {
-            capsule_id,
-            encryption_key,
-            reveal_date,
-            creator,
-            is_retrieved: false,
-            bump,
-        }
-    }
-    
-    pub fn can_retrieve(&self) -> bool {
-        let clock = Clock::get().unwrap();
-        clock.unix_timestamp >= self.reveal_date && !self.is_retrieved
-    }
-    
-    pub fn mark_retrieved(&mut self) {
-        self.is_retrieved = true;
-    }
-} 
+ 

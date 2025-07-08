@@ -37,12 +37,6 @@ pub mod capsulex {
         instructions::reveal_capsule(ctx, reveal_date)
     }
 
-    pub fn retrieve_encryption_key(
-        ctx: Context<RetrieveEncryptionKey>,
-        reveal_date: i64,
-    ) -> Result<()> {
-        instructions::retrieve_encryption_key(ctx, reveal_date)
-    }
 
     pub fn mint_capsule_nft(
         ctx: Context<MintCapsuleNft>,
