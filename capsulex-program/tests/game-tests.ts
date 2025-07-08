@@ -60,13 +60,23 @@ describe("CapsuleX Game Instructions", () => {
   });
 
   it("Game: Initialize game with correct parameters", async () => {
+    // Clear naming: capsule creator vs game player/guesser
+    const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
+    
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 100); // Unique timestamp
-    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda });
+    const accounts = {
+      creator: capsuleCreator.publicKey,
+      capsule: capsulePda,
+      nftMint: nftMintPda,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
     
-    // Create gamified capsule first
+    // Create gamified capsule first (capsule creator creates their capsule)
     await program.methods.createCapsule(
       "test content for game",
       { onChain: {} },
@@ -80,19 +90,21 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     
+    // Initialize game (capsule creator initializes their game)
     await program.methods.initializeGame(
       capsulePda,
       50 // max_guesses (no more guess fees!)
     ).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
+    // Verify game initialization
     const game = await program.account.game.fetch(gamePda);
     expect(game.capsuleId.toBase58()).to.equal(capsulePda.toBase58());
-    expect(game.creator.toBase58()).to.equal(provider.wallet.publicKey.toBase58());
+    expect(game.creator.toBase58()).to.equal(capsuleCreator.publicKey.toBase58());
     expect(game.maxGuesses).to.equal(50);
     expect(game.isActive).to.be.true;
     expect(game.currentGuesses).to.equal(0);
@@ -103,13 +115,24 @@ describe("CapsuleX Game Instructions", () => {
   });
 
   it("Game: Submit guesses with anonymity options", async () => {
+    // Clear naming: capsule creator vs game player/guesser
+    const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
+    const gamePlayer = provider.wallet; // Same player for this test
+    
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 200); // Unique timestamp
-    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda });
+    const accounts = {
+      creator: capsuleCreator.publicKey,
+      capsule: capsulePda,
+      nftMint: nftMintPda,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
     
-    // Create and initialize game
+    // Create and initialize game (capsule creator creates capsule and game)
     await program.methods.createCapsule("test content", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
     
     const [gamePda] = PublicKey.findProgramAddressSync(
@@ -118,38 +141,35 @@ describe("CapsuleX Game Instructions", () => {
     );
     
     await program.methods.initializeGame(capsulePda, 10).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // public guess
+    // Submit public guess (game player submits guess)
     const [freePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), provider.wallet.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
       program.programId
     );
     
     await program.methods.submitGuess("public guess", false).accounts({
-      guesser: provider.wallet.publicKey,
+      guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: freePda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // anonymous guess
+    // Submit anonymous guess (game player submits anonymous guess)
     const [paidPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), provider.wallet.publicKey.toBuffer(), Buffer.from([1, 0, 0, 0])],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer.publicKey.toBuffer(), Buffer.from([1, 0, 0, 0])],
       program.programId
     );
     
     await program.methods.submitGuess("anonymous guess", true).accounts({
-      guesser: provider.wallet.publicKey,
+      guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: paidPda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
@@ -171,11 +191,21 @@ describe("CapsuleX Game Instructions", () => {
   });
 
   it("Game: Multiple users submit guesses", async () => {
+    // Clear naming: capsule creator vs game players
+    const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
+    
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 300); // Unique timestamp
-    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda });
+    const accounts = {
+      creator: capsuleCreator.publicKey,
+      capsule: capsulePda,
+      nftMint: nftMintPda,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
     
     // Create gamified capsule and game
     await program.methods.createCapsule("secret answer", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
@@ -186,42 +216,42 @@ describe("CapsuleX Game Instructions", () => {
     );
     
     await program.methods.initializeGame(capsulePda, 5).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // Create multiple guessers
-    const guesser1 = anchor.web3.Keypair.generate();
-    const guesser2 = anchor.web3.Keypair.generate();
+    // Create multiple game players
+    const gamePlayer1 = anchor.web3.Keypair.generate();
+    const gamePlayer2 = anchor.web3.Keypair.generate();
     
-    // Fund guessers
-    await provider.connection.requestAirdrop(guesser1.publicKey, 1000000000); // 1 SOL
-    await provider.connection.requestAirdrop(guesser2.publicKey, 1000000000);
+    // Fund game players
+    await provider.connection.requestAirdrop(gamePlayer1.publicKey, 1000000000); // 1 SOL
+    await provider.connection.requestAirdrop(gamePlayer2.publicKey, 1000000000);
     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 
     
-    // Guesser 1: Paid guess, public (first guess, so current_guesses = 0)
+    // Game Player 1: Public guess (first guess, so current_guesses = 0)
     const [guess1Pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), guesser1.publicKey.toBuffer(), Buffer.from(new Uint32Array([0]).buffer)],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer1.publicKey.toBuffer(), Buffer.from(new Uint32Array([0]).buffer)],
       program.programId
     );
     
     await program.methods.submitGuess(
-      "wrong guess from guesser 1",
+      "wrong guess from gamePlayer1",
       false // is_anonymous (public)
     ).accounts({
-      guesser: guesser1.publicKey,
+      guesser: gamePlayer1.publicKey,
       game: gamePda,
       guess: guess1Pda,
       systemProgram: SystemProgram.programId,
     } as any)
-    .signers([guesser1])
+    .signers([gamePlayer1])
     .rpc();
     
-    // Guesser 2: Paid guess, anonymous (second guess, so current_guesses = 1)
+    // Game Player 2: Anonymous guess (second guess, so current_guesses = 1)
     const [guess2Pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), guesser2.publicKey.toBuffer(), Buffer.from(new Uint32Array([1]).buffer)],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer2.publicKey.toBuffer(), Buffer.from(new Uint32Array([1]).buffer)],
       program.programId
     );
     
@@ -229,12 +259,12 @@ describe("CapsuleX Game Instructions", () => {
       "another wrong guess",
       true // is_anonymous
     ).accounts({
-      guesser: guesser2.publicKey,
+      guesser: gamePlayer2.publicKey,
       game: gamePda,
       guess: guess2Pda,
       systemProgram: SystemProgram.programId,
     } as any)
-    .signers([guesser2])
+    .signers([gamePlayer2])
     .rpc();
     
     // Verify game state
@@ -244,12 +274,12 @@ describe("CapsuleX Game Instructions", () => {
     
     // Verify individual guesses
     const guess1 = await program.account.guess.fetch(guess1Pda);
-    expect(guess1.guesser.toBase58()).to.equal(guesser1.publicKey.toBase58());
+    expect(guess1.guesser.toBase58()).to.equal(gamePlayer1.publicKey.toBase58());
     expect(guess1.isPaid).to.be.true;
     expect(guess1.isAnonymous).to.be.false;
     
     const guess2 = await program.account.guess.fetch(guess2Pda);
-    expect(guess2.guesser.toBase58()).to.equal(guesser2.publicKey.toBase58());
+    expect(guess2.guesser.toBase58()).to.equal(gamePlayer2.publicKey.toBase58());
     expect(guess2.isPaid).to.be.true;
     expect(guess2.isAnonymous).to.be.true;
     
@@ -257,15 +287,26 @@ describe("CapsuleX Game Instructions", () => {
   });
 
   it("Game: Verify guess after capsule reveal (delayed verification)", async () => {
+    // Clear naming: capsule creator vs game player/guesser
+    const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
+    const gamePlayer = provider.wallet; // Same player for this test
+    
     // Get the validator's current time instead of system time
     const slot = await provider.connection.getSlot();
     const blockTime = await provider.connection.getBlockTime(slot);
     const currentTime = blockTime || Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 3); // Short for testing
     const secretAnswer = "The answer is 42";
-    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda });
+    const accounts = {
+      creator: capsuleCreator.publicKey,
+      capsule: capsulePda,
+      nftMint: nftMintPda,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
     
     // Create gamified capsule with encrypted content
     const encryptionKey = "testkey1234567890123456789012345678";
@@ -280,38 +321,35 @@ describe("CapsuleX Game Instructions", () => {
     );
     
     await program.methods.initializeGame(capsulePda, 10).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // Submit correct guess
+    // Submit correct guess (game player submits guess)
     const [correctGuessPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), provider.wallet.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
       program.programId
     );
     
     await program.methods.submitGuess(secretAnswer, true).accounts({
-      guesser: provider.wallet.publicKey,
+      guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: correctGuessPda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // Submit wrong guess
+    // Submit wrong guess (game player submits another guess)
     const [wrongGuessPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), provider.wallet.publicKey.toBuffer(), Buffer.from([1, 0, 0, 0])],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer.publicKey.toBuffer(), Buffer.from([1, 0, 0, 0])],
       program.programId
     );
     
     await program.methods.submitGuess("Wrong answer", true).accounts({
-      guesser: provider.wallet.publicKey,
+      guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: wrongGuessPda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
@@ -327,24 +365,23 @@ describe("CapsuleX Game Instructions", () => {
     expect(capsule.isActive).to.be.true;
     expect(capsule.isRevealed).to.be.false;
 
-    // console.log("Revealing capsule");
-    // Reveal capsule
+    // Reveal capsule (capsule creator reveals their capsule)
     await program.methods.revealCapsule(revealDate).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
     } as any).rpc();
     
-    // Initialize leaderboard for verification
+    // Initialize leaderboard for verification (game player initializes their leaderboard)
     const [leaderboardPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("leaderboard"), provider.wallet.publicKey.toBuffer()],
+      [Buffer.from("leaderboard"), gamePlayer.publicKey.toBuffer()],
       program.programId
     );
     
     // Try to initialize leaderboard (skip if already exists)
     try {
-      await program.methods.initializeLeaderboard(provider.wallet.publicKey).accounts({
-        authority: provider.wallet.publicKey,
-        user: provider.wallet.publicKey,
+      await program.methods.initializeLeaderboard(gamePlayer.publicKey).accounts({
+        authority: gamePlayer.publicKey,
+        user: gamePlayer.publicKey,
         leaderboard: leaderboardPda,
         systemProgram: SystemProgram.programId,
       } as any).rpc();
@@ -352,24 +389,24 @@ describe("CapsuleX Game Instructions", () => {
       console.log("Leaderboard already exists, continuing...");
     }
     
-    // Verify wrong guess first (should not win)
+    // Verify wrong guess first (game player verifies their guess)
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
       null // verification_window_hours
     ).accounts({
-      authority: provider.wallet.publicKey,
+      authority: gamePlayer.publicKey,
       guess: wrongGuessPda,
       game: gamePda,
       capsule: capsulePda,
       leaderboard: leaderboardPda,
     } as any).rpc();
     
-    // Verify correct guess (should win)
+    // Verify correct guess (game player verifies their winning guess)
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
       null // verification_window_hours (default 1 hour)
     ).accounts({
-      authority: provider.wallet.publicKey,
+      authority: gamePlayer.publicKey,
       guess: correctGuessPda,
       game: gamePda,
       capsule: capsulePda,
@@ -379,7 +416,7 @@ describe("CapsuleX Game Instructions", () => {
     // Check results
     const finalGame = await program.account.game.fetch(gamePda);
     expect(finalGame.winnerFound).to.be.true;
-    expect(finalGame.winner.toBase58()).to.equal(provider.wallet.publicKey.toBase58());
+    expect(finalGame.winner.toBase58()).to.equal(gamePlayer.publicKey.toBase58());
     
     const winningGuess = await program.account.guess.fetch(correctGuessPda);
     expect(winningGuess.isCorrect).to.be.true;
@@ -389,15 +426,23 @@ describe("CapsuleX Game Instructions", () => {
     });
 
   it("Game: Distribute rewards after winner found", async () => {
+    // Clear naming: capsule creator vs game player/guesser
+    const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
+    
     const slot = await provider.connection.getSlot();
     const blockTime = await provider.connection.getBlockTime(slot);
     const currentTime = blockTime || Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 3); // Short for testing
-    // const currentTime = Math.floor(Date.now() / 1000);
-    // const revealDate = new anchor.BN(currentTime + 3); // Short for testing
-    const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+    const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda });
+    const accounts = {
+      creator: capsuleCreator.publicKey,
+      capsule: capsulePda,
+      nftMint: nftMintPda,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    };
     
     // Create gamified capsule
     await program.methods.createCapsule("reward test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
@@ -409,72 +454,70 @@ describe("CapsuleX Game Instructions", () => {
     );
     
     await program.methods.initializeGame(capsulePda, 5).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
-      
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
-    // Create winner
-    const winner = anchor.web3.Keypair.generate();
-    await provider.connection.requestAirdrop(winner.publicKey, 1000000000);
+    // Create game player who will be the winner
+    const gamePlayerWinner = anchor.web3.Keypair.generate();
+    await provider.connection.requestAirdrop(gamePlayerWinner.publicKey, 1000000000);
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Submit winning guess
+    // Submit winning guess (game player submits guess)
     const [guessPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("guess"), gamePda.toBuffer(), winner.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
+      [Buffer.from("guess"), gamePda.toBuffer(), gamePlayerWinner.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
       program.programId
     );
     
     await program.methods.submitGuess("reward test", true).accounts({
-      guesser: winner.publicKey,
+      guesser: gamePlayerWinner.publicKey,
       game: gamePda,
       guess: guessPda,
-      
       systemProgram: SystemProgram.programId,
     } as any)
-    .signers([winner])
+    .signers([gamePlayerWinner])
     .rpc();
     
-    // Wait and reveal
+    // Wait and reveal (capsule creator reveals capsule)
     await new Promise(resolve => setTimeout(resolve, 5000));
     await program.methods.revealCapsule(revealDate).accounts({
-      creator: provider.wallet.publicKey,
+      creator: capsuleCreator.publicKey,
       capsule: capsulePda,
     } as any).rpc();
     
-    // Initialize leaderboard and verify guess
+    // Initialize leaderboard and verify guess (game player manages their leaderboard)
     const [leaderboardPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("leaderboard"), winner.publicKey.toBuffer()],
+      [Buffer.from("leaderboard"), gamePlayerWinner.publicKey.toBuffer()],
       program.programId
     );
     
-    await program.methods.initializeLeaderboard(winner.publicKey).accounts({
-      authority: provider.wallet.publicKey,
-      user: winner.publicKey,
+    await program.methods.initializeLeaderboard(gamePlayerWinner.publicKey).accounts({
+      authority: gamePlayerWinner.publicKey,
+      user: gamePlayerWinner.publicKey,
       leaderboard: leaderboardPda,
       systemProgram: SystemProgram.programId,
-    } as any).rpc();
+    } as any).signers([gamePlayerWinner]).rpc();
     
     await program.methods.verifyGuess("reward test", null).accounts({
-      authority: provider.wallet.publicKey,
+      authority: gamePlayerWinner.publicKey,
       guess: guessPda,
       game: gamePda,
       capsule: capsulePda,
       leaderboard: leaderboardPda,
-    } as any).rpc();
+    } as any).signers([gamePlayerWinner]).rpc();
     
-    // Initialize creator leaderboard for complete game
+    // Initialize creator leaderboard for complete game (capsule creator manages their leaderboard)
     const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("leaderboard"), provider.wallet.publicKey.toBuffer()],
+      [Buffer.from("leaderboard"), capsuleCreator.publicKey.toBuffer()],
       program.programId
     );
     
     try {
-      await program.methods.initializeLeaderboard(provider.wallet.publicKey).accounts({
-        authority: provider.wallet.publicKey,
-        user: provider.wallet.publicKey,
+      await program.methods.initializeLeaderboard(capsuleCreator.publicKey).accounts({
+        authority: capsuleCreator.publicKey,
+        user: capsuleCreator.publicKey,
         leaderboard: creatorLeaderboardPda,
         systemProgram: SystemProgram.programId,
       } as any).rpc();
@@ -483,9 +526,9 @@ describe("CapsuleX Game Instructions", () => {
       // console.log("Creator leaderboard already exists, continuing...");
     }
 
-    // Complete game and distribute rewards to only the winner
+    // Complete game and distribute rewards (capsule creator completes their game)
     await program.methods.completeGame().accounts({
-      authority: provider.wallet.publicKey,
+      authority: capsuleCreator.publicKey,
       game: gamePda,
       creator_leaderboard: creatorLeaderboardPda,
       systemProgram: SystemProgram.programId,
