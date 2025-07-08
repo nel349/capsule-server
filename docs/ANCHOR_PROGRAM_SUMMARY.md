@@ -19,14 +19,16 @@ This document provides a complete overview of the CapsuleX Anchor program struct
 
 ### Core Account Structures
 ```rust
-// Time capsule with NFT mint reference
+// Time capsule with device-side encryption
 pub struct Capsule {
     pub creator: Pubkey,
     pub nft_mint: Pubkey,        // SPL Token mint for NFT
-    pub content_hash: String,
+    pub encrypted_content: String, // Encrypted with device key (OnChain) OR IPFS hash
+    pub content_storage: ContentStorage, // OnChain or IPFS
     pub reveal_date: i64,
     pub is_gamified: bool,
-    // ... other fields
+    pub is_revealed: bool,
+    // ... other fields (no key_vault reference)
 }
 
 // Game state with points-based rewards
@@ -51,11 +53,12 @@ pub struct Game {
 - **50 points per participant** to capsule creator (engagement bonus)
 - **No monetary gambling** - entertainment only
 
-### Hybrid Storage Validation Update (2024-06)
-- The program now supports both on-chain and IPFS storage for encrypted capsule content.
-- **OnChain:** Content (encrypted) must be ≤280 characters.
-- **IPFS:** Content must start with 'Qm' and be between 46 and 59 characters (supports IPFS v0/v1 CIDs).
-- This makes the program compatible with current and future IPFS hash formats.
+### Device-Side Encryption Architecture (2024-12)
+- **Security First:** Encryption keys never leave the device - stored in TEEPIN/Keychain
+- **OnChain Storage:** Encrypted content (≤280 chars) stored directly in capsule account
+- **IPFS Storage:** Encrypted content uploaded to IPFS, hash (46-59 chars, starts with 'Qm') stored in capsule
+- **Time-Lock:** Program enforces reveal date, but decryption happens locally on device
+- **No KeyVault:** Eliminated on-chain key storage for maximum security
 
 #### Test Suite Update
 - The test for IPFS storage now uses a valid mock IPFS hash: `"Qm" + "a".repeat(44)` (46 chars).
@@ -65,12 +68,19 @@ pub struct Game {
 
 ### 1. Time Capsule Operations
 ```rust
-// Create capsule with NFT mint
+// Create capsule with device-encrypted content
 pub fn create_capsule(
     ctx: Context<CreateCapsule>,
-    content_hash: String,
+    encrypted_content: String, // Already encrypted on device
+    content_storage: ContentStorage,
     reveal_date: i64,
     is_gamified: bool,
+) -> Result<()>
+
+// Reveal capsule (no key retrieval needed)
+pub fn reveal_capsule(
+    ctx: Context<RevealCapsule>,
+    reveal_date: i64,
 ) -> Result<()>
 
 // Mint capsule as NFT (uses anchor-spl)
@@ -138,11 +148,12 @@ idl-build = [
 ## Program Flow
 
 ### 1. Time Capsule Creation
-1. User pays 0.00005 SOL creation fee
-2. Program creates `Capsule` account
-3. Program creates NFT `Mint` account (using anchor-spl)
-4. Content stored on IPFS, hash stored in capsule
-5. Optional: Initialize guessing game
+1. **Device encrypts content** with secure device key (TEEPIN, Keychain)
+2. User pays 0.00005 SOL creation fee
+3. Program creates `Capsule` account with encrypted content
+4. Program creates NFT `Mint` account (using anchor-spl)
+5. Content stored on-chain (encrypted) or IPFS hash stored
+6. Optional: Initialize guessing game
 
 ### 2. Guessing Game Flow
 1. Creator initializes game with participant limits
@@ -191,7 +202,11 @@ programs/capsulex/
 
 ## Summary
 
-Your CapsuleX project uses SPL tokens **exclusively for NFT functionality** (capsules, badges, trophies) through the `anchor-spl` crate. The core game economics use a **points-based reward system** with minimal service fees (no gambling), making it legally compliant and focused on entertainment. This design perfectly balances functionality with legal safety - you get engaging gameplay without gambling concerns.
+Your CapsuleX project uses SPL tokens **exclusively for NFT functionality** (capsules, badges, trophies) through the `anchor-spl` crate. The core game economics use a **points-based reward system** with minimal service fees (no gambling), making it legally compliant and focused on entertainment.
+
+**Security Architecture:** The program implements **device-side encryption** where keys are stored securely on the user's device (TEEPIN, Keychain) and never transmitted to or stored on the blockchain. This provides true end-to-end encryption while maintaining the benefits of decentralized time-locking.
+
+This design perfectly balances functionality, security, and legal safety - you get engaging gameplay without gambling concerns and maximum privacy without sacrificing decentralization.
 
 The program is now complete and ready for integration with your React Native mobile app and off-chain services (IPFS, X API, ElevenLabs, etc.). 
 

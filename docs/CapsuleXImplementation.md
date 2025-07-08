@@ -7,14 +7,14 @@
 
 ### 1. Time Capsule Creation
 - **Functionality**:
-  - Users upload a message, photo, or video, encrypted with AES using their Solana wallet's private key.
+  - Users upload a message, photo, or video, encrypted with AES using a secure device key (TEEPIN/Keychain).
   - Capsules are minted as NFTs on Solana with a user-set reveal date.
-  - Content is stored on IPFS, with Filecoin ensuring persistence via a one-time payment.
+  - Encrypted content stored on-chain (≤280 chars) or uploaded to IPFS with hash stored on-chain.
 - **Implementation**:
-  - **Encryption**: Use `@noble/ciphers` for AES encryption, tying keys to the user's Solana wallet (via `@solana/web3.js`).
+  - **Device Encryption**: Use `@noble/ciphers` for AES encryption with keys stored securely in TEEPIN/Keychain.
   - **NFT Minting**: Use Solana's `@solana/spl-token` library to mint capsules as NFTs, leveraging Alpenglow's ~150ms finality for instant transactions.
-  - **Storage**: Integrate IPFS via `@helia/unixfs` for content upload; use Filecoin's API (e.g., `nft.storage`) for pinning, funded by a ~0.00005 SOL service fee (10x base fee per Helius fee analysis).
-  - **Reveal Logic**: Store reveal date in the NFT metadata; use a Solana Anchor program to trigger decryption and X posting on the set date.
+  - **Storage**: OnChain storage for small content (≤280 chars) or IPFS via `@helia/unixfs` for larger content, funded by a ~0.00005 SOL service fee.
+  - **Reveal Logic**: Program enforces time-lock via reveal date; decryption happens locally on device with stored keys.
   - **Solana Program**: Build with `@coral-xyz/anchor` framework to handle:
     - Time capsule creation and metadata storage
     - Reveal date validation and automated triggers  
@@ -82,14 +82,15 @@
 
 ### 5. Security and Privacy
 - **Functionality**:
-  - TEEPIN secures encryption keys and wallet interactions.
-  - SKR manages private keys for seamless signing.
-  - AES encryption ensures only authorized users decrypt capsules.
+  - TEEPIN secures encryption keys (never transmitted to blockchain).
+  - SKR manages wallet private keys for seamless signing.
+  - Device-side AES encryption ensures only device owner can decrypt capsules.
+  - Time-lock enforced by smart contract, decryption enforced by device key security.
 - **Implementation**:
-  - **TEEPIN**: Use Solana Mobile SDK to integrate Trusted Execution Environment for key storage.
+  - **TEEPIN**: Use Solana Mobile SDK to store encryption keys in Trusted Execution Environment (never on blockchain).
   - **SKR**: Implement Solana Key Relayer for secure wallet interactions, compatible with Phantom or other wallets.
-  - **Encryption**: Apply `@noble/ciphers` for AES, tying keys to Solana wallet addresses.
-  - **Compliance**: Ensure OAuth for X posts; store only user-consented data on IPFS.
+  - **Device Encryption**: Apply `@noble/ciphers` for AES with device-generated keys stored in secure hardware.
+  - **Privacy**: No key transmission to blockchain; true end-to-end encryption with time-lock guarantees.
 - **Tech Stack**:
   - Solana Mobile: TEEPIN, SKR via Solana SDK
   - Encryption: `@noble/ciphers`
@@ -125,12 +126,13 @@
   - Firebase: `firebase-admin`
   - Expo: `expo`, `react-native`
 
-### Hybrid Storage Validation Update (2024-06)
-- CapsuleX now supports both on-chain and IPFS storage for encrypted capsule content.
-- **OnChain:** Encrypted content must be ≤280 characters.
-- **IPFS:** Hash must start with 'Qm' and be 46-59 characters (supports v0/v1 CIDs).
-- This ensures compatibility with current and future IPFS hash formats.
-- The test suite uses a valid mock IPFS hash: `"Qm" + "a".repeat(44)` (46 chars) to ensure compliance with validation logic.
+### Device-Side Encryption Security Update (2024-12)
+- CapsuleX implements true end-to-end encryption with device-side key management.
+- **OnChain:** Encrypted content (≤280 chars) stored directly in capsule account.
+- **IPFS:** Encrypted content uploaded to IPFS, hash (46-59 chars, starts with 'Qm') stored on-chain.
+- **Security:** Encryption keys stored in TEEPIN/Keychain, never transmitted to or stored on blockchain.
+- **Time-Lock:** Smart contract enforces reveal timing, device enforces decryption access.
+- **Privacy:** Only device owner can decrypt content, providing maximum security.
 
 ## Technical Stack Summary
 - **Blockchain**: Solana (`@solana/web3.js`, `@solana/spl-token`, `@solana/actions`, Solana Pay)
@@ -185,13 +187,15 @@
 - **X API**: `@x-api-sdk/core` (official X API TypeScript SDK)
 - **Solana Program**: `@coral-xyz/anchor` framework required
 
-### Major Corrections Made
+### Major Updates Made
 1. **Legal compliance**: Switched from gambling model to points-based entertainment
-2. **Updated deprecated packages**: Modern alternatives for IPFS/Filecoin
-3. **Fixed X API**: Correct package, removed unsupported audio uploads  
-4. **Added Solana program details**: Anchor framework, instructions, account structure
-5. **Timeline clarifications**: Noted when features become available
-6. **Service fee structure**: Minimal fees cover operational costs, no gambling
+2. **Security enhancement**: Implemented device-side encryption (eliminated KeyVault)
+3. **Updated deprecated packages**: Modern alternatives for IPFS/Filecoin
+4. **Fixed X API**: Correct package, removed unsupported audio uploads  
+5. **Added Solana program details**: Anchor framework, instructions, account structure
+6. **Timeline clarifications**: Noted when features become available
+7. **Service fee structure**: Minimal fees cover operational costs, no gambling
+8. **Privacy architecture**: True end-to-end encryption with device key management
 
 **Source**: [Solana Fees in Theory and Practice - Helius](https://www.helius.dev/blog/solana-fees-in-theory-and-practice)
 
