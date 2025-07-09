@@ -1,0 +1,56 @@
+test_id,category,guess,answer,expected,predicted,similarity,confidence,correct
+1,exact_matches,pizza,pizza,True,True,1.0,high,True
+2,exact_matches,basketball,basketball,True,True,1.0,high,True
+3,exact_matches,The Great Wall of China,The Great Wall of China,True,True,1.0,high,True
+4,direct_synonyms,car,automobile,True,True,0.8645,medium,True
+5,direct_synonyms,happy,joyful,True,False,0.6841,low,False
+6,direct_synonyms,big,large,True,True,0.8065,medium,True
+7,direct_synonyms,ocean,sea,True,True,0.8714,medium,True
+8,direct_synonyms,physician,doctor,True,True,0.8598,medium,True
+9,descriptive_phrases,italian flatbread with cheese,pizza,True,False,0.4441,very_low,False
+10,descriptive_phrases,big cat with stripes,tiger,True,False,0.4151,very_low,False
+11,descriptive_phrases,round orange fruit,orange,True,False,0.6754,low,False
+12,descriptive_phrases,tall building in New York,skyscraper,True,False,0.6509,low,False
+13,descriptive_phrases,frozen water,ice,True,False,0.6801,low,False
+14,descriptive_phrases,red liquid in your veins,blood,True,False,0.4933,very_low,False
+15,descriptive_phrases,sport with hoops and orange ball,basketball,True,False,0.6613,low,False
+16,cultural_references,The King of Pop,Michael Jackson,True,False,0.4682,very_low,False
+17,cultural_references,The City of Light,Paris,True,False,0.4018,very_low,False
+18,cultural_references,The Dark Knight,Batman,True,False,0.6741,low,False
+19,cultural_references,Uncle Sam,United States,True,False,0.229,very_low,False
+20,cultural_references,The Iron Lady,Margaret Thatcher,True,False,0.4732,very_low,False
+21,emoji_visual,🍕,pizza,True,False,0.2568,very_low,False
+22,emoji_visual,⚽,soccer,True,False,0.2025,very_low,False
+23,emoji_visual,🎬,movie,True,False,0.1597,very_low,False
+24,emoji_visual,something yellow and curved,banana,True,False,0.2889,very_low,False
+25,emoji_visual,red heart shape,heart,True,False,0.5334,low,False
+26,misspellings,piza,pizza,True,False,0.462,very_low,False
+27,misspellings,resturant,restaurant,True,False,0.5105,low,False
+28,misspellings,seperate,separate,True,True,0.8317,medium,True
+29,misspellings,definately,definitely,True,False,0.6387,low,False
+30,misspellings,accomodate,accommodate,True,False,0.6135,low,False
+31,metaphors_idioms,break a leg,good luck,True,False,0.0766,very_low,False
+32,metaphors_idioms,it's raining cats and dogs,heavy rain,True,False,0.593,low,False
+33,metaphors_idioms,time flies,time passes quickly,True,False,0.6895,low,False
+34,metaphors_idioms,spill the beans,reveal a secret,True,False,0.3583,very_low,False
+35,metaphors_idioms,the apple of my eye,beloved person,True,False,0.216,very_low,False
+36,obviously_wrong,completely unrelated answer,pizza,False,False,0.268,very_low,True
+37,obviously_wrong,elephant,basketball,False,False,0.2956,very_low,True
+38,obviously_wrong,mathematics,ice cream,False,False,0.2728,very_low,True
+39,obviously_wrong,computer programming,sandwich,False,False,0.1406,very_low,True
+40,obviously_wrong,purple monkey dancing,serious business meeting,False,False,0.0478,very_low,True
+41,edge_cases,NYC,New York City,True,True,0.9176,high,True
+42,edge_cases,USA,United States,True,True,0.8937,medium,True
+43,edge_cases,iPhone,smartphone,True,False,0.7488,medium,False
+44,edge_cases,Kleenex,tissue,True,False,0.541,low,False
+45,edge_cases,Google it,search online,True,False,0.5591,low,False
+46,numbers_quantities,dozen,twelve,True,False,0.796,medium,False
+47,numbers_quantities,century,hundred years,True,False,0.6889,low,False
+48,numbers_quantities,score,twenty,True,False,0.4697,very_low,False
+49,case_sensitivity,PIZZA,pizza,True,True,1.0,high,True
+50,case_sensitivity,New York,new york,True,True,1.0,high,True
+51,partial_matches,basketball player,basketball,True,False,0.7449,medium,False
+52,partial_matches,pizza slice,pizza,True,False,0.7738,medium,False
+53,compound_concepts,artificial intelligence,AI,True,False,0.7912,medium,False
+54,compound_concepts,machine learning,ML,True,False,0.3727,very_low,False
+55,contextual,H2O,water,True,False,0.4176,very_low,False

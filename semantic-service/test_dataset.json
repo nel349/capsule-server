@@ -1,0 +1,460 @@
+{
+  "metadata": {
+    "description": "CapsuleX Semantic Answer Checking Test Dataset",
+    "version": "1.0",
+    "created": "2025-01-09",
+    "total_cases": 55,
+    "categories": [
+      "exact_matches",
+      "direct_synonyms", 
+      "descriptive_phrases",
+      "cultural_references",
+      "emoji_visual",
+      "misspellings",
+      "metaphors_idioms",
+      "obviously_wrong"
+    ]
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "category": "exact_matches",
+      "guess": "pizza",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Perfect match baseline"
+    },
+    {
+      "id": 2,
+      "category": "exact_matches",
+      "guess": "basketball",
+      "answer": "basketball",
+      "expected": true,
+      "notes": "Perfect match baseline"
+    },
+    {
+      "id": 3,
+      "category": "exact_matches",
+      "guess": "The Great Wall of China",
+      "answer": "The Great Wall of China",
+      "expected": true,
+      "notes": "Perfect match with proper nouns"
+    },
+    {
+      "id": 4,
+      "category": "direct_synonyms",
+      "guess": "car",
+      "answer": "automobile",
+      "expected": true,
+      "notes": "Classic synonym pair"
+    },
+    {
+      "id": 5,
+      "category": "direct_synonyms",
+      "guess": "happy",
+      "answer": "joyful",
+      "expected": true,
+      "notes": "Emotion synonym"
+    },
+    {
+      "id": 6,
+      "category": "direct_synonyms",
+      "guess": "big",
+      "answer": "large",
+      "expected": true,
+      "notes": "Size synonym"
+    },
+    {
+      "id": 7,
+      "category": "direct_synonyms",
+      "guess": "ocean",
+      "answer": "sea",
+      "expected": true,
+      "notes": "Geography synonym"
+    },
+    {
+      "id": 8,
+      "category": "direct_synonyms",
+      "guess": "physician",
+      "answer": "doctor",
+      "expected": true,
+      "notes": "Professional synonym"
+    },
+    {
+      "id": 9,
+      "category": "descriptive_phrases",
+      "guess": "italian flatbread with cheese",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Descriptive definition"
+    },
+    {
+      "id": 10,
+      "category": "descriptive_phrases",
+      "guess": "big cat with stripes",
+      "answer": "tiger",
+      "expected": true,
+      "notes": "Animal description"
+    },
+    {
+      "id": 11,
+      "category": "descriptive_phrases",
+      "guess": "round orange fruit",
+      "answer": "orange",
+      "expected": true,
+      "notes": "Fruit description"
+    },
+    {
+      "id": 12,
+      "category": "descriptive_phrases",
+      "guess": "tall building in New York",
+      "answer": "skyscraper",
+      "expected": true,
+      "notes": "Architecture description"
+    },
+    {
+      "id": 13,
+      "category": "descriptive_phrases",
+      "guess": "frozen water",
+      "answer": "ice",
+      "expected": true,
+      "notes": "State change description"
+    },
+    {
+      "id": 14,
+      "category": "descriptive_phrases",
+      "guess": "red liquid in your veins",
+      "answer": "blood",
+      "expected": true,
+      "notes": "Biology description"
+    },
+    {
+      "id": 15,
+      "category": "descriptive_phrases",
+      "guess": "sport with hoops and orange ball",
+      "answer": "basketball",
+      "expected": true,
+      "notes": "Sports description"
+    },
+    {
+      "id": 16,
+      "category": "cultural_references",
+      "guess": "The King of Pop",
+      "answer": "Michael Jackson",
+      "expected": true,
+      "notes": "Music culture reference"
+    },
+    {
+      "id": 17,
+      "category": "cultural_references",
+      "guess": "The City of Light",
+      "answer": "Paris",
+      "expected": true,
+      "notes": "City nickname"
+    },
+    {
+      "id": 18,
+      "category": "cultural_references",
+      "guess": "The Dark Knight",
+      "answer": "Batman",
+      "expected": true,
+      "notes": "Superhero reference"
+    },
+    {
+      "id": 19,
+      "category": "cultural_references",
+      "guess": "Uncle Sam",
+      "answer": "United States",
+      "expected": true,
+      "notes": "National personification"
+    },
+    {
+      "id": 20,
+      "category": "cultural_references",
+      "guess": "The Iron Lady",
+      "answer": "Margaret Thatcher",
+      "expected": true,
+      "notes": "Political nickname"
+    },
+    {
+      "id": 21,
+      "category": "emoji_visual",
+      "guess": "🍕",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Direct emoji representation"
+    },
+    {
+      "id": 22,
+      "category": "emoji_visual",
+      "guess": "⚽",
+      "answer": "soccer",
+      "expected": true,
+      "notes": "Sports emoji"
+    },
+    {
+      "id": 23,
+      "category": "emoji_visual",
+      "guess": "🎬",
+      "answer": "movie",
+      "expected": true,
+      "notes": "Entertainment emoji"
+    },
+    {
+      "id": 24,
+      "category": "emoji_visual",
+      "guess": "something yellow and curved",
+      "answer": "banana",
+      "expected": true,
+      "notes": "Visual description"
+    },
+    {
+      "id": 25,
+      "category": "emoji_visual",
+      "guess": "red heart shape",
+      "answer": "heart",
+      "expected": true,
+      "notes": "Shape description"
+    },
+    {
+      "id": 26,
+      "category": "misspellings",
+      "guess": "piza",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Common misspelling"
+    },
+    {
+      "id": 27,
+      "category": "misspellings",
+      "guess": "resturant",
+      "answer": "restaurant",
+      "expected": true,
+      "notes": "Common misspelling"
+    },
+    {
+      "id": 28,
+      "category": "misspellings",
+      "guess": "seperate",
+      "answer": "separate",
+      "expected": true,
+      "notes": "Common misspelling"
+    },
+    {
+      "id": 29,
+      "category": "misspellings",
+      "guess": "definately",
+      "answer": "definitely",
+      "expected": true,
+      "notes": "Common misspelling"
+    },
+    {
+      "id": 30,
+      "category": "misspellings",
+      "guess": "accomodate",
+      "answer": "accommodate",
+      "expected": true,
+      "notes": "Common misspelling"
+    },
+    {
+      "id": 31,
+      "category": "metaphors_idioms",
+      "guess": "break a leg",
+      "answer": "good luck",
+      "expected": true,
+      "notes": "Theater idiom"
+    },
+    {
+      "id": 32,
+      "category": "metaphors_idioms",
+      "guess": "it's raining cats and dogs",
+      "answer": "heavy rain",
+      "expected": true,
+      "notes": "Weather idiom"
+    },
+    {
+      "id": 33,
+      "category": "metaphors_idioms",
+      "guess": "time flies",
+      "answer": "time passes quickly",
+      "expected": true,
+      "notes": "Time metaphor"
+    },
+    {
+      "id": 34,
+      "category": "metaphors_idioms",
+      "guess": "spill the beans",
+      "answer": "reveal a secret",
+      "expected": true,
+      "notes": "Disclosure idiom"
+    },
+    {
+      "id": 35,
+      "category": "metaphors_idioms",
+      "guess": "the apple of my eye",
+      "answer": "beloved person",
+      "expected": true,
+      "notes": "Affection idiom"
+    },
+    {
+      "id": 36,
+      "category": "obviously_wrong",
+      "guess": "completely unrelated answer",
+      "answer": "pizza",
+      "expected": false,
+      "notes": "Totally unrelated"
+    },
+    {
+      "id": 37,
+      "category": "obviously_wrong",
+      "guess": "elephant",
+      "answer": "basketball",
+      "expected": false,
+      "notes": "Different categories"
+    },
+    {
+      "id": 38,
+      "category": "obviously_wrong",
+      "guess": "mathematics",
+      "answer": "ice cream",
+      "expected": false,
+      "notes": "Abstract vs concrete"
+    },
+    {
+      "id": 39,
+      "category": "obviously_wrong",
+      "guess": "computer programming",
+      "answer": "sandwich",
+      "expected": false,
+      "notes": "Technical vs food"
+    },
+    {
+      "id": 40,
+      "category": "obviously_wrong",
+      "guess": "purple monkey dancing",
+      "answer": "serious business meeting",
+      "expected": false,
+      "notes": "Nonsensical vs formal"
+    },
+    {
+      "id": 41,
+      "category": "edge_cases",
+      "guess": "NYC",
+      "answer": "New York City",
+      "expected": true,
+      "notes": "Abbreviation to full name"
+    },
+    {
+      "id": 42,
+      "category": "edge_cases",
+      "guess": "USA",
+      "answer": "United States",
+      "expected": true,
+      "notes": "Country abbreviation"
+    },
+    {
+      "id": 43,
+      "category": "edge_cases",
+      "guess": "iPhone",
+      "answer": "smartphone",
+      "expected": true,
+      "notes": "Brand to category"
+    },
+    {
+      "id": 44,
+      "category": "edge_cases",
+      "guess": "Kleenex",
+      "answer": "tissue",
+      "expected": true,
+      "notes": "Brand to generic"
+    },
+    {
+      "id": 45,
+      "category": "edge_cases",
+      "guess": "Google it",
+      "answer": "search online",
+      "expected": true,
+      "notes": "Brand verb to action"
+    },
+    {
+      "id": 46,
+      "category": "numbers_quantities",
+      "guess": "dozen",
+      "answer": "twelve",
+      "expected": true,
+      "notes": "Quantity to number"
+    },
+    {
+      "id": 47,
+      "category": "numbers_quantities",
+      "guess": "century",
+      "answer": "hundred years",
+      "expected": true,
+      "notes": "Time unit description"
+    },
+    {
+      "id": 48,
+      "category": "numbers_quantities",
+      "guess": "score",
+      "answer": "twenty",
+      "expected": true,
+      "notes": "Historical number term"
+    },
+    {
+      "id": 49,
+      "category": "case_sensitivity",
+      "guess": "PIZZA",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Case insensitive match"
+    },
+    {
+      "id": 50,
+      "category": "case_sensitivity",
+      "guess": "New York",
+      "answer": "new york",
+      "expected": true,
+      "notes": "Proper noun case variation"
+    },
+    {
+      "id": 51,
+      "category": "partial_matches",
+      "guess": "basketball player",
+      "answer": "basketball",
+      "expected": true,
+      "notes": "Contains correct answer"
+    },
+    {
+      "id": 52,
+      "category": "partial_matches",
+      "guess": "pizza slice",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Contains correct answer"
+    },
+    {
+      "id": 53,
+      "category": "compound_concepts",
+      "guess": "artificial intelligence",
+      "answer": "AI",
+      "expected": true,
+      "notes": "Full form to abbreviation"
+    },
+    {
+      "id": 54,
+      "category": "compound_concepts",
+      "guess": "machine learning",
+      "answer": "ML",
+      "expected": true,
+      "notes": "Technical abbreviation"
+    },
+    {
+      "id": 55,
+      "category": "contextual",
+      "guess": "H2O",
+      "answer": "water",
+      "expected": true,
+      "notes": "Chemical formula to common name"
+    }
+  ]
+}

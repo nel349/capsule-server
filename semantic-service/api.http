@@ -1,0 +1,278 @@
+### CapsuleX Semantic Answer Checking Service
+### Make sure the service is running first: `source .venv/bin/activate && python app.py`
+
+# Environment URLs
+@localUrl = http://localhost:5001
+@remoteUrl = https://capsule-server-hl1s.onrender.com
+
+# Test data
+@correctAnswer = pizza
+@exactGuess = pizza
+@synonymGuess = automobile
+@synonymAnswer = car
+@descriptiveGuess = italian flatbread with cheese and tomato sauce
+@wrongGuess = completely unrelated answer
+@defaultThreshold = 0.8
+@lowThreshold = 0.6
+
+### 1. Service Health & Status Checks
+
+### Check if service is running locally
+GET {{localUrl}}/
+Accept: application/json
+
+### Check if remote service is deployed and healthy
+GET {{remoteUrl}}/
+Accept: application/json
+
+### Health endpoint (monitoring ready)
+GET {{localUrl}}/health
+Accept: application/json
+
+### Run built-in test suite (pizza, car examples)
+GET {{localUrl}}/test
+Accept: application/json
+
+### 2. Basic Answer Checking Tests
+
+### Perfect match (should be 1.0 similarity)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "{{exactGuess}}",
+  "answer": "{{correctAnswer}}"
+}
+
+### Test synonym detection (car vs automobile)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "{{synonymGuess}}",
+  "answer": "{{synonymAnswer}}"
+}
+
+### Test descriptive phrase (challenging case)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "italian flatbread with cheese and tomato sauce",
+  "answer": "{{correctAnswer}}"
+}
+
+### Obviously wrong answer (should be low similarity)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "{{wrongGuess}}",
+  "answer": "{{correctAnswer}}"
+}
+
+### 3. Threshold Testing & Edge Cases
+
+### Test with lower threshold (more lenient)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "big cat with stripes",
+  "answer": "tiger",
+  "threshold": {{lowThreshold}}
+}
+
+### Test with default threshold (stricter)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "big cat with stripes",
+  "answer": "tiger",
+  "threshold": {{defaultThreshold}}
+}
+
+### Test case sensitivity
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "PIZZA",
+  "answer": "pizza"
+}
+
+### Test with extra whitespace
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "  pizza  ",
+  "answer": "pizza"
+}
+
+### 4. Real Game Scenarios
+
+### Emoji guess (modern user behavior)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "🍕",
+  "answer": "pizza"
+}
+
+### Common misspelling
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "piza",
+  "answer": "pizza"
+}
+
+### Cultural reference
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "the big apple",
+  "answer": "new york"
+}
+
+### Scientific notation
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "H2O",
+  "answer": "water"
+}
+
+### Abbreviation vs full form
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "NYC",
+  "answer": "New York City"
+}
+
+### 5. Error Handling & Validation
+
+### Missing guess field
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "answer": "pizza"
+}
+
+### Missing answer field
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "pizza"
+}
+
+### Empty strings
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "",
+  "answer": "pizza"
+}
+
+### Invalid threshold (should default to 0.8)
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "pizza",
+  "answer": "pizza",
+  "threshold": "invalid"
+}
+
+### 6. Remote Service Testing (After Deployment)
+
+### Test remote service with exact match
+POST {{remoteUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "{{exactGuess}}",
+  "answer": "{{correctAnswer}}"
+}
+
+### Test remote service performance with description
+POST {{remoteUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "{{descriptiveGuess}}",
+  "answer": "{{correctAnswer}}"
+}
+
+### Test remote service built-in tests
+GET {{remoteUrl}}/test
+Accept: application/json
+
+### 7. Load & Performance Testing
+
+### Rapid fire test 1
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "water",
+  "answer": "H2O"
+}
+
+### Rapid fire test 2  
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "automobile",
+  "answer": "car"
+}
+
+### Rapid fire test 3
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "feline",
+  "answer": "cat"
+}
+
+### 8. Evaluation Dataset Examples (For Future Testing)
+
+### Animals category
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "man's best friend",
+  "answer": "dog"
+}
+
+### Food category
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "round bread with cheese",
+  "answer": "pizza"
+}
+
+### Technology category
+POST {{localUrl}}/check-answer
+Content-Type: application/json
+
+{
+  "guess": "smartphone",
+  "answer": "mobile phone"
+}
