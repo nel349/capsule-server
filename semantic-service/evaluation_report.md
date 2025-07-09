@@ -1,35 +1,25 @@
 
 # CapsuleX Semantic Evaluation Report
-**Generated:** 2025-07-08 22:27:36
+**Generated:** 2025-07-09 15:11:43
 **Service:** http://localhost:5001
-**Total Test Cases:** 50
+**Total Test Cases:** 55
 
 ## Overall Performance
-- **Accuracy:** 0.720 (72.0%)
+- **Accuracy:** 0.764 (76.4%)
 - **Precision:** 1.000
-- **Recall:** 0.689
-- **F1-Score:** 0.816
+- **Recall:** 0.740
+- **F1-Score:** 0.851
 
 ### Confusion Matrix
 |              | Predicted No | Predicted Yes |
 |--------------|--------------|---------------|
 | **Actual No**  |   5 (TN)    |   0 (FP)     |
-| **Actual Yes** |  14 (FN)    |  31 (TP)     |
+| **Actual Yes** |  13 (FN)    |  37 (TP)     |
 
 ## Performance by Category
 
-### Emoji Visual
+### Edge Cases
 - Cases: 5
-- Accuracy: 0.400 (40.0%)
-- F1-Score: 0.571
-
-### Case Sensitivity
-- Cases: 4
-- Accuracy: 1.000 (100.0%)
-- F1-Score: 1.000
-
-### Direct Synonyms
-- Cases: 4
 - Accuracy: 1.000 (100.0%)
 - F1-Score: 1.000
 
@@ -38,12 +28,27 @@
 - Accuracy: 1.000 (100.0%)
 - F1-Score: 1.000
 
-### Partial Matches
-- Cases: 5
-- Accuracy: 0.200 (20.0%)
-- F1-Score: 0.333
+### Direct Synonyms
+- Cases: 4
+- Accuracy: 1.000 (100.0%)
+- F1-Score: 1.000
 
-### Metaphors Idioms
+### Obviously Wrong
+- Cases: 5
+- Accuracy: 1.000 (100.0%)
+- F1-Score: 0.000
+
+### Case Sensitivity
+- Cases: 4
+- Accuracy: 1.000 (100.0%)
+- F1-Score: 1.000
+
+### Descriptive Phrases
+- Cases: 6
+- Accuracy: 0.833 (83.3%)
+- F1-Score: 0.909
+
+### Partial Matches
 - Cases: 5
 - Accuracy: 0.200 (20.0%)
 - F1-Score: 0.333
@@ -53,22 +58,22 @@
 - Accuracy: 0.750 (75.0%)
 - F1-Score: 0.857
 
-### Descriptive Phrases
-- Cases: 6
-- Accuracy: 0.833 (83.3%)
-- F1-Score: 0.909
-
 ### Misspellings
 - Cases: 4
 - Accuracy: 0.750 (75.0%)
 - F1-Score: 0.857
 
-### Obviously Wrong
+### Metaphors Idioms
 - Cases: 5
-- Accuracy: 1.000 (100.0%)
-- F1-Score: 0.000
+- Accuracy: 0.600 (60.0%)
+- F1-Score: 0.750
 
-### Edge Cases
+### Emoji Visual
+- Cases: 5
+- Accuracy: 0.200 (20.0%)
+- F1-Score: 0.333
+
+### Verbose Answers
 - Cases: 5
 - Accuracy: 1.000 (100.0%)
 - F1-Score: 1.000
@@ -78,4 +83,4 @@
 ### False Positives (Should be NO, predicted YES)
 
 ### False Negatives (Should be YES, predicted NO)
-- **cultural_references**: 'Breakpoint' → 'Solana Breakpoint Conference' (sim: 0.553)\n- **emoji_visual**: '💻🚀' → 'Solana Mobile Hackathon' (sim: 0.157)\n- **emoji_visual**: '🎮🔗' → 'A blockchain-based game' (sim: 0.347)\n- **misspellings**: 'piza' → 'pizza' (sim: 0.462)\n- **metaphors_idioms**: 'Reached the finish line' → 'Running a marathon' (sim: 0.208)\n
+- **cultural_references**: 'Breakpoint' → 'Solana Breakpoint Conference' (sim: 0.537)\n- **emoji_visual**: '🏃‍♂️' → 'Running a marathon' (sim: 0.513)\n- **emoji_visual**: '💻🚀' → 'Solana Mobile Hackathon' (sim: 0.144)\n- **emoji_visual**: '🎮🔗' → 'A blockchain-based game' (sim: 0.326)\n- **misspellings**: 'piza' → 'pizza' (sim: 0.435)\n

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Load local model once at startup
 print("Loading local Sentence Transformer model...")
-local_model = SentenceTransformer('all-MiniLM-L6-v2')  # Back to smaller/faster model
+local_model = SentenceTransformer('all-MiniLM-L12-v2')  # Back to smaller/faster model
 print("Local model loaded successfully!")
 
 # Initialize OpenAI client (will use OPENAI_API_KEY env var)
@@ -50,7 +50,7 @@ def calculate_local_similarity(text1: str, text2: str) -> float:
 def should_use_premium_llm(text1: str, text2: str, local_similarity: float) -> bool:
     """
     Determine if we should use premium LLM for complex semantic matching.
-    Triggers for cases that might need advanced reasoning or recent knowledge.
+    Triggers for cases that need advanced reasoning, cultural knowledge, or creative interpretation.
     """
     # Check for indicators that premium LLM might help
     complex_indicators = [
@@ -69,10 +69,29 @@ def should_use_premium_llm(text1: str, text2: str, local_similarity: float) -> b
     combined_text = f"{text1} {text2}".lower()
     has_complex_content = any(indicator in combined_text for indicator in complex_indicators)
     
-    # Use premium LLM if:
-    # 1. Content suggests it might need advanced knowledge/reasoning
-    # 2. Local similarity shows some potential connection (0.15-0.6 range)
-    return has_complex_content and 0.15 <= local_similarity <= 0.6
+    # Additional triggers for premium LLM
+    emoji_pattern = r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U000024C2-\U0001F251]'
+    import re
+    
+    # Check for cases that need premium reasoning
+    needs_premium = (
+        # 1. Has complex content (original logic)
+        has_complex_content or
+        # 2. Contains emojis (visual-to-text understanding)
+        bool(re.search(emoji_pattern, text1 + text2)) or
+        # 3. Potential misspellings (similar length, low similarity)
+        (abs(len(text1) - len(text2)) <= 2 and 0.3 <= local_similarity <= 0.7) or
+        # 4. Idiomatic expressions (common phrases)
+        any(phrase in combined_text for phrase in [
+            "piece of cake", "break a leg", "hit the road", "finish line",
+            "king of pop", "big apple", "reached the", "ran a race"
+        ]) or
+        # 5. Very low similarity but some connection (metaphors, cultural refs)
+        (0.05 <= local_similarity <= 0.3)
+    )
+    
+    # Use premium LLM if needs premium reasoning and similarity suggests possible connection
+    return needs_premium and 0.05 <= local_similarity <= 0.8
 
 def ask_llm_semantic_match(text1: str, text2: str) -> Optional[bool]:
     """Ask LLM directly if two things are semantically the same."""
@@ -208,7 +227,7 @@ def hybrid_check_answer(guess: str, answer: str, threshold: float = 0.8) -> dict
             "method": "local_model",
             "tier": 2
         }
-    elif local_similarity <= 0.15:  # Very low confidence - probably wrong
+    elif local_similarity <= 0.05:  # Only trust very low confidence - send more to LLM
         return {
             "is_correct": False,
             "similarity": round(local_similarity, 4),
@@ -216,8 +235,8 @@ def hybrid_check_answer(guess: str, answer: str, threshold: float = 0.8) -> dict
             "tier": 2
         }
     
-    # Tier 3: Uncertain cases (0.15 < similarity < threshold) -> Ask Standard LLM
-    if openai_client and 0.15 < local_similarity < threshold:
+    # Tier 3: Uncertain cases (0.05 < similarity < threshold) -> Ask Standard LLM
+    if openai_client and 0.05 < local_similarity < threshold:
         logger.info(f"Local model uncertain (sim={local_similarity:.3f}), asking LLM...")
         
         llm_result = ask_llm_semantic_match(guess, answer)

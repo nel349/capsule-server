@@ -2,50 +2,55 @@ test_id,category,guess,answer,expected,predicted,similarity,confidence,correct
 1,exact_matches,Solana Mobile Hackathon,Solana Mobile Hackathon,True,True,1.0,high,True
 2,exact_matches,Running a marathon,Running a marathon,True,True,1.0,high,True
 3,exact_matches,A blockchain-based game,A blockchain-based game,True,True,1.0,high,True
-4,direct_synonyms,automobile,car,True,True,0.8645,medium,True
+4,direct_synonyms,automobile,car,True,True,0.8555,medium,True
 5,direct_synonyms,Marathon,Long-distance race,True,True,1.0,high,True
 6,direct_synonyms,Crypto game,Blockchain-based game,True,True,1.0,high,True
-7,direct_synonyms,NYC,New York City,True,True,0.9176,high,True
+7,direct_synonyms,NYC,New York City,True,True,0.9008,high,True
 8,descriptive_phrases,A coding event for Solana developers,Solana Mobile Hackathon,True,True,1.0,high,True
 9,descriptive_phrases,Ran 26.2 miles,Running a marathon,True,True,1.0,high,True
 10,descriptive_phrases,Italian flatbread with cheese,pizza,True,True,1.0,high,True
 11,descriptive_phrases,The largest city in the US,New York City,True,True,1.0,high,True
 12,descriptive_phrases,The King of Pop,Michael Jackson,True,True,1.0,high,True
 13,cultural_references,Solana's founder,Anatoly Yakovenko,True,True,1.0,high,True
-14,cultural_references,Breakpoint,Solana Breakpoint Conference,True,False,0.5529,low,False
+14,cultural_references,Breakpoint,Solana Breakpoint Conference,True,False,0.537,low,False
 15,cultural_references,The Big Apple,New York City,True,True,1.0,high,True
-16,emoji_visual,🏃‍♂️,Running a marathon,True,True,1.0,high,True
-17,emoji_visual,💻🚀,Solana Mobile Hackathon,True,False,0.1568,very_low,False
-18,emoji_visual,🎮🔗,A blockchain-based game,True,False,0.3471,very_low,False
+16,emoji_visual,🏃‍♂️,Running a marathon,True,False,0.5135,low,False
+17,emoji_visual,💻🚀,Solana Mobile Hackathon,True,False,0.1444,very_low,False
+18,emoji_visual,🎮🔗,A blockchain-based game,True,False,0.3264,very_low,False
 19,emoji_visual,🍕,pizza,True,True,1.0,high,True
 20,misspellings,Solana Hackaton,Solana Mobile Hackathon,True,True,1.0,high,True
 21,misspellings,Marathn,Running a marathon,True,True,1.0,high,True
 22,misspellings,Blokchain game,A blockchain-based game,True,True,1.0,high,True
-23,misspellings,piza,pizza,True,False,0.462,very_low,False
-24,metaphors_idioms,Reached the finish line,Running a marathon,True,False,0.2083,very_low,False
-25,metaphors_idioms,Break a leg,Good luck,True,False,0.0766,very_low,False
-26,metaphors_idioms,Piece of cake,Easy,True,False,0.2778,very_low,False
+23,misspellings,piza,pizza,True,False,0.4351,very_low,False
+24,metaphors_idioms,Reached the finish line,Running a marathon,True,False,0.2104,very_low,False
+25,metaphors_idioms,Break a leg,Good luck,True,True,1.0,high,True
+26,metaphors_idioms,Piece of cake,Easy,True,True,1.0,high,True
 27,metaphors_idioms,Hit the road,Leave,True,True,1.0,high,True
-28,obviously_wrong,Went to the moon,Solana Mobile Hackathon,False,False,0.0372,very_low,True
-29,obviously_wrong,Bought a yacht,Running a marathon,False,False,0.1492,very_low,True
-30,obviously_wrong,Painted a mural,A blockchain-based game,False,False,0.0064,very_low,True
-31,obviously_wrong,Ate a taco,pizza,False,False,0.3638,very_low,True
-32,edge_cases,Solana Hackathon,Solana Mobile Hackathon,True,True,0.8282,medium,True
-33,edge_cases,Marathon,Running a marathon,True,True,0.8565,medium,True
+28,obviously_wrong,Went to the moon,Solana Mobile Hackathon,False,False,0.1579,very_low,True
+29,obviously_wrong,Bought a yacht,Running a marathon,False,False,0.1907,very_low,True
+30,obviously_wrong,Painted a mural,A blockchain-based game,False,False,0.0525,very_low,True
+31,obviously_wrong,Ate a taco,pizza,False,False,0.3439,very_low,True
+32,edge_cases,Solana Hackathon,Solana Mobile Hackathon,True,True,0.8958,medium,True
+33,edge_cases,Marathon,Running a marathon,True,True,0.8425,medium,True
 34,edge_cases,Web3 game,A blockchain-based game,True,True,1.0,high,True
 35,edge_cases,MJ,Michael Jackson,True,True,1.0,high,True
-36,partial_matches,Solana developer event,Solana Mobile Hackathon,True,False,0.5536,low,False
-37,partial_matches,Ran a race,Running a marathon,True,False,0.6588,low,False
-38,partial_matches,Blockchain app,A blockchain-based game,True,False,0.5916,low,False
-39,partial_matches,Jackson,Michael Jackson,True,False,0.7616,medium,False
+36,partial_matches,Solana developer event,Solana Mobile Hackathon,True,False,0.6024,low,False
+37,partial_matches,Ran a race,Running a marathon,True,False,0.7456,medium,False
+38,partial_matches,Blockchain app,A blockchain-based game,True,False,0.6083,low,False
+39,partial_matches,Jackson,Michael Jackson,True,False,0.6776,low,False
 40,case_sensitivity,SOLANA MOBILE HACKATHON,Solana Mobile Hackathon,True,True,1.0,high,True
 41,case_sensitivity,running a MARATHON,Running a marathon,True,True,1.0,high,True
-42,case_sensitivity,BLOCKCHAIN-BASED GAME,A blockchain-based game,True,True,0.961,high,True
+42,case_sensitivity,BLOCKCHAIN-BASED GAME,A blockchain-based game,True,True,0.9586,high,True
 43,cultural_references,The Solana boss,Anatoly Yakovenko,True,True,1.0,high,True
-44,emoji_visual,🗽,New York City,True,False,0.2748,very_low,False
-45,descriptive_phrases,Met a blockchain pioneer,Anatoly Yakovenko,True,False,0.1123,very_low,False
-46,metaphors_idioms,Pioneered a new chain,Anatoly Yakovenko,True,False,0.0649,very_low,False
-47,obviously_wrong,Wrote a novel,Anatoly Yakovenko,False,False,0.116,very_low,True
+44,emoji_visual,🗽,New York City,True,False,0.2238,very_low,False
+45,descriptive_phrases,Met a blockchain pioneer,Anatoly Yakovenko,True,False,0.1075,very_low,False
+46,metaphors_idioms,Pioneered a new chain,Anatoly Yakovenko,True,False,0.0487,very_low,False
+47,obviously_wrong,Wrote a novel,Anatoly Yakovenko,False,False,0.1325,very_low,True
 48,edge_cases,Anatoly,Anatoly Yakovenko,True,True,1.0,high,True
 49,partial_matches,Solana founder,Anatoly Yakovenko,True,True,1.0,high,True
 50,case_sensitivity,ANATOLY YAKOVENKO,Anatoly Yakovenko,True,True,1.0,high,True
+51,verbose_answers,"I went to this amazing coding event where developers from all over came to build mobile apps on the Solana blockchain. It was super intense and we had 48 hours to create something innovative. There were mentors, free food, and prizes for the best projects. It was basically a hackathon focused on Solana's mobile stack.",Solana Mobile Hackathon,True,True,1.0,high,True
+52,verbose_answers,"Well, I decided to challenge myself and signed up for this 26.2 mile race through the city. I trained for months, woke up at 5am, followed a strict diet, and finally completed it in under 4 hours. It was one of the hardest things I've ever done but so rewarding when I crossed that finish line.",Running a marathon,True,True,1.0,high,True
+53,verbose_answers,"So I've been working on this really cool project that uses blockchain technology to create an immersive gaming experience. Players can own their in-game assets as NFTs, trade them on decentralized marketplaces, and the whole economy runs on smart contracts. It's basically combining gaming with DeFi.",A blockchain-based game,True,True,1.0,high,True
+54,verbose_answers,"I discovered this incredible round Italian bread covered in tomato sauce, mozzarella cheese, and various toppings. It's baked in a wood-fired oven and has this perfect crispy crust. The combination of flavors is amazing and it's become my favorite comfort food.",pizza,True,True,1.0,high,True
+55,verbose_answers,"This person is widely regarded as the most influential pop artist of all time. He revolutionized music videos, broke racial barriers, and had this incredible stage presence with his signature dance moves like the moonwalk. His album Thriller is still one of the best-selling albums ever.",Michael Jackson,True,True,1.0,high,True

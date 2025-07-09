@@ -3,7 +3,7 @@
     "description": "CapsuleX Semantic Answer Checking Test Dataset v2 - Corrected for True Equivalences",
     "version": "2.0",
     "created": "2025-07-09",
-    "total_cases": 50,
+    "total_cases": 55,
     "corrections": "Fixed false equivalences based on GPT-4o analysis",
     "categories": [
       "exact_matches",
@@ -15,7 +15,8 @@
       "metaphors_idioms",
       "obviously_wrong",
       "edge_cases",
-      "partial_matches"
+      "partial_matches",
+      "verbose_answers"
     ]
   },
   "test_cases": [
@@ -418,6 +419,46 @@
       "answer": "Anatoly Yakovenko",
       "expected": true,
       "notes": "Case insensitive person match"
+    },
+    {
+      "id": 51,
+      "category": "verbose_answers",
+      "guess": "I went to this amazing coding event where developers from all over came to build mobile apps on the Solana blockchain. It was super intense and we had 48 hours to create something innovative. There were mentors, free food, and prizes for the best projects. It was basically a hackathon focused on Solana's mobile stack.",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Long verbose answer with correct core concept"
+    },
+    {
+      "id": 52,
+      "category": "verbose_answers",
+      "guess": "Well, I decided to challenge myself and signed up for this 26.2 mile race through the city. I trained for months, woke up at 5am, followed a strict diet, and finally completed it in under 4 hours. It was one of the hardest things I've ever done but so rewarding when I crossed that finish line.",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Detailed marathon description with extra context"
+    },
+    {
+      "id": 53,
+      "category": "verbose_answers",
+      "guess": "So I've been working on this really cool project that uses blockchain technology to create an immersive gaming experience. Players can own their in-game assets as NFTs, trade them on decentralized marketplaces, and the whole economy runs on smart contracts. It's basically combining gaming with DeFi.",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Verbose project description with technical details"
+    },
+    {
+      "id": 54,
+      "category": "verbose_answers",
+      "guess": "I discovered this incredible round Italian bread covered in tomato sauce, mozzarella cheese, and various toppings. It's baked in a wood-fired oven and has this perfect crispy crust. The combination of flavors is amazing and it's become my favorite comfort food.",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Overly detailed food description"
+    },
+    {
+      "id": 55,
+      "category": "verbose_answers",
+      "guess": "This person is widely regarded as the most influential pop artist of all time. He revolutionized music videos, broke racial barriers, and had this incredible stage presence with his signature dance moves like the moonwalk. His album Thriller is still one of the best-selling albums ever.",
+      "answer": "Michael Jackson",
+      "expected": true,
+      "notes": "Verbose cultural reference with biographical details"
     }
   ],
   "fixes_from_v1": [
