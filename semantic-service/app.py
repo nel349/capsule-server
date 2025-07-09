@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # Load model once at startup
 print("Loading Sentence Transformer model...")
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('all-mpnet-base-v2')
 print("Model loaded successfully!")
 
 @app.route('/', methods=['GET'])
@@ -15,7 +15,7 @@ def hello():
     return jsonify({
         "message": "CapsuleX Semantic Answer Checker",
         "status": "healthy",
-        "model": "all-MiniLM-L6-v2"
+        "model": "all-mpnet-base-v2"
     })
 
 @app.route('/health', methods=['GET'])
@@ -90,7 +90,7 @@ def test():
         
         return jsonify({
             "test_results": results,
-            "model": "all-MiniLM-L6-v2"
+            "model": "all-mpnet-base-v2"
         })
         
     except Exception as e:

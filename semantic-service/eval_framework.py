@@ -351,7 +351,7 @@ def main():
     
     try:
         # Load test dataset
-        evaluator.load_test_dataset("test_dataset.json")
+        evaluator.load_test_dataset("capsuleX_semantic_dataset_v2.json")
         
         # Run evaluation
         evaluator.run_full_evaluation(threshold=0.8)

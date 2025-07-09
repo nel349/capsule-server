@@ -1,0 +1,422 @@
+{
+  "metadata": {
+    "description": "CapsuleX Semantic Answer Checking Test Dataset for Time Capsule Guessing Game",
+    "version": "1.0",
+    "created": "2025-07-08",
+    "total_cases": 50,
+    "categories": [
+      "exact_matches",
+      "direct_synonyms",
+      "descriptive_phrases",
+      "cultural_references",
+      "emoji_visual",
+      "misspellings",
+      "metaphors_idioms",
+      "obviously_wrong",
+      "edge_cases",
+      "partial_matches"
+    ]
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "category": "exact_matches",
+      "guess": "Solana Mobile Hackathon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Perfect match for event-based fact"
+    },
+    {
+      "id": 2,
+      "category": "exact_matches",
+      "guess": "Running a marathon",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Perfect match for personal achievement"
+    },
+    {
+      "id": 3,
+      "category": "exact_matches",
+      "guess": "A blockchain-based game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Perfect match for personal creation"
+    },
+    {
+      "id": 4,
+      "category": "direct_synonyms",
+      "guess": "Hackathon",
+      "answer": "Coding competition",
+      "expected": true,
+      "notes": "Synonym for event type"
+    },
+    {
+      "id": 5,
+      "category": "direct_synonyms",
+      "guess": "Marathon",
+      "answer": "Long-distance race",
+      "expected": true,
+      "notes": "Synonym for personal achievement"
+    },
+    {
+      "id": 6,
+      "category": "direct_synonyms",
+      "guess": "Crypto game",
+      "answer": "Blockchain-based game",
+      "expected": true,
+      "notes": "Synonym for project type"
+    },
+    {
+      "id": 7,
+      "category": "direct_synonyms",
+      "guess": "Web3 workshop",
+      "answer": "Blockchain seminar",
+      "expected": true,
+      "notes": "Synonym for event type"
+    },
+    {
+      "id": 8,
+      "category": "descriptive_phrases",
+      "guess": "A coding event for Solana developers",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Descriptive event definition"
+    },
+    {
+      "id": 9,
+      "category": "descriptive_phrases",
+      "guess": "Ran 26.2 miles",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Specific achievement description"
+    },
+    {
+      "id": 10,
+      "category": "descriptive_phrases",
+      "guess": "Built a decentralized app",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Broad project description"
+    },
+    {
+      "id": 11,
+      "category": "descriptive_phrases",
+      "guess": "Visited a tech conference",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "General event description"
+    },
+    {
+      "id": 12,
+      "category": "descriptive_phrases",
+      "guess": "Found a hidden crypto hub",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Descriptive fun fact"
+    },
+    {
+      "id": 13,
+      "category": "cultural_references",
+      "guess": "Solana’s founder",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto community reference"
+    },
+    {
+      "id": 14,
+      "category": "cultural_references",
+      "guess": "Breakpoint",
+      "answer": "Solana Breakpoint Conference",
+      "expected": true,
+      "notes": "Solana-specific event nickname"
+    },
+    {
+      "id": 15,
+      "category": "cultural_references",
+      "guess": "The Web3 capital",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Crypto culture reference"
+    },
+    {
+      "id": 16,
+      "category": "emoji_visual",
+      "guess": "🏃‍♂️",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Direct emoji for achievement"
+    },
+    {
+      "id": 17,
+      "category": "emoji_visual",
+      "guess": "💻🚀",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Tech event emoji combo"
+    },
+    {
+      "id": 18,
+      "category": "emoji_visual",
+      "guess": "🎮🔗",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Game and blockchain emoji"
+    },
+    {
+      "id": 19,
+      "category": "emoji_visual",
+      "guess": "hidden tech spot",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Visual description from emoji hint"
+    },
+    {
+      "id": 20,
+      "category": "misspellings",
+      "guess": "Solana Hackaton",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Common event misspelling"
+    },
+    {
+      "id": 21,
+      "category": "misspellings",
+      "guess": "Marathn",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Achievement misspelling"
+    },
+    {
+      "id": 22,
+      "category": "misspellings",
+      "guess": "Blokchain game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Project misspelling"
+    },
+    {
+      "id": 23,
+      "category": "misspellings",
+      "guess": "Web3 start-up hub",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Minor spelling variation"
+    },
+    {
+      "id": 24,
+      "category": "metaphors_idioms",
+      "guess": "Reached the finish line",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Achievement metaphor"
+    },
+    {
+      "id": 25,
+      "category": "metaphors_idioms",
+      "guess": "Joined the crypto race",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Event metaphor"
+    },
+    {
+      "id": 26,
+      "category": "metaphors_idioms",
+      "guess": "Built a digital bridge",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Project metaphor"
+    },
+    {
+      "id": 27,
+      "category": "metaphors_idioms",
+      "guess": "Found a diamond in the rough",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Discovery idiom"
+    },
+    {
+      "id": 28,
+      "category": "obviously_wrong",
+      "guess": "Went to the moon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": false,
+      "notes": "Nonsensical vs real event"
+    },
+    {
+      "id": 29,
+      "category": "obviously_wrong",
+      "guess": "Bought a yacht",
+      "answer": "Running a marathon",
+      "expected": false,
+      "notes": "Unrelated luxury vs achievement"
+    },
+    {
+      "id": 30,
+      "category": "obviously_wrong",
+      "guess": "Painted a mural",
+      "answer": "A blockchain-based game",
+      "expected": false,
+      "notes": "Art vs tech project"
+    },
+    {
+      "id": 31,
+      "category": "obviously_wrong",
+      "guess": "Ate a taco",
+      "answer": "A hidden Web3 startup hub",
+      "expected": false,
+      "notes": "Food vs location"
+    },
+    {
+      "id": 32,
+      "category": "edge_cases",
+      "guess": "Solana Hackathon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Abbreviated event name"
+    },
+    {
+      "id": 33,
+      "category": "edge_cases",
+      "guess": "Marathon",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Shortened achievement"
+    },
+    {
+      "id": 34,
+      "category": "edge_cases",
+      "guess": "Web3 game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Simplified project term"
+    },
+    {
+      "id": 35,
+      "category": "edge_cases",
+      "guess": "Crypto hub",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Shortened location term"
+    },
+    {
+      "id": 36,
+      "category": "partial_matches",
+      "guess": "Solana developer event",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Contains core event concept"
+    },
+    {
+      "id": 37,
+      "category": "partial_matches",
+      "guess": "Ran a race",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Contains core achievement"
+    },
+    {
+      "id": 38,
+      "category": "partial_matches",
+      "guess": "Blockchain app",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Contains core project concept"
+    },
+    {
+      "id": 39,
+      "category": "partial_matches",
+      "guess": "Tech startup spot",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Contains core location concept"
+    },
+    {
+      "id": 40,
+      "category": "case_sensitivity",
+      "guess": "SOLANA MOBILE HACKATHON",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Case insensitive event match"
+    },
+    {
+      "id": 41,
+      "category": "case_sensitivity",
+      "guess": "running a MARATHON",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Case insensitive achievement match"
+    },
+    {
+      "id": 42,
+      "category": "case_sensitivity",
+      "guess": "BLOCKCHAIN-BASED GAME",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Case insensitive project match"
+    },
+    {
+      "id": 43,
+      "category": "cultural_references",
+      "guess": "The Solana boss",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto leader nickname"
+    },
+    {
+      "id": 44,
+      "category": "emoji_visual",
+      "guess": "🌐💼",
+      "answer": "A hidden Web3 startup hub",
+      "expected": true,
+      "notes": "Web3 and business emoji combo"
+    },
+    {
+      "id": 45,
+      "category": "descriptive_phrases",
+      "guess": "Met a blockchain pioneer",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Descriptive person reference"
+    },
+    {
+      "id": 46,
+      "category": "metaphors_idioms",
+      "guess": "Pioneered a new chain",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto innovator metaphor"
+    },
+    {
+      "id": 47,
+      "category": "obviously_wrong",
+      "guess": "Wrote a novel",
+      "answer": "Anatoly Yakovenko",
+      "expected": false,
+      "notes": "Unrelated creative vs person"
+    },
+    {
+      "id": 48,
+      "category": "edge_cases",
+      "guess": "Anatoly",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "First name to full name"
+    },
+    {
+      "id": 49,
+      "category": "partial_matches",
+      "guess": "Solana founder",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Contains core person concept"
+    },
+    {
+      "id": 50,
+      "category": "case_sensitivity",
+      "guess": "ANATOLY YAKOVENKO",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Case insensitive person match"
+    }
+  ]
+}

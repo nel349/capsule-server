@@ -1,0 +1,449 @@
+{
+  "metadata": {
+    "description": "CapsuleX Semantic Answer Checking Test Dataset v2 - Corrected for True Equivalences",
+    "version": "2.0",
+    "created": "2025-07-09",
+    "total_cases": 50,
+    "corrections": "Fixed false equivalences based on GPT-4o analysis",
+    "categories": [
+      "exact_matches",
+      "direct_synonyms",
+      "descriptive_phrases",
+      "cultural_references",
+      "emoji_visual",
+      "misspellings",
+      "metaphors_idioms",
+      "obviously_wrong",
+      "edge_cases",
+      "partial_matches"
+    ]
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "category": "exact_matches",
+      "guess": "Solana Mobile Hackathon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Perfect match for event-based fact"
+    },
+    {
+      "id": 2,
+      "category": "exact_matches",
+      "guess": "Running a marathon",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Perfect match for personal achievement"
+    },
+    {
+      "id": 3,
+      "category": "exact_matches",
+      "guess": "A blockchain-based game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Perfect match for personal creation"
+    },
+    {
+      "id": 4,
+      "category": "direct_synonyms",
+      "guess": "automobile",
+      "answer": "car",
+      "expected": true,
+      "notes": "True synonym - same object"
+    },
+    {
+      "id": 5,
+      "category": "direct_synonyms",
+      "guess": "Marathon",
+      "answer": "Long-distance race",
+      "expected": true,
+      "notes": "Marathon is a type of long-distance race"
+    },
+    {
+      "id": 6,
+      "category": "direct_synonyms",
+      "guess": "Crypto game",
+      "answer": "Blockchain-based game",
+      "expected": true,
+      "notes": "Crypto and blockchain are equivalent in gaming context"
+    },
+    {
+      "id": 7,
+      "category": "direct_synonyms",
+      "guess": "NYC",
+      "answer": "New York City",
+      "expected": true,
+      "notes": "Common abbreviation for same city"
+    },
+    {
+      "id": 8,
+      "category": "descriptive_phrases",
+      "guess": "A coding event for Solana developers",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Descriptive definition of the specific event"
+    },
+    {
+      "id": 9,
+      "category": "descriptive_phrases",
+      "guess": "Ran 26.2 miles",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Specific distance definition of marathon"
+    },
+    {
+      "id": 10,
+      "category": "descriptive_phrases",
+      "guess": "Italian flatbread with cheese",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Descriptive definition of pizza"
+    },
+    {
+      "id": 11,
+      "category": "descriptive_phrases",
+      "guess": "The largest city in the US",
+      "answer": "New York City",
+      "expected": true,
+      "notes": "Factual description of NYC"
+    },
+    {
+      "id": 12,
+      "category": "descriptive_phrases",
+      "guess": "The King of Pop",
+      "answer": "Michael Jackson",
+      "expected": true,
+      "notes": "Well-known cultural descriptor"
+    },
+    {
+      "id": 13,
+      "category": "cultural_references",
+      "guess": "Solana's founder",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto community reference"
+    },
+    {
+      "id": 14,
+      "category": "cultural_references",
+      "guess": "Breakpoint",
+      "answer": "Solana Breakpoint Conference",
+      "expected": true,
+      "notes": "Solana-specific event nickname"
+    },
+    {
+      "id": 15,
+      "category": "cultural_references",
+      "guess": "The Big Apple",
+      "answer": "New York City",
+      "expected": true,
+      "notes": "Famous nickname for NYC"
+    },
+    {
+      "id": 16,
+      "category": "emoji_visual",
+      "guess": "🏃‍♂️",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Direct emoji for achievement"
+    },
+    {
+      "id": 17,
+      "category": "emoji_visual",
+      "guess": "💻🚀",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Tech event emoji combo"
+    },
+    {
+      "id": 18,
+      "category": "emoji_visual",
+      "guess": "🎮🔗",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Game and blockchain emoji"
+    },
+    {
+      "id": 19,
+      "category": "emoji_visual",
+      "guess": "🍕",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Direct pizza emoji"
+    },
+    {
+      "id": 20,
+      "category": "misspellings",
+      "guess": "Solana Hackaton",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Common event misspelling"
+    },
+    {
+      "id": 21,
+      "category": "misspellings",
+      "guess": "Marathn",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Achievement misspelling"
+    },
+    {
+      "id": 22,
+      "category": "misspellings",
+      "guess": "Blokchain game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Project misspelling"
+    },
+    {
+      "id": 23,
+      "category": "misspellings",
+      "guess": "piza",
+      "answer": "pizza",
+      "expected": true,
+      "notes": "Common pizza misspelling"
+    },
+    {
+      "id": 24,
+      "category": "metaphors_idioms",
+      "guess": "Reached the finish line",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Achievement metaphor for completing marathon"
+    },
+    {
+      "id": 25,
+      "category": "metaphors_idioms",
+      "guess": "Break a leg",
+      "answer": "Good luck",
+      "expected": true,
+      "notes": "Theater idiom meaning good luck"
+    },
+    {
+      "id": 26,
+      "category": "metaphors_idioms",
+      "guess": "Piece of cake",
+      "answer": "Easy",
+      "expected": true,
+      "notes": "Common idiom for something easy"
+    },
+    {
+      "id": 27,
+      "category": "metaphors_idioms",
+      "guess": "Hit the road",
+      "answer": "Leave",
+      "expected": true,
+      "notes": "Idiom for departing"
+    },
+    {
+      "id": 28,
+      "category": "obviously_wrong",
+      "guess": "Went to the moon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": false,
+      "notes": "Nonsensical vs real event"
+    },
+    {
+      "id": 29,
+      "category": "obviously_wrong",
+      "guess": "Bought a yacht",
+      "answer": "Running a marathon",
+      "expected": false,
+      "notes": "Unrelated luxury vs achievement"
+    },
+    {
+      "id": 30,
+      "category": "obviously_wrong",
+      "guess": "Painted a mural",
+      "answer": "A blockchain-based game",
+      "expected": false,
+      "notes": "Art vs tech project"
+    },
+    {
+      "id": 31,
+      "category": "obviously_wrong",
+      "guess": "Ate a taco",
+      "answer": "pizza",
+      "expected": false,
+      "notes": "Different food entirely"
+    },
+    {
+      "id": 32,
+      "category": "edge_cases",
+      "guess": "Solana Hackathon",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Abbreviated event name"
+    },
+    {
+      "id": 33,
+      "category": "edge_cases",
+      "guess": "Marathon",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Shortened achievement"
+    },
+    {
+      "id": 34,
+      "category": "edge_cases",
+      "guess": "Web3 game",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Web3 and blockchain equivalent in gaming"
+    },
+    {
+      "id": 35,
+      "category": "edge_cases",
+      "guess": "MJ",
+      "answer": "Michael Jackson",
+      "expected": true,
+      "notes": "Common initials for famous person"
+    },
+    {
+      "id": 36,
+      "category": "partial_matches",
+      "guess": "Solana developer event",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Contains core event concept"
+    },
+    {
+      "id": 37,
+      "category": "partial_matches",
+      "guess": "Ran a race",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Marathon is a type of race"
+    },
+    {
+      "id": 38,
+      "category": "partial_matches",
+      "guess": "Blockchain app",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Game is a type of app"
+    },
+    {
+      "id": 39,
+      "category": "partial_matches",
+      "guess": "Jackson",
+      "answer": "Michael Jackson",
+      "expected": true,
+      "notes": "Last name to full name"
+    },
+    {
+      "id": 40,
+      "category": "case_sensitivity",
+      "guess": "SOLANA MOBILE HACKATHON",
+      "answer": "Solana Mobile Hackathon",
+      "expected": true,
+      "notes": "Case insensitive event match"
+    },
+    {
+      "id": 41,
+      "category": "case_sensitivity",
+      "guess": "running a MARATHON",
+      "answer": "Running a marathon",
+      "expected": true,
+      "notes": "Case insensitive achievement match"
+    },
+    {
+      "id": 42,
+      "category": "case_sensitivity",
+      "guess": "BLOCKCHAIN-BASED GAME",
+      "answer": "A blockchain-based game",
+      "expected": true,
+      "notes": "Case insensitive project match"
+    },
+    {
+      "id": 43,
+      "category": "cultural_references",
+      "guess": "The Solana boss",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto leader nickname"
+    },
+    {
+      "id": 44,
+      "category": "emoji_visual",
+      "guess": "🗽",
+      "answer": "New York City",
+      "expected": true,
+      "notes": "Statue of Liberty emoji for NYC"
+    },
+    {
+      "id": 45,
+      "category": "descriptive_phrases",
+      "guess": "Met a blockchain pioneer",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Descriptive person reference"
+    },
+    {
+      "id": 46,
+      "category": "metaphors_idioms",
+      "guess": "Pioneered a new chain",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Crypto innovator metaphor"
+    },
+    {
+      "id": 47,
+      "category": "obviously_wrong",
+      "guess": "Wrote a novel",
+      "answer": "Anatoly Yakovenko",
+      "expected": false,
+      "notes": "Unrelated creative vs person"
+    },
+    {
+      "id": 48,
+      "category": "edge_cases",
+      "guess": "Anatoly",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "First name to full name"
+    },
+    {
+      "id": 49,
+      "category": "partial_matches",
+      "guess": "Solana founder",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Contains core person concept"
+    },
+    {
+      "id": 50,
+      "category": "case_sensitivity",
+      "guess": "ANATOLY YAKOVENKO",
+      "answer": "Anatoly Yakovenko",
+      "expected": true,
+      "notes": "Case insensitive person match"
+    }
+  ],
+  "fixes_from_v1": [
+    {
+      "id": 4,
+      "old": "Hackathon vs Coding competition",
+      "new": "automobile vs car", 
+      "reason": "Hackathon and coding competition are related but different event types"
+    },
+    {
+      "id": 7,
+      "old": "Web3 workshop vs Blockchain seminar",
+      "new": "NYC vs New York City",
+      "reason": "Workshop and seminar are different formats, not equivalent"
+    },
+    {
+      "id": 10,
+      "old": "Built a decentralized app vs A blockchain-based game",
+      "new": "Italian flatbread with cheese vs pizza",
+      "reason": "Decentralized app is broader category than blockchain game"
+    },
+    {
+      "id": 15,
+      "old": "The Web3 capital vs A hidden Web3 startup hub",
+      "new": "The Big Apple vs New York City",
+      "reason": "Capital implies well-known, hidden hub implies unknown - opposite concepts"
+    }
+  ]
+}
