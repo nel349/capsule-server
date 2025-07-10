@@ -7,6 +7,10 @@ from typing import Optional, Tuple
 import logging
 import emoji
 from dotenv import load_dotenv
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives import serialization
+import secrets
+import base64
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,6 +33,63 @@ try:
     print("✅ OpenAI client initialized (hybrid mode enabled)")
 except Exception as e:
     print(f"⚠️  OpenAI not available: {e} (falling back to local-only mode)")
+
+# Initialize Oracle signing key
+oracle_private_key = None
+oracle_public_key_bytes = None
+try:
+    # Try to load existing key from file
+    if os.path.exists('oracle_private_key.pem'):
+        with open('oracle_private_key.pem', 'rb') as f:
+            oracle_private_key = serialization.load_pem_private_key(f.read(), password=None)
+        print("✅ Loaded existing oracle private key")
+    else:
+        # Generate new key pair
+        oracle_private_key = Ed25519PrivateKey.generate()
+        
+        # Save private key to file
+        with open('oracle_private_key.pem', 'wb') as f:
+            f.write(oracle_private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+        print("🔑 Generated new oracle private key and saved to oracle_private_key.pem")
+    
+    # Get public key bytes for Solana
+    oracle_public_key = oracle_private_key.public_key()
+    oracle_public_key_bytes = oracle_public_key.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    )
+    
+    # Print public key for Solana program
+    oracle_public_key_hex = oracle_public_key_bytes.hex()
+    print(f"🔑 Oracle Public Key (for Solana): {oracle_public_key_hex}")
+    print(f"🔑 Oracle Public Key (Base64): {base64.b64encode(oracle_public_key_bytes).decode()}")
+    
+except Exception as e:
+    print(f"❌ Failed to initialize oracle signing: {e}")
+    oracle_private_key = None
+
+def create_oracle_signature(guess: str, answer: str, is_correct: bool, timestamp: int, nonce: str) -> Optional[str]:
+    """Create an oracle signature for the semantic validation result."""
+    if not oracle_private_key:
+        return None
+    
+    try:
+        # Create message to sign (must match Solana program format)
+        message = f"{guess}:{answer}:{is_correct}:{timestamp}:{nonce}"
+        message_bytes = message.encode('utf-8')
+        
+        # Sign the message
+        signature_bytes = oracle_private_key.sign(message_bytes)
+        
+        # Return as base64 string
+        return base64.b64encode(signature_bytes).decode('utf-8')
+    except Exception as e:
+        logger.error(f"Failed to create oracle signature: {e}")
+        return None
 
 def preprocess_text(text: str) -> str:
     """Preprocess text by converting emojis to readable descriptions."""
@@ -306,6 +367,27 @@ def check_answer():
         
         result = hybrid_check_answer(guess, answer, threshold)
         result['threshold'] = threshold
+        
+        # Add oracle signature for security
+        timestamp = int(time.time())
+        nonce = secrets.token_urlsafe(16)  # 128-bit random nonce
+        
+        signature = create_oracle_signature(
+            guess, 
+            answer, 
+            result['is_correct'], 
+            timestamp, 
+            nonce
+        )
+        
+        # Add oracle fields to response
+        result['oracle_timestamp'] = timestamp
+        result['oracle_nonce'] = nonce
+        result['oracle_signature'] = signature
+        result['oracle_enabled'] = signature is not None
+        
+        if signature is None:
+            logger.warning("Oracle signature generation failed - running in insecure mode")
         
         return jsonify(result)
         
