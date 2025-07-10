@@ -3,7 +3,7 @@
 
 # Environment URLs
 @localUrl = http://localhost:5001
-@remoteUrl = https://capsule-server-hl1s.onrender.com
+@remoteUrl = https://capsule-server-production.up.railway.app
 
 # Test data
 @correctAnswer = pizza
@@ -222,7 +222,7 @@ Accept: application/json
 ### 7. Load & Performance Testing
 
 ### Rapid fire test 1
-POST {{localUrl}}/check-answer
+POST {{remoteUrl}}/check-answer
 Content-Type: application/json
 
 {
