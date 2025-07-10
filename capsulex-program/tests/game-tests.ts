@@ -648,4 +648,254 @@ describe("CapsuleX Game Instructions", () => {
       // console.log("✅ Correctly prevented verification before reveal");
     }
   });
+
+  describe("Game Completion Scenarios", () => {
+    
+    it("Complete Game: Creator cancels game with no guesses", async () => {
+      const capsuleCreator = provider.wallet;
+      
+      const currentTime = Math.floor(Date.now() / 1000);
+      const revealDate = new anchor.BN(currentTime + 100);
+      const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = {
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        nftMint: nftMintPda,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      };
+      
+      // Create game
+      await program.methods.createCapsule("no guesses test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      
+      const [gamePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("game"), capsulePda.toBuffer()],
+        program.programId
+      );
+      
+      await program.methods.initializeGame(capsulePda, 5, 2).accounts({
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        game: gamePda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      // Creator should be able to complete game immediately (no guesses yet)
+      const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("leaderboard"), capsuleCreator.publicKey.toBuffer()],
+        program.programId
+      );
+      
+      try {
+        await program.methods.initializeLeaderboard(capsuleCreator.publicKey).accounts({
+          authority: capsuleCreator.publicKey,
+          user: capsuleCreator.publicKey,
+          leaderboard: creatorLeaderboardPda,
+          systemProgram: SystemProgram.programId,
+        } as any).rpc();
+      } catch (error) {
+        // May already exist
+      }
+      
+      await program.methods.completeGame().accounts({
+        authority: capsuleCreator.publicKey,
+        game: gamePda,
+        capsule: capsulePda,
+        creator_leaderboard: creatorLeaderboardPda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      const finalGame = await program.account.game.fetch(gamePda);
+      expect(finalGame.isActive).to.be.false;
+      expect(finalGame.currentGuesses).to.equal(0);
+    });
+
+    it("Complete Game: After reveal date (creator can end anytime)", async () => {
+      const capsuleCreator = provider.wallet;
+      const gamePlayer = anchor.web3.Keypair.generate();
+      
+      await provider.connection.requestAirdrop(gamePlayer.publicKey, 1000000000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const currentTime = Math.floor(Date.now() / 1000);
+      const revealDate = new anchor.BN(currentTime + 3); // Short reveal time
+      const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = {
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        nftMint: nftMintPda,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      };
+      
+      // Create game with guesses
+      await program.methods.createCapsule("after reveal test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      
+      const [gamePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("game"), capsulePda.toBuffer()],
+        program.programId
+      );
+      
+      await program.methods.initializeGame(capsulePda,
+         5, // max_guesses
+         2 // max_winners
+      ).accounts({
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        game: gamePda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      // Submit a guess but don't find winner
+      const [guessPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("guess"), gamePda.toBuffer(), gamePlayer.publicKey.toBuffer(), Buffer.from([0, 0, 0, 0])],
+        program.programId
+      );
+      
+      await program.methods.submitGuess("wrong guess", false).accounts({
+        guesser: gamePlayer.publicKey,
+        game: gamePda,
+        guess: guessPda,
+        systemProgram: SystemProgram.programId,
+      } as any).signers([gamePlayer]).rpc();
+      
+      // Cannot complete before reveal
+      const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("leaderboard"), capsuleCreator.publicKey.toBuffer()],
+        program.programId
+      );
+      
+      try {
+        await program.methods.initializeLeaderboard(capsuleCreator.publicKey).accounts({
+          authority: capsuleCreator.publicKey,
+          user: capsuleCreator.publicKey,
+          leaderboard: creatorLeaderboardPda,
+          systemProgram: SystemProgram.programId,
+        } as any).rpc();
+      } catch (error) {}
+      
+      try {
+        await program.methods.completeGame().accounts({
+          authority: capsuleCreator.publicKey,
+          game: gamePda,
+          capsule: capsulePda,
+          creator_leaderboard: creatorLeaderboardPda,
+          systemProgram: SystemProgram.programId,
+        } as any).rpc();
+        expect.fail("Should not be able to complete before reveal");
+      } catch (error) {
+        expect(error.message).to.include("GameNotEnded");
+      }
+      
+      // Wait for reveal time and reveal
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      await program.methods.revealCapsule(revealDate).accounts({
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+      } as any).rpc();
+      
+      // Now should be able to complete after reveal
+      await program.methods.completeGame().accounts({
+        authority: capsuleCreator.publicKey,
+        game: gamePda,
+        capsule: capsulePda,
+        creator_leaderboard: creatorLeaderboardPda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      const finalGame = await program.account.game.fetch(gamePda);
+      expect(finalGame.isActive).to.be.false;
+      expect(finalGame.currentGuesses).to.equal(1);
+      expect(finalGame.winnersFound).to.equal(0); // No winners found
+    });
+
+    it("Complete Game: Max guesses reached", async () => {
+      const capsuleCreator = provider.wallet;
+      
+      const currentTime = Math.floor(Date.now() / 1000);
+      const revealDate = new anchor.BN(currentTime + 3);
+      const capsulePda = getCapsulePda(capsuleCreator.publicKey, revealDate, program.programId);
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = {
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        nftMint: nftMintPda,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      };
+      
+      // Create game with low max_guesses
+      await program.methods.createCapsule("max guesses test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      
+      const [gamePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("game"), capsulePda.toBuffer()],
+        program.programId
+      );
+      
+      await program.methods.initializeGame(capsulePda, 2, 1).accounts({ // max_guesses=2, max_winners=1
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+        game: gamePda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      // Submit 2 guesses to reach max
+      for (let i = 0; i < 2; i++) {
+        const [guessPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("guess"), gamePda.toBuffer(), capsuleCreator.publicKey.toBuffer(), Buffer.from([i, 0, 0, 0])],
+          program.programId
+        );
+        
+        await program.methods.submitGuess(`guess ${i}`, false).accounts({
+          guesser: capsuleCreator.publicKey,
+          game: gamePda,
+          guess: guessPda,
+          systemProgram: SystemProgram.programId,
+        } as any).rpc();
+      }
+      
+      // Wait and reveal
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      await program.methods.revealCapsule(revealDate).accounts({
+        creator: capsuleCreator.publicKey,
+        capsule: capsulePda,
+      } as any).rpc();
+      
+      // Game should be ready for completion (max_guesses reached)
+      const gameBeforeCompletion = await program.account.game.fetch(gamePda);
+      expect(gameBeforeCompletion.currentGuesses).to.equal(2);
+      
+      // Complete game (max_guesses condition met)
+      const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("leaderboard"), capsuleCreator.publicKey.toBuffer()],
+        program.programId
+      );
+      
+      try {
+        await program.methods.initializeLeaderboard(capsuleCreator.publicKey).accounts({
+          authority: capsuleCreator.publicKey,
+          user: capsuleCreator.publicKey,
+          leaderboard: creatorLeaderboardPda,
+          systemProgram: SystemProgram.programId,
+        } as any).rpc();
+      } catch (error) {}
+      
+      await program.methods.completeGame().accounts({
+        authority: capsuleCreator.publicKey,
+        game: gamePda,
+        capsule: capsulePda,
+        creator_leaderboard: creatorLeaderboardPda,
+        systemProgram: SystemProgram.programId,
+      } as any).rpc();
+      
+      const finalGame = await program.account.game.fetch(gamePda);
+      expect(finalGame.isActive).to.be.false;
+    });
+
+  });
 });
