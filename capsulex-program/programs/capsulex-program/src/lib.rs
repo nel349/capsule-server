@@ -52,8 +52,9 @@ pub mod capsulex {
         ctx: Context<InitializeGame>,
         capsule_id: Pubkey,
         max_guesses: u32,
+        max_winners: u32,
     ) -> Result<()> {
-        instructions::initialize_game(ctx, capsule_id, max_guesses)
+        instructions::initialize_game(ctx, capsule_id, max_guesses, max_winners)
     }
 
     pub fn submit_guess(
@@ -68,8 +69,9 @@ pub mod capsulex {
         ctx: Context<VerifyGuess>,
         decrypted_content: String,
         verification_window_hours: Option<u8>,
+        semantic_result: bool,
     ) -> Result<()> {
-        instructions::verify_guess(ctx, decrypted_content, verification_window_hours)
+        instructions::verify_guess(ctx, decrypted_content, verification_window_hours, semantic_result)
     }
 
     pub fn complete_game(

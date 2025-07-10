@@ -93,7 +93,8 @@ describe("CapsuleX Game Instructions", () => {
     // Initialize game (capsule creator initializes their game)
     await program.methods.initializeGame(
       capsulePda,
-      50 // max_guesses (no more guess fees!)
+      50, // max_guesses (no more guess fees!)
+      3 // max_winners
     ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
@@ -140,7 +141,10 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     
-    await program.methods.initializeGame(capsulePda, 10).accounts({
+    await program.methods.initializeGame(capsulePda,
+       10, // max_guesses
+        3
+      ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
@@ -215,7 +219,10 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     
-    await program.methods.initializeGame(capsulePda, 5).accounts({
+    await program.methods.initializeGame(capsulePda, 
+      5, // max_guesses
+      3 // max_winners
+    ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
@@ -320,7 +327,10 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     
-    await program.methods.initializeGame(capsulePda, 10).accounts({
+    await program.methods.initializeGame(capsulePda, 
+      10, // max_guesses
+      3 // max_winners
+    ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
@@ -392,7 +402,8 @@ describe("CapsuleX Game Instructions", () => {
     // Verify wrong guess first (game player verifies their guess)
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
-      null // verification_window_hours
+      null, // verification_window_hours
+      false // semantic_result
     ).accounts({
       authority: gamePlayer.publicKey,
       guess: wrongGuessPda,
@@ -404,7 +415,8 @@ describe("CapsuleX Game Instructions", () => {
     // Verify correct guess (game player verifies their winning guess)
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
-      null // verification_window_hours (default 1 hour)
+      null, // verification_window_hours (default 1 hour)
+      true // semantic_result
     ).accounts({
       authority: gamePlayer.publicKey,
       guess: correctGuessPda,
@@ -453,7 +465,10 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     
-    await program.methods.initializeGame(capsulePda, 5).accounts({
+    await program.methods.initializeGame(capsulePda, 
+      5, // max_guesses
+      3 // max_winners
+    ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
@@ -500,7 +515,7 @@ describe("CapsuleX Game Instructions", () => {
       systemProgram: SystemProgram.programId,
     } as any).signers([gamePlayerWinner]).rpc();
     
-    await program.methods.verifyGuess("reward test", null).accounts({
+    await program.methods.verifyGuess("reward test", null, true).accounts({
       authority: gamePlayerWinner.publicKey,
       guess: guessPda,
       game: gamePda,
@@ -530,6 +545,7 @@ describe("CapsuleX Game Instructions", () => {
     await program.methods.completeGame().accounts({
       authority: capsuleCreator.publicKey,
       game: gamePda,
+      capsule: capsulePda,
       creator_leaderboard: creatorLeaderboardPda,
       systemProgram: SystemProgram.programId,
     } as any).rpc();
@@ -579,7 +595,10 @@ describe("CapsuleX Game Instructions", () => {
       [Buffer.from("game"), capsulePda.toBuffer()],
       program.programId
     );
-    await program.methods.initializeGame(capsulePda, 5).accounts({
+    await program.methods.initializeGame(capsulePda,
+      5, // max_guesses
+      3 // max_winners
+    ).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       game: gamePda,
@@ -615,7 +634,7 @@ describe("CapsuleX Game Instructions", () => {
     
     // Try to verify guess before reveal (should fail)
     try {
-      await program.methods.verifyGuess("test", null).accounts({
+      await program.methods.verifyGuess("test", null, false).accounts({
         authority: gamePlayer.publicKey,        // Player verifies their own guess
         guess: guessPda,
         game: gamePda,

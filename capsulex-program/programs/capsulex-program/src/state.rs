@@ -64,11 +64,14 @@ pub struct Game {
     pub capsule_id: Pubkey,
     pub creator: Pubkey,
     pub max_guesses: u32,
+    pub max_winners: u32,
     pub current_guesses: u32,
+    pub winners_found: u32,
     pub total_participants: u32, // Track total participants for points
     pub is_active: bool,
-    pub winner_found: bool,
-    pub winner: Option<Pubkey>,
+    pub winner_found: bool, // Keep for backward compatibility
+    pub winner: Option<Pubkey>, // Keep for backward compatibility (first winner)
+    pub winners: Vec<Pubkey>, // All winners
     pub bump: u8,
 }
 
@@ -79,23 +82,27 @@ impl Game {
         capsule_id: Pubkey,
         creator: Pubkey,
         max_guesses: u32,
+        max_winners: u32,
         bump: u8,
     ) -> Self {
         Self {
             capsule_id,
             creator,
             max_guesses,
+            max_winners,
             current_guesses: 0,
+            winners_found: 0,
             total_participants: 0,
             is_active: true,
             winner_found: false,
             winner: None,
+            winners: Vec::new(),
             bump,
         }
     }
     
     pub fn can_accept_guess(&self) -> bool {
-        self.is_active && !self.winner_found && self.current_guesses < self.max_guesses
+        self.is_active && self.winners_found < self.max_winners && self.current_guesses < self.max_guesses
     }
     
     pub fn add_guess(&mut self) {
@@ -104,8 +111,19 @@ impl Game {
     }
     
     pub fn set_winner(&mut self, winner: Pubkey) {
-        self.winner = Some(winner);
+        // Add to winners list
+        self.winners.push(winner);
+        self.winners_found += 1;
+        
+        // Update backward compatibility fields
+        if self.winner.is_none() {
+            self.winner = Some(winner);
+        }
         self.winner_found = true;
+    }
+    
+    pub fn should_end_game(&self) -> bool {
+        self.winners_found >= self.max_winners || self.current_guesses >= self.max_guesses
     }
     
     pub fn end_game(&mut self) {

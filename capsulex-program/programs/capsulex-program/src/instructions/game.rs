@@ -62,7 +62,7 @@ pub struct SubmitGuess<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(decrypted_content: String, verification_window_hours: Option<u8>)]
+#[instruction(decrypted_content: String, verification_window_hours: Option<u8>, semantic_result: bool)]
 pub struct VerifyGuess<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -75,7 +75,7 @@ pub struct VerifyGuess<'info> {
     
     #[account(
         mut,
-        constraint = !game.winner_found @ CapsuleXError::WinnerAlreadyFound
+        constraint = game.winners_found < game.max_winners @ CapsuleXError::WinnerAlreadyFound
     )]
     pub game: Account<'info, Game>,
     
@@ -98,11 +98,13 @@ pub struct CompleteGame<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     
-    #[account(
-        mut,
-        constraint = game.winner_found || game.current_guesses >= game.max_guesses @ CapsuleXError::GameNotEnded
-    )]
+    #[account(mut)]
     pub game: Account<'info, Game>,
+    
+    #[account(
+        constraint = capsule.key() == game.capsule_id,
+    )]
+    pub capsule: Account<'info, Capsule>,
     
     #[account(
         mut,
@@ -118,10 +120,17 @@ pub fn initialize_game(
     ctx: Context<InitializeGame>,
     capsule_id: Pubkey,
     max_guesses: u32,
+    max_winners: u32,
 ) -> Result<()> {
     // Validate max guesses
     require!(
         max_guesses > 0 && max_guesses <= MAX_GUESSES_PER_GAME,
+        CapsuleXError::InvalidFeeAmount
+    );
+    
+    // Validate max winners (can't exceed max guesses)
+    require!(
+        max_winners > 0 && max_winners <= max_guesses,
         CapsuleXError::InvalidFeeAmount
     );
     
@@ -131,6 +140,7 @@ pub fn initialize_game(
         capsule_id,
         ctx.accounts.creator.key(),
         max_guesses,
+        max_winners,
         ctx.bumps.game,
     );
     
@@ -211,6 +221,7 @@ pub fn verify_guess(
     ctx: Context<VerifyGuess>,
     decrypted_content: String,
     verification_window_hours: Option<u8>,
+    semantic_result: bool,
 ) -> Result<()> {
     let guess = &mut ctx.accounts.guess;
     let game = &mut ctx.accounts.game;
@@ -218,6 +229,9 @@ pub fn verify_guess(
     
     // Ensure the capsule has been revealed
     require!(capsule.is_revealed, CapsuleXError::CapsuleNotReady);
+    
+    // Ensure the game is still active and accepting verifications
+    require!(game.is_active, CapsuleXError::GameNotActive);
     
     // Check if we're within the verification window
     let clock = Clock::get()?;
@@ -229,20 +243,27 @@ pub fn verify_guess(
         CapsuleXError::GameNotEnded
     );
     
-    // Verify the guess against the decrypted content
-    let is_correct = guess.guess_content.trim().to_lowercase() == decrypted_content.trim().to_lowercase();
+    // Use semantic validation result from oracle
+    // The semantic service has already been called off-chain and result passed in
+    // TODO: Add signature verification for oracle result in production
+    let is_correct = semantic_result;
     
     // Update leaderboard for participation
     let leaderboard = &mut ctx.accounts.leaderboard;
     leaderboard.add_game_played();
     leaderboard.add_points(PARTICIPATION_POINTS);
     
-    if is_correct && !game.winner_found {
+    if is_correct && game.winners_found < game.max_winners {
         // Mark guess as correct
         guess.mark_correct();
         
-        // Set winner in game
+        // Add this player as a winner
         game.set_winner(guess.guesser);
+        
+        // Check if game should end (reached max winners or max guesses)
+        if game.should_end_game() {
+            game.end_game();
+        }
         
         // Award winner points
         leaderboard.add_game_won(WINNER_POINTS);
@@ -275,9 +296,23 @@ pub fn verify_guess(
 pub fn complete_game(ctx: Context<CompleteGame>) -> Result<()> {
     let game = &mut ctx.accounts.game;
     
-    // Ensure game has ended (winner found or max guesses reached)
+    let clock = Clock::get()?;
+    let capsule = &ctx.accounts.capsule;
+    
+    // Game can be completed in these scenarios:
+    // 1. Max winners reached
+    // 2. Max guesses reached  
+    // 3. No guesses submitted yet (creator can cancel)
+    // 4. After reveal date (creator can end anytime after reveal)
+    // 5. After reveal + 1 hour verification window (auto-complete allowed)
+    
+    let max_conditions_met = game.winners_found >= game.max_winners || game.current_guesses >= game.max_guesses;
+    let no_guesses_yet = game.current_guesses == 0;
+    let after_reveal = capsule.is_revealed && clock.unix_timestamp >= capsule.reveal_date;
+    let verification_window_expired = capsule.is_revealed && clock.unix_timestamp >= (capsule.reveal_date + 3600); // +1 hour
+    
     require!(
-        game.winner_found || game.current_guesses >= game.max_guesses,
+        max_conditions_met || no_guesses_yet || after_reveal || verification_window_expired,
         CapsuleXError::GameNotEnded
     );
     

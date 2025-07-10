@@ -48,12 +48,16 @@ pub const GAME_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // capsule_id
     32 + // creator
     4 + // max_guesses
+    4 + // max_winners (new)
     4 + // current_guesses
+    4 + // winners_found (new)
     4 + // total_participants
     1 + // is_active
-    1 + // winner_found
-    32 + // winner (optional)
-    32; // padding
+    1 + // winner_found (backward compatibility)
+    32 + // winner (optional, backward compatibility)
+    4 + (32 * 10) + // winners: Vec<Pubkey> - reserve space for up to 10 winners
+    1 + // bump
+    128; // padding (increased for future expansion)
 
 pub const GUESS_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // game_id
