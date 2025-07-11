@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::{
     constants::*, 
     errors::CapsuleXError, 
-    state::{Capsule, ProgramVault, ContentStorage}
+    state::{Capsule, ContentStorage, ProgramVault}
 };
 
 #[derive(Accounts)]
@@ -92,11 +92,8 @@ pub fn create_capsule(
         CapsuleXError::InvalidRevealDate
     );
     
-    // Calculate fee based on storage type
-    let fee_amount = match content_storage {
-        ContentStorage::OnChain => CAPSULE_CREATION_FEE * 2, // 2x fee for on-chain storage
-        ContentStorage::IPFS => CAPSULE_CREATION_FEE, // Standard fee for IPFS storage
-    };
+    // Collect capsule creation fee
+    let fee_amount = CAPSULE_CREATION_FEE;
     
     let transfer_instruction = anchor_lang::solana_program::system_instruction::transfer(
         &ctx.accounts.creator.key(),
@@ -113,7 +110,6 @@ pub fn create_capsule(
         ],
     )?;
     
-    // Update vault
     ctx.accounts.vault.add_fees(fee_amount);
     
     // Initialize capsule (content is already encrypted on device)
@@ -135,7 +131,7 @@ pub fn create_capsule(
         reveal_date,
         is_gamified,
         content_storage: capsule.content_storage.clone(),
-        fee_amount,
+        fee_amount, // Actual fee collected
     });
     
     Ok(())

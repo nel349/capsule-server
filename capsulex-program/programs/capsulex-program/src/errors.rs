@@ -109,4 +109,10 @@ pub enum CapsuleXError {
     
     #[msg("Leaderboard entry not found.")]
     LeaderboardEntryNotFound,
+    
+    #[msg("Invalid oracle signature.")]
+    InvalidOracleSignature,
+    
+    #[msg("Oracle signature has expired.")]
+    OracleSignatureExpired,
 } 

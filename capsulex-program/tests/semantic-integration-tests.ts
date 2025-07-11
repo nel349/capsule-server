@@ -13,12 +13,28 @@ const SEMANTIC_SERVICE_URL = "http://localhost:5001";
 const DEFAULT_THRESHOLD = 0.8;
 
 // Helper function to call semantic service
-async function callSemanticService(guess: string, answer: string, threshold: number = DEFAULT_THRESHOLD) {
+async function callSemanticService(guess: string, answer: string, threshold: number = DEFAULT_THRESHOLD, provider?: any) {
   try {
+    // Get Solana validator timestamp for uniform time across systems
+    let solanaTimestamp;
+    if (provider) {
+      try {
+        const slot = await provider.connection.getSlot();
+        const blockTime = await provider.connection.getBlockTime(slot);
+        solanaTimestamp = blockTime || Math.floor(Date.now() / 1000);
+      } catch (error) {
+        console.warn("Failed to get Solana time, using system time:", error.message);
+        solanaTimestamp = Math.floor(Date.now() / 1000);
+      }
+    } else {
+      solanaTimestamp = Math.floor(Date.now() / 1000);
+    }
+
     const response = await axios.post(`${SEMANTIC_SERVICE_URL}/check-answer`, {
       guess: guess,
       answer: answer,
-      threshold: threshold
+      threshold: threshold,
+      timestamp: solanaTimestamp
     });
     
     return {
@@ -26,7 +42,11 @@ async function callSemanticService(guess: string, answer: string, threshold: num
       similarity: response.data.similarity,
       threshold: response.data.threshold,
       method: response.data.method,
-      tier: response.data.tier || 2
+      tier: response.data.tier || 2,
+      oracle_timestamp: response.data.oracle_timestamp,
+      oracle_nonce: response.data.oracle_nonce,
+      oracle_signature: response.data.oracle_signature,
+      oracle_enabled: response.data.oracle_enabled
     };
   } catch (error) {
     // More detailed error reporting
@@ -50,7 +70,11 @@ async function callSemanticService(guess: string, answer: string, threshold: num
       similarity: exact_match ? 1.0 : 0.0,
       threshold: threshold,
       method: "exact_match_fallback",
-      tier: 1
+      tier: 1,
+      oracle_timestamp: Math.floor(Date.now() / 1000),
+      oracle_nonce: "fallback_nonce",
+      oracle_signature: "",
+      oracle_enabled: false
     };
   }
 }
@@ -208,8 +232,8 @@ describe("Semantic Answer Validation Integration", () => {
         capsule: capsulePda,
       } as any).rpc();
       
-      // Call semantic service
-      const semanticResult = await callSemanticService(testGuess, secretAnswer, DEFAULT_THRESHOLD);
+      // Call semantic service with Solana validator time
+      const semanticResult = await callSemanticService(testGuess, secretAnswer, DEFAULT_THRESHOLD, provider);
       console.log(`📊 direct synonym: "${testGuess}" vs "${secretAnswer}"`);
       console.log(`   Similarity: ${semanticResult.similarity}, Method: ${semanticResult.method}, Tier: ${semanticResult.tier}`);
       
@@ -226,11 +250,14 @@ describe("Semantic Answer Validation Integration", () => {
         systemProgram: SystemProgram.programId,
       } as any).signers([gamePlayer]).rpc();
       
-      // Verify guess with semantic result
+      // Verify guess with semantic result and Oracle signature
       await program.methods.verifyGuess(
         secretAnswer,
         null, // verification_window_hours
-        semanticResult.is_correct // Only need the boolean result
+        semanticResult.is_correct,
+        new anchor.BN(semanticResult.oracle_timestamp || Math.floor(Date.now() / 1000)),
+        semanticResult.oracle_nonce || "fallback_nonce",
+        semanticResult.oracle_signature || ""
       ).accounts({
         authority: gamePlayer.publicKey,
         guess: guessPda,
@@ -324,8 +351,8 @@ describe("Semantic Answer Validation Integration", () => {
           } as any).rpc();
         }
         
-        // Call semantic service
-        const semanticResult = await callSemanticService(testCase.guess, secretAnswer, DEFAULT_THRESHOLD);
+        // Call semantic service with Solana validator time
+        const semanticResult = await callSemanticService(testCase.guess, secretAnswer, DEFAULT_THRESHOLD, provider);
         console.log(`📊 ${testCase.description}: "${testCase.guess}" vs "${secretAnswer}"`);
         console.log(`   Similarity: ${semanticResult.similarity}, Expected: ❌ INCORRECT`);
         
@@ -344,11 +371,14 @@ describe("Semantic Answer Validation Integration", () => {
           } as any).signers([gamePlayer]).rpc();
         }
         
-        // Verify guess  
+        // Verify guess with Oracle signature
         await program.methods.verifyGuess(
           secretAnswer,
           null,
-          semanticResult.is_correct
+          semanticResult.is_correct,
+          new anchor.BN(semanticResult.oracle_timestamp || Math.floor(Date.now() / 1000)),
+          semanticResult.oracle_nonce || "fallback_nonce",
+          semanticResult.oracle_signature || ""
         ).accounts({
           authority: gamePlayer.publicKey,
           guess: guessPda,
@@ -428,8 +458,8 @@ describe("Semantic Answer Validation Integration", () => {
         capsule: capsulePda,
       } as any).rpc();
       
-      // Test semantic service with verbose content
-      const semanticResult = await callSemanticService(verboseGuess, secretAnswer, DEFAULT_THRESHOLD);
+      // Test semantic service with verbose content using Solana validator time
+      const semanticResult = await callSemanticService(verboseGuess, secretAnswer, DEFAULT_THRESHOLD, provider);
       console.log(`📊 Verbose answer test:`);
       console.log(`   Guess: "${verboseGuess.substring(0, 100)}..."`);
       console.log(`   Answer: "${secretAnswer}"`);
@@ -448,11 +478,14 @@ describe("Semantic Answer Validation Integration", () => {
         systemProgram: SystemProgram.programId,
       } as any).signers([gamePlayer]).rpc();
       
-      // Verify verbose guess
+      // Verify verbose guess with Oracle signature
       await program.methods.verifyGuess(
         secretAnswer,
         null,
-        semanticResult.is_correct
+        semanticResult.is_correct,
+        new anchor.BN(semanticResult.oracle_timestamp || Math.floor(Date.now() / 1000)),
+        semanticResult.oracle_nonce || "fallback_nonce",
+        semanticResult.oracle_signature || ""
       ).accounts({
         authority: gamePlayer.publicKey,
         guess: guessPda,
@@ -572,19 +605,22 @@ describe("Semantic Answer Validation Integration", () => {
           systemProgram: SystemProgram.programId,
         } as any).signers([player]).rpc();
         
-        // Get semantic result
-        const semanticResult = await callSemanticService(guess, secretAnswer, DEFAULT_THRESHOLD);
+        // Get semantic result using Solana validator time
+        const semanticResult = await callSemanticService(guess, secretAnswer, DEFAULT_THRESHOLD, provider);
         console.log(`📊 Player ${i + 1} (${description}): "${guess}" vs "${secretAnswer}"`);
         console.log(`   Similarity: ${semanticResult.similarity}, Method: ${semanticResult.method}`);
         
         // Check if game is still active before verifying
         const gameState = await program.account.game.fetch(gamePda);
         if (gameState.isActive) {
-          // Verify guess  
+          // Verify guess with Oracle signature
           await program.methods.verifyGuess(
             secretAnswer,
             null,
-            semanticResult.is_correct
+            semanticResult.is_correct,
+            new anchor.BN(semanticResult.oracle_timestamp || Math.floor(Date.now() / 1000)),
+            semanticResult.oracle_nonce || "fallback_nonce",
+            semanticResult.oracle_signature || ""
           ).accounts({
             authority: player.publicKey,
             guess: guessPda,
@@ -692,15 +728,18 @@ describe("Semantic Answer Validation Integration", () => {
         systemProgram: SystemProgram.programId,
       } as any).signers([gamePlayer]).rpc();
       
-      // Get semantic result and verify
-      const semanticResult = await callSemanticService("car", secretAnswer, DEFAULT_THRESHOLD);
+      // Get semantic result and verify using Solana validator time
+      const semanticResult = await callSemanticService("car", secretAnswer, DEFAULT_THRESHOLD, provider);
       console.log(`📊 Single winner test: "car" vs "${secretAnswer}"`);
       console.log(`   Similarity: ${semanticResult.similarity}, Method: ${semanticResult.method}`);
       
       await program.methods.verifyGuess(
         secretAnswer,
         null,
-        semanticResult.is_correct
+        semanticResult.is_correct,
+        new anchor.BN(semanticResult.oracle_timestamp || Math.floor(Date.now() / 1000)),
+        semanticResult.oracle_nonce || "fallback_nonce",
+        semanticResult.oracle_signature || ""
       ).accounts({
         authority: gamePlayer.publicKey,
         guess: guessPda,
@@ -794,11 +833,14 @@ describe("Semantic Answer Validation Integration", () => {
         systemProgram: SystemProgram.programId,
       } as any).signers([gamePlayer]).rpc();
       
-      // Test semantic result (should pass with simplified interface)
+      // Test semantic result with Oracle signature (should pass with simplified interface)
       await program.methods.verifyGuess(
         secretAnswer,
         null,
-        true  // semantic_result
+        true,  // semantic_result
+        new anchor.BN(Math.floor(Date.now() / 1000)), // oracle_timestamp
+        "test_nonce", // oracle_nonce
+        "" // oracle_signature (empty for fallback test)
       ).accounts({
         authority: gamePlayer.publicKey,
         guess: guessPda,

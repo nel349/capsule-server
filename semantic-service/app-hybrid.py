@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
+import time
 from openai import OpenAI
 from typing import Optional, Tuple
 import logging
@@ -268,6 +269,24 @@ def hybrid_check_answer(guess: str, answer: str, threshold: float = 0.8) -> dict
     guess_clean = guess.strip().lower()
     answer_clean = answer.strip().lower()
     
+    # Early validation: Empty or whitespace-only guesses are always wrong
+    if not guess_clean or len(guess_clean) == 0:
+        return {
+            "is_correct": False,
+            "similarity": 0.0,
+            "method": "empty_string_validation",
+            "tier": 1
+        }
+    
+    # Early validation: Empty answer (shouldn't happen but defensive)
+    if not answer_clean or len(answer_clean) == 0:
+        return {
+            "is_correct": False,
+            "similarity": 0.0,
+            "method": "empty_answer_validation",
+            "tier": 1
+        }
+    
     # Tier 1: Exact match check (free and instant)
     if guess_clean == answer_clean:
         return {
@@ -364,12 +383,13 @@ def check_answer():
         guess = data['guess']
         answer = data['answer']
         threshold = data.get('threshold', 0.8)
+        # Use provided timestamp (from Solana validator) or current system time
+        timestamp = data.get('timestamp', int(time.time()))
         
         result = hybrid_check_answer(guess, answer, threshold)
         result['threshold'] = threshold
         
         # Add oracle signature for security
-        timestamp = int(time.time())
         nonce = secrets.token_urlsafe(16)  # 128-bit random nonce
         
         signature = create_oracle_signature(

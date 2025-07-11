@@ -37,11 +37,21 @@ function getNftMintPda(capsule: PublicKey, programId: PublicKey) {
   return pda;
 }
 
-function getDefaultAccounts({ provider, capsulePda, nftMintPda }) {
+// Helper function to get vault PDA
+function getVaultPda(programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from(VAULT_SEED)],
+    programId
+  );
+  return pda;
+}
+
+function getDefaultAccounts({ provider, capsulePda, nftMintPda, programId }) {
   return {
     creator: provider.wallet.publicKey,
     capsule: capsulePda,
     nftMint: nftMintPda,
+    vault: getVaultPda(programId),
     systemProgram: SystemProgram.programId,
     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -55,8 +65,35 @@ describe("CapsuleX Game Instructions", () => {
   const program = anchor.workspace.capsulex as Program<Capsulex>;
 
   before(async () => {
-    // No vault initialization needed with device-side encryption
     console.log("Starting tests with device-side encryption");
+    
+    // Find the vault PDA
+    const [vaultPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(VAULT_SEED)],
+      program.programId
+    );
+
+    // Initialize the program and vault if not already initialized
+    try {
+      await program.methods.initializeProgram()
+        .accounts({
+          authority: provider.wallet.publicKey,
+          vault: vaultPda,
+          systemProgram: SystemProgram.programId,
+        } as any)
+        .rpc();
+      console.log("✅ Program and vault initialized.");
+    } catch (error) {
+      if (error.logs && (
+        error.logs.some((log: string) => log.includes("Already initialized")) ||
+        error.logs.some((log: string) => log.includes("already in use"))
+      )) {
+        console.log("✅ Program and vault already initialized.");
+      } else {
+        console.log("⚠️ Vault initialization failed:", error.message);
+        // Continue with tests even if vault init fails (might already exist)
+      }
+    }
   });
 
   it("Game: Initialize game with correct parameters", async () => {
@@ -71,6 +108,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -128,6 +166,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -161,6 +200,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: freePda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
@@ -174,6 +214,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: paidPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any).rpc();
     
@@ -206,6 +247,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -251,6 +293,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer1.publicKey,
       game: gamePda,
       guess: guess1Pda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any)
     .signers([gamePlayer1])
@@ -269,6 +312,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer2.publicKey,
       game: gamePda,
       guess: guess2Pda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any)
     .signers([gamePlayer2])
@@ -296,7 +340,9 @@ describe("CapsuleX Game Instructions", () => {
   it("Game: Verify guess after capsule reveal (delayed verification)", async () => {
     // Clear naming: capsule creator vs game player/guesser
     const capsuleCreator = provider.wallet; // Use provider wallet as capsule creator
-    const gamePlayer = provider.wallet; // Same player for this test
+    const gamePlayer = anchor.web3.Keypair.generate(); // Same player for this test
+    await provider.connection.requestAirdrop(gamePlayer.publicKey, 1000000000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Get the validator's current time instead of system time
     const slot = await provider.connection.getSlot();
@@ -310,6 +356,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -319,7 +366,7 @@ describe("CapsuleX Game Instructions", () => {
     const encryptionKey = "testkey1234567890123456789012345678";
     const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
     
-    await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+    await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true).accounts(accounts as any).signers([capsuleCreator.payer]).rpc();
     
     // Initialize game
     const [gamePda] = PublicKey.findProgramAddressSync(
@@ -335,7 +382,7 @@ describe("CapsuleX Game Instructions", () => {
       capsule: capsulePda,
       game: gamePda,
       systemProgram: SystemProgram.programId,
-    } as any).rpc();
+    } as any).signers([capsuleCreator.payer]).rpc();
     
     // Submit correct guess (game player submits guess)
     const [correctGuessPda] = PublicKey.findProgramAddressSync(
@@ -347,8 +394,9 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: correctGuessPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
-    } as any).rpc();
+    } as any).signers([gamePlayer]).rpc();
     
     // Submit wrong guess (game player submits another guess)
     const [wrongGuessPda] = PublicKey.findProgramAddressSync(
@@ -360,8 +408,9 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: wrongGuessPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
-    } as any).rpc();
+    } as any).signers([gamePlayer]).rpc();
     
     // Wait for reveal date (extra buffer for timing)
     // console.log(`Reveal date: ${revealDate.toNumber()}, Current time: ${Math.floor(Date.now() / 1000)}`);
@@ -379,7 +428,7 @@ describe("CapsuleX Game Instructions", () => {
     await program.methods.revealCapsule(revealDate).accounts({
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
-    } as any).rpc();
+    } as any).signers([capsuleCreator.payer]).rpc();
     
     // Initialize leaderboard for verification (game player initializes their leaderboard)
     const [leaderboardPda] = PublicKey.findProgramAddressSync(
@@ -394,7 +443,7 @@ describe("CapsuleX Game Instructions", () => {
         user: gamePlayer.publicKey,
         leaderboard: leaderboardPda,
         systemProgram: SystemProgram.programId,
-      } as any).rpc();
+      } as any).signers([gamePlayer]).rpc();
     } catch (error) {
       console.log("Leaderboard already exists, continuing...");
     }
@@ -403,27 +452,33 @@ describe("CapsuleX Game Instructions", () => {
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
       null, // verification_window_hours
-      false // semantic_result
+      false, // semantic_result
+      new anchor.BN(Math.floor(Date.now() / 1000)), // oracle_timestamp
+      "test_nonce_wrong", // oracle_nonce
+      "" // oracle_signature (empty for fallback test)
     ).accounts({
       authority: gamePlayer.publicKey,
       guess: wrongGuessPda,
       game: gamePda,
       capsule: capsulePda,
       leaderboard: leaderboardPda,
-    } as any).rpc();
+    } as any).signers([gamePlayer]).rpc();
     
     // Verify correct guess (game player verifies their winning guess)
     await program.methods.verifyGuess(
       secretAnswer, // decrypted_content
       null, // verification_window_hours (default 1 hour)
-      true // semantic_result
+      true, // semantic_result
+      new anchor.BN(Math.floor(Date.now() / 1000)), // oracle_timestamp
+      "test_nonce_correct", // oracle_nonce
+      "" // oracle_signature (empty for fallback test)
     ).accounts({
       authority: gamePlayer.publicKey,
       guess: correctGuessPda,
       game: gamePda,
       capsule: capsulePda,
       leaderboard: leaderboardPda,
-    } as any).rpc();
+    } as any).signers([gamePlayer]).rpc();
     
     // Check results
     const finalGame = await program.account.game.fetch(gamePda);
@@ -451,6 +506,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -490,6 +546,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayerWinner.publicKey,
       game: gamePda,
       guess: guessPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any)
     .signers([gamePlayerWinner])
@@ -515,7 +572,11 @@ describe("CapsuleX Game Instructions", () => {
       systemProgram: SystemProgram.programId,
     } as any).signers([gamePlayerWinner]).rpc();
     
-    await program.methods.verifyGuess("reward test", null, true).accounts({
+    await program.methods.verifyGuess("reward test", null, true,
+      new anchor.BN(Math.floor(Date.now() / 1000)), // oracle_timestamp
+      "test_nonce_reward", // oracle_nonce
+      "" // oracle_signature (empty for fallback test)
+    ).accounts({
       authority: gamePlayerWinner.publicKey,
       guess: guessPda,
       game: gamePda,
@@ -583,6 +644,7 @@ describe("CapsuleX Game Instructions", () => {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -615,6 +677,7 @@ describe("CapsuleX Game Instructions", () => {
       guesser: gamePlayer.publicKey,
       game: gamePda,
       guess: guessPda,
+      vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
     } as any).signers([gamePlayer]).rpc();
     
@@ -634,7 +697,11 @@ describe("CapsuleX Game Instructions", () => {
     
     // Try to verify guess before reveal (should fail)
     try {
-      await program.methods.verifyGuess("test", null, false).accounts({
+      await program.methods.verifyGuess("test", null, false,
+        new anchor.BN(Math.floor(Date.now() / 1000)), // oracle_timestamp
+        "test_nonce_fail", // oracle_nonce
+        "" // oracle_signature (empty for fallback test)
+      ).accounts({
         authority: gamePlayer.publicKey,        // Player verifies their own guess
         guess: guessPda,
         game: gamePda,
@@ -662,6 +729,7 @@ describe("CapsuleX Game Instructions", () => {
         creator: capsuleCreator.publicKey,
         capsule: capsulePda,
         nftMint: nftMintPda,
+        vault: getVaultPda(program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -727,6 +795,7 @@ describe("CapsuleX Game Instructions", () => {
         creator: capsuleCreator.publicKey,
         capsule: capsulePda,
         nftMint: nftMintPda,
+        vault: getVaultPda(program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -760,6 +829,7 @@ describe("CapsuleX Game Instructions", () => {
         guesser: gamePlayer.publicKey,
         game: gamePda,
         guess: guessPda,
+        vault: getVaultPda(program.programId),
         systemProgram: SystemProgram.programId,
       } as any).signers([gamePlayer]).rpc();
       
@@ -824,6 +894,7 @@ describe("CapsuleX Game Instructions", () => {
         creator: capsuleCreator.publicKey,
         capsule: capsulePda,
         nftMint: nftMintPda,
+        vault: getVaultPda(program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -855,6 +926,7 @@ describe("CapsuleX Game Instructions", () => {
           guesser: capsuleCreator.publicKey,
           game: gamePda,
           guess: guessPda,
+          vault: getVaultPda(program.programId),
           systemProgram: SystemProgram.programId,
         } as any).rpc();
       }

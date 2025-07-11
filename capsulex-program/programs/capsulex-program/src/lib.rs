@@ -70,8 +70,11 @@ pub mod capsulex {
         decrypted_content: String,
         verification_window_hours: Option<u8>,
         semantic_result: bool,
+        oracle_timestamp: i64,
+        oracle_nonce: String,
+        oracle_signature: String,
     ) -> Result<()> {
-        instructions::verify_guess(ctx, decrypted_content, verification_window_hours, semantic_result)
+        instructions::verify_guess(ctx, decrypted_content, verification_window_hours, semantic_result, oracle_timestamp, oracle_nonce, oracle_signature)
     }
 
     pub fn complete_game(
