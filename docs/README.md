@@ -4,6 +4,7 @@
 
 ### Core Documentation
 - **[SEMANTIC_INTEGRATION.md](./SEMANTIC_INTEGRATION.md)** - Complete guide to AI-powered semantic answer validation with Oracle security
+- **[NFT_SYSTEM.md](./NFT_SYSTEM.md)** - Comprehensive NFT system with capsule ownership, badges, and trophies
 - **[ANCHOR_PROGRAM_SUMMARY.md](./ANCHOR_PROGRAM_SUMMARY.md)** - Solana program architecture overview
 - **[CapsuleXImplementation.md](./CapsuleXImplementation.md)** - Core platform implementation details
 
@@ -22,6 +23,34 @@ CapsuleX features an advanced semantic answer validation system that replaces ri
 ### Architecture
 ```
 Client → Semantic Service (AI + Signatures) → Solana Program (Verification)
+```
+
+## 🏆 NFT Achievement System
+
+### Overview
+CapsuleX implements a comprehensive **3-tier NFT system** that transforms gaming achievements into valuable, tradeable digital assets. Unlike speculative NFT projects, these NFTs represent real platform accomplishments and utility.
+
+### NFT Types
+- **🏺 Capsule NFTs**: Ownership tokens for time capsules (transferable ownership)
+- **🏆 Winner Badge NFTs**: Achievement tokens for game wins (collectible proof)
+- **🏅 Trophy NFTs**: Milestone tokens for platform achievements (status symbols)
+
+### Value Proposition
+- **Earned Not Bought**: Primary acquisition through actual gameplay
+- **Utility-Driven**: NFTs tied to platform functionality and achievements
+- **Tradeable Assets**: All NFTs can be sold/traded on Solana marketplaces
+- **Social Proof**: Verifiable on-chain achievements and status
+
+### **REVISED** Economic Model (Market-Competitive 2025)
+```
+Revenue Sources:
+- Badge Minting: 0.005 SOL (~$1.00) per achievement badge
+- Trophy Minting: 0.025 SOL (~$5.00) per milestone trophy  
+- Special Trophies: 0.05 SOL (~$10.00) for rare achievements
+- Market-Rate Model: Competitive fees × quality achievements = significant revenue
+
+Revenue Impact: 1000x increase in secondary revenue stream
+Annual Potential: $100,000+ from NFT minting (vs. previous $60)
 ```
 
 ## 🚀 Quick Start
@@ -59,6 +88,7 @@ cd capsulex-program && anchor run test-semantic
 docs/
 ├── README.md                    # This index (you are here)
 ├── SEMANTIC_INTEGRATION.md      # 🔒 Complete semantic validation guide
+├── NFT_SYSTEM.md                # 🏆 Comprehensive NFT achievement system
 ├── ANCHOR_PROGRAM_SUMMARY.md    # 🏗️ Solana program architecture
 └── CapsuleXImplementation.md    # 🎮 Core platform implementation
 ```
