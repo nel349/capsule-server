@@ -3,16 +3,44 @@ use crate::constants::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum ContentStorage {
-    OnChain,  // Content stored directly in encrypted_content field
-    IPFS,     // IPFS hash stored in encrypted_content field, actual content on IPFS
+    // Plain text content (< 280 chars)
+    Text,
+    
+    // Large text/files stored on IPFS
+    Document { cid: String },
+    
+    // Preserved social media content with verification
+    SocialArchive {
+        original_url: String,
+        archived_cid: String,
+        platform: String,          // "x.com", "instagram", "tiktok", etc
+        capture_timestamp: i64,
+        content_hash: String,      // SHA256 for integrity verification
+    },
+    
+    // Multi-media bundles (photos, videos, mixed content)
+    MediaBundle {
+        primary_cid: String,       // Main content CID
+        attachments: Vec<String>,  // Additional media CIDs
+        manifest_cid: String,      // Metadata manifest CID
+        total_size_bytes: u64,     // For storage cost calculation
+    },
+    
+    // External references with backup (links + archive)
+    ExternalWithBackup {
+        original_url: String,
+        backup_cid: String,        // Archived version on IPFS
+        verification_hash: String,
+    }
 }
 
 #[account]
 pub struct Capsule {
     pub creator: Pubkey,
     pub nft_mint: Pubkey,
-    pub encrypted_content: String, // Encrypted with device key (OnChain) OR IPFS hash
-    pub content_storage: ContentStorage, // OnChain or IPFS
+    pub encrypted_content: String, // Encrypted content or reference based on storage type
+    pub content_storage: ContentStorage, // Storage type and metadata
+    pub content_integrity_hash: String, // SHA256 of original content for verification
     pub reveal_date: i64,
     pub created_at: i64,
     pub is_gamified: bool,
@@ -29,6 +57,7 @@ impl Capsule {
         nft_mint: Pubkey,
         encrypted_content: String,
         content_storage: ContentStorage,
+        content_integrity_hash: String,
         reveal_date: i64,
         is_gamified: bool,
         bump: u8,
@@ -40,6 +69,7 @@ impl Capsule {
             nft_mint,
             encrypted_content,
             content_storage,
+            content_integrity_hash,
             reveal_date,
             created_at: clock.unix_timestamp,
             is_gamified,

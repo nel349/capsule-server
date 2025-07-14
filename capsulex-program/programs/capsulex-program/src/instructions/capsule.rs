@@ -6,8 +6,21 @@ use crate::{
     state::{Capsule, ContentStorage, ProgramVault}
 };
 
+// Light on-chain validation helpers (avoid expensive char iteration)
+fn is_valid_sha256_length(hash: &str) -> bool {
+    hash.len() == 64  // Just check length, client validates hex format
+}
+
+fn is_valid_ipfs_cid_format(cid: &str) -> bool {
+    cid.len() >= 46 && cid.len() <= 59 && cid.starts_with("Qm")
+}
+
+fn is_valid_url_format(url: &str) -> bool {
+    url.len() >= 12 && url.len() <= 500 && url.starts_with("https://")
+}
+
 #[derive(Accounts)]
-#[instruction(encrypted_content: String, content_storage: ContentStorage, reveal_date: i64, is_gamified: bool)]
+#[instruction(encrypted_content: String, content_storage: ContentStorage, content_integrity_hash: String, reveal_date: i64, is_gamified: bool)]
 pub struct CreateCapsule<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -63,6 +76,7 @@ pub fn create_capsule(
     ctx: Context<CreateCapsule>,
     encrypted_content: String,
     content_storage: ContentStorage,
+    content_integrity_hash: String,
     reveal_date: i64,
     is_gamified: bool,
 ) -> Result<()> {
@@ -70,20 +84,41 @@ pub fn create_capsule(
     let current_time = clock.unix_timestamp;
     
     // Validate content based on storage type
-    match content_storage {
-        ContentStorage::OnChain => {
+    match &content_storage {
+        ContentStorage::Text => {
             require!(
                 encrypted_content.len() <= MAX_ONCHAIN_CONTENT_LENGTH,
                 CapsuleXError::ContentHashTooLong
             );
         },
-        ContentStorage::IPFS => {
-            require!(
-                encrypted_content.starts_with("Qm") && (46..=59).contains(&encrypted_content.len()),
-                CapsuleXError::ContentHashTooLong
-            );
+        ContentStorage::Document { cid } => {
+            require!(is_valid_ipfs_cid_format(cid), CapsuleXError::InvalidCID);
+        },
+        ContentStorage::SocialArchive { original_url, archived_cid, platform, content_hash, .. } => {
+            require!(is_valid_url_format(original_url), CapsuleXError::InvalidURL);
+            require!(is_valid_ipfs_cid_format(archived_cid), CapsuleXError::InvalidCID);
+            require!(platform.len() <= 20, CapsuleXError::UnsupportedPlatform);  // Basic length check
+            require!(is_valid_sha256_length(content_hash), CapsuleXError::InvalidContentHash);
+        },
+        ContentStorage::MediaBundle { primary_cid, attachments, manifest_cid, total_size_bytes } => {
+            require!(is_valid_ipfs_cid_format(primary_cid), CapsuleXError::InvalidCID);
+            require!(is_valid_ipfs_cid_format(manifest_cid), CapsuleXError::InvalidCID);
+            require!(attachments.len() <= 50, CapsuleXError::TooManyAttachments);
+            // Skip individual attachment validation to save compute (client validates)
+            require!(*total_size_bytes <= 1_000_000_000, CapsuleXError::ContentTooLarge);
+        },
+        ContentStorage::ExternalWithBackup { original_url, backup_cid, verification_hash } => {
+            require!(is_valid_url_format(original_url), CapsuleXError::InvalidURL);
+            require!(is_valid_ipfs_cid_format(backup_cid), CapsuleXError::InvalidCID);
+            require!(is_valid_sha256_length(verification_hash), CapsuleXError::InvalidContentHash);
         }
     }
+    
+    // Validate content integrity hash (length only - client validates hex format)
+    require!(
+        is_valid_sha256_length(&content_integrity_hash),
+        CapsuleXError::InvalidContentHash
+    );
     
     // Validate reveal date
     require!(
@@ -119,6 +154,7 @@ pub fn create_capsule(
         ctx.accounts.nft_mint.key(),
         encrypted_content,
         content_storage,
+        content_integrity_hash,
         reveal_date,
         is_gamified,
         ctx.bumps.capsule,

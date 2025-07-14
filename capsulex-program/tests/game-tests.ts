@@ -6,6 +6,12 @@ import { describe, before, it } from "mocha";
 import { VAULT_SEED, CAPSULE_SEED, CAPSULE_MINT_SEED } from "./constants";
 import CryptoJS from "crypto-js";
 import { expect } from "chai";
+import crypto from "crypto";
+
+// Helper function to create content integrity hash
+function createSHA256Hash(content: string): string {
+  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+}
 
 // Helper functions for PDA generation (matching existing test style)
 function getCapsulePda(creator: PublicKey, revealDate: anchor.BN, programId: PublicKey) {
@@ -115,9 +121,12 @@ describe("CapsuleX Game Instructions", () => {
     };
     
     // Create gamified capsule first (capsule creator creates their capsule)
+    const content = "test content for game";
+    const contentHash = createSHA256Hash(content);
     await program.methods.createCapsule(
-      "test content for game",
-      { onChain: {} },
+      content,
+      { text: {} },
+      contentHash,
       revealDate,
       true // is_gamified
     ).accounts(accounts as any).rpc();
@@ -173,7 +182,9 @@ describe("CapsuleX Game Instructions", () => {
     };
     
     // Create and initialize game (capsule creator creates capsule and game)
-    await program.methods.createCapsule("test content", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+    const content = "test content";
+    const contentHash = createSHA256Hash(content);
+    await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
     
     const [gamePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("game"), capsulePda.toBuffer()],
@@ -254,7 +265,9 @@ describe("CapsuleX Game Instructions", () => {
     };
     
     // Create gamified capsule and game
-    await program.methods.createCapsule("secret answer", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+    const content = "secret answer";
+    const contentHash = createSHA256Hash(content);
+    await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
     
     const [gamePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("game"), capsulePda.toBuffer()],
@@ -366,7 +379,8 @@ describe("CapsuleX Game Instructions", () => {
     const encryptionKey = "testkey1234567890123456789012345678";
     const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
     
-    await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true).accounts(accounts as any).signers([capsuleCreator.payer]).rpc();
+    const contentHash = createSHA256Hash(secretAnswer); // Hash original content, not encrypted
+    await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).signers([capsuleCreator.payer]).rpc();
     
     // Initialize game
     const [gamePda] = PublicKey.findProgramAddressSync(
@@ -513,7 +527,9 @@ describe("CapsuleX Game Instructions", () => {
     };
     
     // Create gamified capsule
-    await program.methods.createCapsule("reward test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+    const content = "reward test";
+    const contentHash = createSHA256Hash(content);
+    await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
     
     // Initialize game with higher fees for testing
     const [gamePda] = PublicKey.findProgramAddressSync(
@@ -651,7 +667,9 @@ describe("CapsuleX Game Instructions", () => {
     };
 
     // Create game (capsule creator creates the capsule and game)
-    await program.methods.createCapsule("test", { onChain: {} }, revealDate, true).accounts(accounts as any).signers([capsuleCreator]).rpc();
+    const content = "test";
+    const contentHash = createSHA256Hash(content);
+    await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).signers([capsuleCreator]).rpc();
     
     const [gamePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("game"), capsulePda.toBuffer()],
@@ -736,7 +754,9 @@ describe("CapsuleX Game Instructions", () => {
       };
       
       // Create game
-      await program.methods.createCapsule("no guesses test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      const content = "no guesses test";
+      const contentHash = createSHA256Hash(content);
+      await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("game"), capsulePda.toBuffer()],
@@ -802,7 +822,9 @@ describe("CapsuleX Game Instructions", () => {
       };
       
       // Create game with guesses
-      await program.methods.createCapsule("after reveal test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      const content = "after reveal test";
+      const contentHash = createSHA256Hash(content);
+      await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("game"), capsulePda.toBuffer()],
@@ -901,7 +923,9 @@ describe("CapsuleX Game Instructions", () => {
       };
       
       // Create game with low max_guesses
-      await program.methods.createCapsule("max guesses test", { onChain: {} }, revealDate, true).accounts(accounts as any).rpc();
+      const content = "max guesses test";
+      const contentHash = createSHA256Hash(content);
+      await program.methods.createCapsule(content, { text: {} }, contentHash, revealDate, true).accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("game"), capsulePda.toBuffer()],

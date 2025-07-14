@@ -158,7 +158,7 @@ pub fn mint_capsule_nft(
     let seeds = &[
         CAPSULE_SEED,
         capsule.creator.as_ref(),
-        capsule.encrypted_content.as_bytes(),
+        &capsule.reveal_date.to_le_bytes(), // ✅ Fixed: use reveal_date like CreateCapsule
         &bump_seed,
     ];
     let signer_seeds = &[&seeds[..]];

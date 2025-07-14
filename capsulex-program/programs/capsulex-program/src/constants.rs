@@ -34,15 +34,16 @@ pub const MAX_REVEAL_DELAY: i64 = 31536000; // 1 year maximum
 pub const CAPSULE_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // creator
     32 + // nft_mint
-    4 + 280 + // encrypted_content (String with max 280 chars for on-chain)
-    1 + // content_storage (enum: OnChain vs IPFS)
+    4 + 500 + // encrypted_content (String with max 500 chars for various content types)
+    4 + 1000 + // content_storage (enum with complex variants - generous allocation)
+    4 + 64 + // content_integrity_hash (String, 64 chars for SHA256)
     8 + // reveal_date
     8 + // created_at
     1 + // is_gamified
     1 + // is_revealed
     1 + // is_active
     1 + // bump
-    64; // padding (increased since we removed key_vault field)
+    200; // padding (increased for complex content storage)
 
 pub const GAME_ACCOUNT_SIZE: usize = 8 + // discriminator
     32 + // capsule_id

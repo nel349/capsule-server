@@ -115,4 +115,23 @@ pub enum CapsuleXError {
     
     #[msg("Oracle signature has expired.")]
     OracleSignatureExpired,
+    
+    // New errors for enhanced content storage
+    #[msg("Invalid IPFS CID format.")]
+    InvalidCID,
+    
+    #[msg("Invalid URL format.")]
+    InvalidURL,
+    
+    #[msg("Unsupported social media platform.")]
+    UnsupportedPlatform,
+    
+    #[msg("Invalid content integrity hash.")]
+    InvalidContentHash,
+    
+    #[msg("Too many attachments. Maximum is 50.")]
+    TooManyAttachments,
+    
+    #[msg("Content is too large. Maximum is 1GB.")]
+    ContentTooLarge,
 } 

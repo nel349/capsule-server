@@ -24,10 +24,11 @@ pub mod capsulex {
         ctx: Context<CreateCapsule>,
         encrypted_content: String,
         content_storage: ContentStorage,
+        content_integrity_hash: String,
         reveal_date: i64,
         is_gamified: bool,
     ) -> Result<()> {
-        instructions::create_capsule(ctx, encrypted_content, content_storage, reveal_date, is_gamified)
+        instructions::create_capsule(ctx, encrypted_content, content_storage, content_integrity_hash, reveal_date, is_gamified)
     }
 
     pub fn reveal_capsule(

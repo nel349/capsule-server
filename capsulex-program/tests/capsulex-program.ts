@@ -3,9 +3,15 @@ import { Program } from "@coral-xyz/anchor";
 import { Capsulex } from "../target/types/capsulex";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { describe, before, it } from "mocha";
-import { VAULT_SEED, CAPSULE_SEED, CAPSULE_MINT_SEED, KEY_VAULT_SEED } from "./constants";
+import { VAULT_SEED, CAPSULE_SEED, CAPSULE_MINT_SEED } from "./constants";
 import CryptoJS from "crypto-js";
 import { expect } from "chai";
+import crypto from "crypto";
+
+// Helper function to create content integrity hash
+function createSHA256Hash(content: string): string {
+  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+}
 
 describe("capsulex-program", () => {
   // Configure the client to use the local cluster.
@@ -72,24 +78,16 @@ describe("capsulex-program", () => {
       program.programId
     );
     
-    // Find the key vault PDA
-    const [keyVaultPda, keyVaultBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(KEY_VAULT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
-    
+    const contentHash = createSHA256Hash(originalContent);
     const tx = await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       false
     ).accounts({
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
-      keyVault: keyVaultPda,
       nftMint: nftMintPda,
       vault: vaultPda,
       systemProgram: SystemProgram.programId,
@@ -141,15 +139,6 @@ describe("capsulex-program", () => {
       program.programId
     );
     
-    // Find the key vault PDA
-    const [keyVaultPda, keyVaultBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(KEY_VAULT_SEED),
-        capsulePda.toBuffer()
-      ],
-      program.programId
-    );
-    
     // Find the NFT mint PDA
     const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
       [
@@ -159,15 +148,16 @@ describe("capsulex-program", () => {
       program.programId
     );
     
+    const contentHash = createSHA256Hash(actualContent);
     const tx = await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       isGamified
     ).accounts({
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
-      keyVault: keyVaultPda,
       nftMint: nftMintPda,
       vault: vaultPda,
       systemProgram: SystemProgram.programId,
@@ -230,12 +220,6 @@ describe("capsulex-program", () => {
     )[0];
   }
 
-  function getKeyVaultPda(capsulePda: PublicKey, programId: PublicKey) {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from(KEY_VAULT_SEED), capsulePda.toBuffer()],
-      programId
-    )[0];
-  }
 
   function getNftMintPda(capsulePda: PublicKey, programId: PublicKey) {
     return PublicKey.findProgramAddressSync(
@@ -244,17 +228,15 @@ describe("capsulex-program", () => {
     )[0];
   }
 
-  function getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda }: {
+  function getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda }: {
     provider: anchor.AnchorProvider,
     capsulePda: PublicKey,
-    keyVaultPda: PublicKey,
     nftMintPda: PublicKey,
     vaultPda: PublicKey
   }) {
     return {
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
-      keyVault: keyVaultPda,
       nftMint: nftMintPda,
       vault: vaultPda,
       systemProgram: SystemProgram.programId,
@@ -268,13 +250,14 @@ describe("capsulex-program", () => {
     const encryptedContent = CryptoJS.AES.encrypt(longContent, "longkey123").toString();
     const revealDate = new anchor.BN(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     try {
+      const contentHash = createSHA256Hash(longContent);
       await program.methods.createCapsule(
         encryptedContent,
-        { onChain: {} },
+        { text: {} },
+        contentHash,
         revealDate,
         false
       ).accounts(accounts as any).rpc();
@@ -289,19 +272,20 @@ describe("capsulex-program", () => {
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 7200); // 2 hours from now
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
+    const contentHash = createSHA256Hash(ipfsHash);
     const tx = await program.methods.createCapsule(
       ipfsHash, // Store only the IPFS hash on-chain
-      { ipfs: {} },
+      { document: { cid: ipfsHash } },
+      contentHash,
       revealDate,
       false // isGamified
     ).accounts(accounts as any).rpc();
     // console.log("\nIPFS Capsule Created", tx);
     const capsule = await program.account.capsule.fetch(capsulePda);
     // console.log("IPFS Capsule", capsule);
-    expect(capsule.contentStorage.ipfs).to.exist;
+    expect(capsule.contentStorage.document).to.exist;
     expect(capsule.encryptedContent).to.equal(ipfsHash);
     expect(capsule.isActive).to.be.true;
     expect(capsule.isRevealed).to.be.false;
@@ -327,15 +311,16 @@ describe("capsulex-program", () => {
     
     // Create PDAs
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     
     // Step 2: Create the time capsule (this stores the encrypted content and locks the key)
     // console.log("\n📦 Creating time capsule with encrypted content...");
-    const tx = await program.methods.createCapsule(
+    const contentHash = createSHA256Hash(secretMessage);
+    await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       false
     ).accounts(accounts as any).rpc();
@@ -370,14 +355,7 @@ describe("capsulex-program", () => {
     // console.log("\n🔓 Demonstrating decryption with retrieved key:");
     const decryptedMessage = CryptoJS.AES.decrypt(encryptedContent, encryptionKey).toString(CryptoJS.enc.Utf8);
     expect(decryptedMessage).to.equal(secretMessage);
-    // console.log(`✨ Decrypted message: "${decryptedMessage}"`);
-    
-    // console.log("\n🎯 KeyVault Demo Summary:");
-    // console.log("✅ Encrypted content stored on-chain");
-    // console.log("✅ Encryption key stored in time-locked KeyVault");
-    // console.log("✅ Content inaccessible until reveal date");
-    // console.log("✅ Successful decryption after time lock expires");
-    // console.log("🔐 This proves the time-lock mechanism works!");
+
   });
 
   it("Should fail to create capsule with reveal date too soon", async () => {
@@ -385,14 +363,16 @@ describe("capsulex-program", () => {
     const invalidRevealDate = new anchor.BN(currentTime + 1800); // Only 30 minutes (less than 1 hour minimum)
     
     const capsulePda = getCapsulePda(provider.wallet.publicKey, invalidRevealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     
     try {
+      const content = "test content";
+      const contentHash = createSHA256Hash(content);
       await program.methods.createCapsule(
-        "test content",
-        { onChain: {} },
+        content,
+        { text: {} },
+        contentHash,
         invalidRevealDate,
         false
       ).accounts(accounts as any).rpc();
@@ -413,13 +393,14 @@ describe("capsulex-program", () => {
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 2); // 2 seconds from now
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     // Create capsule
+    const contentHash = createSHA256Hash(content);
     await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       false
     ).accounts(accounts as any).rpc();
@@ -429,7 +410,6 @@ describe("capsulex-program", () => {
     await program.methods.revealCapsule(revealDate).accounts({
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
-      keyVault: keyVaultPda,
     } as any).rpc();
     // Check state
     const capsule = await program.account.capsule.fetch(capsulePda);
@@ -443,13 +423,14 @@ describe("capsulex-program", () => {
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 10); // 10 seconds from now (unique)
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     // Create capsule
+    const contentHash = createSHA256Hash(content);
     await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       false
     ).accounts(accounts as any).rpc();
@@ -458,7 +439,6 @@ describe("capsulex-program", () => {
       await program.methods.revealCapsule(revealDate).accounts({
         creator: provider.wallet.publicKey,
         capsule: capsulePda,
-        keyVault: keyVaultPda,
       } as any).rpc();
       // expect.fail("Expected reveal to fail before reveal date");
     } catch (error) {
@@ -474,13 +454,14 @@ describe("capsulex-program", () => {
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 4); // 4 seconds from now (unique)
     const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-    const keyVaultPda = getKeyVaultPda(capsulePda, program.programId);
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
-    const accounts = getDefaultAccounts({ provider, capsulePda, keyVaultPda, nftMintPda, vaultPda });
+    const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, vaultPda });
     // Create capsule
+    const contentHash = createSHA256Hash(content);
     await program.methods.createCapsule(
       encryptedContent,
-      { onChain: {} },
+      { text: {} },
+      contentHash,
       revealDate,
       false
     ).accounts(accounts as any).rpc();
@@ -490,14 +471,12 @@ describe("capsulex-program", () => {
     await program.methods.revealCapsule(revealDate).accounts({
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
-      keyVault: keyVaultPda,
     } as any).rpc();
     // Try to reveal again
     try {
       await program.methods.revealCapsule(revealDate).accounts({
         creator: provider.wallet.publicKey,
         capsule: capsulePda,
-        keyVault: keyVaultPda,
       } as any).rpc();
       // expect.fail("Expected double reveal to fail");
     } catch (error) {
