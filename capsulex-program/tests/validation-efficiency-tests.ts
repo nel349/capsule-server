@@ -350,7 +350,7 @@ describe("On-Chain Validation Efficiency Tests", () => {
     it("Should quickly reject MediaBundle with too many attachments", async () => {
       const primaryCID = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
       const manifestCID = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ";
-      const tooManyAttachments = Array(51).fill("QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH"); // 51 > 50
+      const tooManyAttachments = Array(51).fill("QmX"); // 51 > 50 limit, but much shorter to avoid buffer overflow
       
       const contentHash = createSHA256Hash("media bundle");
       const currentTime = Math.floor(Date.now() / 1000);

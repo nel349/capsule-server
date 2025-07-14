@@ -7,7 +7,7 @@ describe("Client-Side Content Validation Tests", () => {
   describe("SHA256 Hash Validation", () => {
     it("Should accept valid SHA256 hex strings", () => {
       const validHashes = [
-        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12",
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef",
         "0000000000000000000000000000000000000000000000000000000000000000",
         "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "ABCDEF1234567890abcdef1234567890ABCDEF1234567890abcdef1234567890",
@@ -21,12 +21,12 @@ describe("Client-Side Content Validation Tests", () => {
     it("Should reject invalid SHA256 hex strings", () => {
       const invalidHashes = [
         "too_short",
-        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef123", // 65 chars
-        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef1", // 63 chars
-        "g1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12", // Contains 'g'
-        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef!", // Contains '!'
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef1", // 65 chars
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcde", // 63 chars
+        "g1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef", // Contains 'g'
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcde!", // Contains '!'
         "", // Empty
-        " a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef1", // Leading space
+        " a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcde", // Leading space
       ];
 
       invalidHashes.forEach(hash => {
@@ -40,7 +40,7 @@ describe("Client-Side Content Validation Tests", () => {
       const validCIDs = [
         "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG", // 46 chars
         "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdGH", // 47 chars
-        "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdGHJKLMNPQRSTUVWXYZ", // 59 chars (max)
+        "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdGHJKLMNPQRST", // 59 chars (max)
       ];
 
       validCIDs.forEach(cid => {
@@ -164,7 +164,7 @@ describe("Client-Side Content Validation Tests", () => {
         originalUrl: "https://x.com/user/status/123",
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12"
+        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
       };
       const result = ContentValidator.validateContentStorage(socialStorage);
       expect(result.valid).to.be.true;
@@ -176,7 +176,7 @@ describe("Client-Side Content Validation Tests", () => {
         originalUrl: "http://insecure.com", // HTTP not HTTPS
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12"
+        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
       };
       const result = ContentValidator.validateContentStorage(socialStorage);
       expect(result.valid).to.be.false;
@@ -189,7 +189,7 @@ describe("Client-Side Content Validation Tests", () => {
         primaryCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         attachments: [
           "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH",
-          "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdI"
+          "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdK"
         ],
         manifestCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ",
         totalSizeBytes: 50000000
@@ -229,7 +229,7 @@ describe("Client-Side Content Validation Tests", () => {
         type: "ExternalWithBackup" as const,
         originalUrl: "https://example.com/resource",
         backupCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-        verificationHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdef12"
+        verificationHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
       };
       const result = ContentValidator.validateContentStorage(externalStorage);
       expect(result.valid).to.be.true;
@@ -247,7 +247,7 @@ describe("Client-Side Content Validation Tests", () => {
     it("Should validate complete capsule content successfully", () => {
       const encryptedContent = "Encrypted content here";
       const contentStorage = { type: "Text" as const };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12";
+      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         encryptedContent,
@@ -276,7 +276,7 @@ describe("Client-Side Content Validation Tests", () => {
     it("Should reject Text storage with content too long", () => {
       const longContent = "a".repeat(281); // Over 280 char limit
       const contentStorage = { type: "Text" as const };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12";
+      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         longContent,
@@ -295,9 +295,9 @@ describe("Client-Side Content Validation Tests", () => {
         originalUrl: "https://x.com/user/status/1234567890",
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12"
+        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
       };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef12";
+      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         encryptedContent,
@@ -329,7 +329,7 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should be case sensitive for hex validation", () => {
-      const mixedCaseHash = "A1B2c3d4E5F67890123456789012345678901234567890ABCDEFABCDEFABCDEF12";
+      const mixedCaseHash = "A1B2c3d4E5F67890123456789012345678901234567890ABCDEFABCDEFABCDEF";
       expect(ContentValidator.isValidSHA256Hex(mixedCaseHash)).to.be.true;
     });
   });

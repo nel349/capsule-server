@@ -7,10 +7,17 @@ import { VAULT_SEED, CAPSULE_SEED, CAPSULE_MINT_SEED } from "./constants";
 import CryptoJS from "crypto-js";
 import { expect } from "chai";
 import axios from "axios";
+import crypto from "crypto";
 
 // Semantic service configuration
 const SEMANTIC_SERVICE_URL = "http://localhost:5001";
 const DEFAULT_THRESHOLD = 0.8;
+
+function createSHA256Hash(content: string): string {
+  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+}
+
+const contentHash = createSHA256Hash("content");
 
 // Helper function to call semantic service
 async function callSemanticService(guess: string, answer: string, threshold: number = DEFAULT_THRESHOLD, provider?: any) {
@@ -192,7 +199,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
       // Create capsule and game
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
@@ -304,7 +311,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptionKey = "testkey1234567890123456789012345678";
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
@@ -423,7 +430,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptionKey = "testkey1234567890123456789012345678";
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
@@ -534,7 +541,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptionKey = "testkey1234567890123456789012345678";
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
@@ -679,7 +686,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptionKey = "testkey1234567890123456789012345678";
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
@@ -788,7 +795,7 @@ describe("Semantic Answer Validation Integration", () => {
       const encryptionKey = "testkey1234567890123456789012345678";
       const encryptedContent = CryptoJS.AES.encrypt(secretAnswer, encryptionKey).toString();
       
-      await program.methods.createCapsule(encryptedContent, { onChain: {} }, revealDate, true)
+      await program.methods.createCapsule(encryptedContent, { text: {} }, contentHash, revealDate, true)
         .accounts(accounts as any).rpc();
       
       const [gamePda] = PublicKey.findProgramAddressSync(
