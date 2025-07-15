@@ -57,12 +57,25 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - Rate limiting considerations for production
 - Proper CORS configuration per environment
 
+## Development Roadmap
+**See BACKEND_API_ROADMAP.md for complete development plan**
+
+### Current Status:
+- ✅ Solana Program: 100% complete (time capsules, games, NFTs, leaderboards)
+- ✅ Basic Backend API: 20% complete (auth, basic CRUD, database)
+- ❌ Missing: 80% of backend APIs needed for frontend consumption
+
+### Next Priorities:
+1. **PHASE 1**: Game System Integration (POST/GET game endpoints)
+2. **PHASE 2**: Leaderboard & Achievement APIs  
+3. **PHASE 3**: NFT Management endpoints
+4. **PHASE 4**: Content Discovery & Search
+
 ## Testing
 - Health check endpoint: `GET /health`
 - Database connectivity test included in health check
 - Use custom slash commands for comprehensive testing:
   - `/project:build-and-test`: Full build and test pipeline
-  - `/project:db-check`: Database health verification
   - `/project:lint-and-fix`: Code quality fixes
   - `/project:review-security`: Security code review
 
@@ -72,3 +85,4 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - Database uses Row Level Security (RLS) - backend uses service_role to bypass
 - JWT tokens expire in 7 days
 - Default SOL fee for capsules: 0.00005 SOL
+- **Solana program is feature-complete** - focus is on exposing functionality via APIs
