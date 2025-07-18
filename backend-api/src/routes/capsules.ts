@@ -7,8 +7,16 @@ import {
 } from '../utils/database';
 import { authenticateToken } from '../middleware/auth';
 import { CreateCapsuleRequest, ApiResponse, AuthenticatedRequest } from '../types';
+import { SolanaService } from '../services/solana';
+import { Keypair } from '@solana/web3.js';
 
 const router = express.Router();
+
+// Initialize SolanaService (it will handle IDL loading internally)
+const solanaService = new SolanaService(
+  process.env.SOLANA_RPC_URL || 'http://localhost:8899', // Use local by default
+  'confirmed'
+);
 
 // Create new capsule (requires authentication)
 router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res) => {
@@ -21,12 +29,14 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
       reveal_date,
       on_chain_tx,
       sol_fee_amount,
-    }: CreateCapsuleRequest = req.body;
+      is_gamified = false,
+      test_mode = false, // Add test mode flag
+    }: CreateCapsuleRequest & { is_gamified?: boolean; test_mode?: boolean } = req.body;
 
-    if (!content_encrypted || !content_hash || !reveal_date || !on_chain_tx) {
+    if (!content_encrypted || !content_hash || !reveal_date) {
       return res.status(400).json({
         success: false,
-        error: 'content_encrypted, content_hash, reveal_date, and on_chain_tx are required',
+        error: 'content_encrypted, content_hash, and reveal_date are required',
       } as ApiResponse);
     }
 
@@ -39,6 +49,66 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
       } as ApiResponse);
     }
 
+    let onChainTx = on_chain_tx;
+    let solFeeAmount = sol_fee_amount;
+
+    // Test Solana integration if test_mode is enabled
+    if (test_mode) {
+      try {
+        console.log('🔧 Testing Solana integration...');
+        
+        // Create a test keypair (in production, you'd use a proper wallet)
+        const testKeypair = Keypair.generate();
+        
+        // Initialize the program with the wallet (IDL already loaded in constructor)
+        await solanaService.initializeProgram(testKeypair);
+        
+        // Test 1: Initialize program vault (only needed once)
+        console.log('1️⃣ Testing initializeProgramVault...');
+        try {
+          const vaultTx = await solanaService.initializeProgramVault(testKeypair);
+          console.log('✅ Program vault initialized:', vaultTx);
+        console.log('🔗 View transaction: https://explorer.solana.com/tx/' + vaultTx + '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899');
+        } catch (error: any) {
+          if (error.message?.includes('already in use') || error.message?.includes('Already initialized')) {
+            console.log('✅ Program vault already initialized');
+          } else {
+            console.log('⚠️ Vault initialization failed:', error.message);
+          }
+        }
+        
+        // Test 2: Create capsule on-chain
+        console.log('2️⃣ Testing createCapsule...');
+        const capsuleTx = await solanaService.createCapsule({
+          content: content_encrypted, // In production, use decrypted content
+          contentHash: content_hash,
+          revealDate: revealDateTime,
+          payer: testKeypair,
+          isGamified: is_gamified,
+        });
+        
+        console.log('✅ Capsule created on-chain:', capsuleTx);
+        console.log('🔗 View transaction: https://explorer.solana.com/tx/' + capsuleTx + '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899');
+        onChainTx = capsuleTx;
+        solFeeAmount = 0.001; // Example fee
+        
+        // Test 3: Get capsule data
+        console.log('3️⃣ Testing getCapsuleData...');
+        const revealDateBN = solanaService.dateToBN(revealDateTime);
+        const capsuleData = await solanaService.getCapsuleData(testKeypair.publicKey, revealDateBN);
+        console.log('✅ Capsule data retrieved:', capsuleData);
+        
+      } catch (solanaError: any) {
+        console.error('❌ Solana integration test failed:', solanaError);
+        return res.status(500).json({
+          success: false,
+          error: `Solana integration failed: ${solanaError.message}`,
+          details: solanaError,
+        } as ApiResponse);
+      }
+    }
+
+    // Save to database
     const { data: capsule, error } = await createCapsule({
       user_id: req.user!.user_id,
       content_encrypted,
@@ -46,8 +116,8 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
       has_media,
       media_urls,
       reveal_date,
-      on_chain_tx,
-      sol_fee_amount,
+      on_chain_tx: onChainTx,
+      sol_fee_amount: solFeeAmount,
     });
 
     if (error) {
@@ -60,6 +130,7 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     res.status(201).json({
       success: true,
       data: capsule,
+      solana_test: test_mode ? 'completed' : 'skipped',
     } as ApiResponse);
   } catch (error) {
     console.error('Create capsule error:', error);

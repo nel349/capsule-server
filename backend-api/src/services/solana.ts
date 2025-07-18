@@ -14,6 +14,7 @@ import {
 import { AnchorProvider, Program, Wallet, BN, utils } from '@coral-xyz/anchor';
 import { Capsulex } from '@capsulex/types';
 import crypto from 'crypto';
+import idl from '../../../capsulex-program/target/idl/capsulex.json';
 
 // Constants from tests
 const VAULT_SEED = "vault";
@@ -47,9 +48,12 @@ export class SolanaService {
   private connection: Connection;
   private program: Program<Capsulex> | null = null;
   private provider: AnchorProvider | null = null;
+  private idl: Capsulex | null = null;
 
   constructor(rpcUrl?: string, commitment: Commitment = 'confirmed') {
     this.connection = new Connection(rpcUrl || clusterApiUrl('devnet'), commitment);
+    this.idl = idl as Capsulex;
+    console.log('✅ Loaded Capsulex IDL, Program ID:', idl.address);
   }
 
   /**
@@ -62,13 +66,18 @@ export class SolanaService {
   /**
    * Initialize the program with a wallet
    */
-  async initializeProgram(wallet: Keypair, idl: Capsulex): Promise<void> {
+  async initializeProgram(wallet: Keypair, idl?: Capsulex): Promise<void> {
+    const programIdl = idl || this.idl;
+    if (!programIdl) {
+      throw new Error('IDL not provided. Pass IDL in constructor or as parameter.');
+    }
+    
     const anchorWallet = new Wallet(wallet);
     this.provider = new AnchorProvider(this.connection, anchorWallet, {
       commitment: 'confirmed',
       preflightCommitment: 'confirmed',
     });
-    this.program = new Program<Capsulex>(idl, this.provider);
+    this.program = new Program<Capsulex>(programIdl, this.provider);
   }
 
   /**
