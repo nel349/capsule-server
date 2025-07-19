@@ -8,11 +8,14 @@ skip-lint = false
 [programs.localnet]
 capsulex_program = "J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH"
 
+[programs.devnet]
+capsulex_program = "J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
@@ -27,3 +30,6 @@ test-client-validation = "anchor build && anchor deploy && pnpm ts-mocha -p ./ts
 
 # This is a test for the semantic integration test specifically "Accepts semantically equivalent answers" test
 test-specific = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/content-storage-tests.ts --grep 'Should verify content integrity after reveal'"
+
+# Initialize program script
+init-program = "pnpm ts-node scripts/init-program.ts"
