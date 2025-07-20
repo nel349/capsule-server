@@ -155,6 +155,7 @@ export const createSocialConnection = async (connectionData: {
   platform_username?: string;
   access_token?: string;
   refresh_token?: string;
+  expires_at?: Date;
 }): Promise<{ data: DatabaseSocialConnection | null; error: any }> => {
   try {
     const { data, error } = await supabase

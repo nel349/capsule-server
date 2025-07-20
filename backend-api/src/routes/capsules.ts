@@ -56,27 +56,34 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     if (test_mode) {
       try {
         console.log('🔧 Testing Solana integration...');
-        
+
         // Create a test keypair (in production, you'd use a proper wallet)
         const testKeypair = Keypair.generate();
-        
+
         // Initialize the program with the wallet (IDL already loaded in constructor)
         await solanaService.initializeProgram(testKeypair);
-        
+
         // Test 1: Initialize program vault (only needed once)
         console.log('1️⃣ Testing initializeProgramVault...');
         try {
           const vaultTx = await solanaService.initializeProgramVault(testKeypair);
           console.log('✅ Program vault initialized:', vaultTx);
-        console.log('🔗 View transaction: https://explorer.solana.com/tx/' + vaultTx + '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899');
+          console.log(
+            '🔗 View transaction: https://explorer.solana.com/tx/' +
+              vaultTx +
+              '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899'
+          );
         } catch (error: any) {
-          if (error.message?.includes('already in use') || error.message?.includes('Already initialized')) {
+          if (
+            error.message?.includes('already in use') ||
+            error.message?.includes('Already initialized')
+          ) {
             console.log('✅ Program vault already initialized');
           } else {
             console.log('⚠️ Vault initialization failed:', error.message);
           }
         }
-        
+
         // Test 2: Create capsule on-chain
         console.log('2️⃣ Testing createCapsule...');
         const capsuleTx = await solanaService.createCapsule({
@@ -86,18 +93,21 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
           payer: testKeypair,
           isGamified: is_gamified,
         });
-        
+
         console.log('✅ Capsule created on-chain:', capsuleTx);
-        console.log('🔗 View transaction: https://explorer.solana.com/tx/' + capsuleTx + '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899');
+        console.log(
+          '🔗 View transaction: https://explorer.solana.com/tx/' +
+            capsuleTx +
+            '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899'
+        );
         onChainTx = capsuleTx;
         solFeeAmount = 0.001; // Example fee
-        
+
         // Test 3: Get capsule data
         console.log('3️⃣ Testing getCapsuleData...');
         const revealDateBN = solanaService.dateToBN(revealDateTime);
         const capsuleData = await solanaService.getCapsuleData(testKeypair.publicKey, revealDateBN);
         console.log('✅ Capsule data retrieved:', capsuleData);
-        
       } catch (solanaError: any) {
         console.error('❌ Solana integration test failed:', solanaError);
         return res.status(500).json({

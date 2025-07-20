@@ -17,12 +17,12 @@ import crypto from 'crypto';
 import idl from '../../../capsulex-program/target/idl/capsulex.json';
 
 // Constants from tests
-const VAULT_SEED = "vault";
-const CAPSULE_SEED = "capsule";
-const CAPSULE_MINT_SEED = "capsule_mint";
-const GAME_SEED = "game";
-const GUESS_SEED = "guess";
-const LEADERBOARD_SEED = "leaderboard";
+const VAULT_SEED = 'vault';
+const CAPSULE_SEED = 'capsule';
+const CAPSULE_MINT_SEED = 'capsule_mint';
+const GAME_SEED = 'game';
+const GUESS_SEED = 'guess';
+const LEADERBOARD_SEED = 'leaderboard';
 
 export interface CapsuleData {
   contentHash: string;
@@ -71,7 +71,7 @@ export class SolanaService {
     if (!programIdl) {
       throw new Error('IDL not provided. Pass IDL in constructor or as parameter.');
     }
-    
+
     const anchorWallet = new Wallet(wallet);
     this.provider = new AnchorProvider(this.connection, anchorWallet, {
       commitment: 'confirmed',
@@ -109,11 +109,7 @@ export class SolanaService {
    */
   getCapsulePda(creator: PublicKey, revealDate: BN): PublicKey {
     const [pda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(CAPSULE_SEED),
-        creator.toBuffer(),
-        Buffer.from(revealDate.toArray('le', 8))
-      ],
+      [Buffer.from(CAPSULE_SEED), creator.toBuffer(), Buffer.from(revealDate.toArray('le', 8))],
       this.getProgram().programId
     );
     return pda;
@@ -161,7 +157,7 @@ export class SolanaService {
         Buffer.from(GUESS_SEED),
         game.toBuffer(),
         guesser.toBuffer(),
-        Buffer.from(new Uint32Array([guessIndex]).buffer)
+        Buffer.from(new Uint32Array([guessIndex]).buffer),
       ],
       this.getProgram().programId
     );
@@ -449,10 +445,7 @@ export class SolanaService {
   /**
    * Initialize leaderboard (matching test pattern)
    */
-  async initializeLeaderboard(params: {
-    user: PublicKey;
-    payer: Keypair;
-  }): Promise<string> {
+  async initializeLeaderboard(params: { user: PublicKey; payer: Keypair }): Promise<string> {
     const program = this.getProgram();
     const { user, payer } = params;
 
@@ -647,7 +640,7 @@ export class SolanaService {
    */
   async getGamesForCapsule(capsule: PublicKey): Promise<any[]> {
     const program = this.getProgram();
-    
+
     try {
       const games = await program.account.game.all([
         {
@@ -663,4 +656,4 @@ export class SolanaService {
       return [];
     }
   }
-} 
+}
