@@ -262,6 +262,40 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
 
     console.log('✅ Twitter connection found for user:', twitterConnection.platform_username);
 
+    // Check if we should mock Twitter API for development/demo
+    const mockTwitterApi = process.env.MOCK_TWITTER_API === 'true';
+    
+    if (mockTwitterApi) {
+      console.log('🎭 Mock mode: Simulating Twitter post');
+      
+      // Generate mock response data
+      const mockTweetId = `mock_${Date.now()}`;
+      const mockTweetUrl = `https://twitter.com/${twitterConnection.platform_username}/status/${mockTweetId}`;
+      
+      // Mock media info if media URLs provided
+      const mockMediaInfo = media_urls && Array.isArray(media_urls) && media_urls.length > 0 
+        ? media_urls.map((url, index) => ({
+            mediaId: `mock_media_${Date.now()}_${index}`,
+            mediaKey: `mock_key_${Date.now()}_${index}`,
+            viewUrl: url, // Use original URL as mock view URL
+            originalUrl: url,
+          }))
+        : [];
+
+      // Return mock success response
+      return res.status(200).json({
+        success: true,
+        data: {
+          tweet_id: mockTweetId,
+          tweet_url: mockTweetUrl,
+          username: twitterConnection.platform_username,
+          text: text.trim(),
+          media_info: mockMediaInfo.length > 0 ? mockMediaInfo : undefined,
+          mock_mode: true,
+        },
+      } as ApiResponse);
+    }
+
     // Prepare tweet data
     const tweetData: any = {
       text: text.trim(),
@@ -452,6 +486,57 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
     res.status(500).json({
       success: false,
       error: 'Internal server error during tweet posting',
+    } as ApiResponse);
+  }
+});
+
+// Get app settings (requires authentication)
+router.get('/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const settings = {
+      mock_twitter_api: process.env.MOCK_TWITTER_API === 'true',
+      environment: process.env.NODE_ENV || 'development',
+    };
+
+    res.json({
+      success: true,
+      data: settings,
+    } as ApiResponse);
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    } as ApiResponse);
+  }
+});
+
+// Update app settings (requires authentication)
+router.post('/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { mock_twitter_api } = req.body;
+
+    // Update environment variable for current session
+    if (typeof mock_twitter_api === 'boolean') {
+      process.env.MOCK_TWITTER_API = mock_twitter_api.toString();
+      console.log('🎭 Mock Twitter API setting updated:', mock_twitter_api);
+    }
+
+    const updatedSettings = {
+      mock_twitter_api: process.env.MOCK_TWITTER_API === 'true',
+      environment: process.env.NODE_ENV || 'development',
+    };
+
+    res.json({
+      success: true,
+      data: updatedSettings,
+      message: 'Settings updated successfully',
+    } as ApiResponse);
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
     } as ApiResponse);
   }
 });
