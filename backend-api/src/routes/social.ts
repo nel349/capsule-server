@@ -1,8 +1,13 @@
 import express from 'express';
-import { createSocialConnection, getSocialConnections } from '../utils/database';
+import {
+  createSocialConnection,
+  getSocialConnections,
+  upsertSocialConnection,
+} from '../utils/database';
 import { authenticateToken } from '../middleware/auth';
 import { CreateSocialConnectionRequest, ApiResponse, AuthenticatedRequest } from '../types';
 import axios from 'axios';
+import FormData from 'form-data';
 
 const router = express.Router();
 
@@ -112,8 +117,10 @@ router.post(
 
       // Exchange authorization code for access token with Twitter
       // Twitter OAuth 2.0 requires Basic Auth header with client credentials
-      const credentials = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString('base64');
-      
+      const credentials = Buffer.from(
+        `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`
+      ).toString('base64');
+
       const tokenResponse = await axios.post(
         'https://api.twitter.com/2/oauth2/token',
         new URLSearchParams({
@@ -125,7 +132,7 @@ router.post(
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Basic ${credentials}`,
+            Authorization: `Basic ${credentials}`,
           },
         }
       );
@@ -145,8 +152,8 @@ router.post(
 
       console.log('✅ Twitter user info retrieved:', username);
 
-      // Store the connection in database
-      const { error } = await createSocialConnection({
+      // Store or update the connection in database
+      const { error } = await upsertSocialConnection({
         user_id: req.user!.user_id,
         platform: 'twitter',
         platform_user_id,
@@ -201,5 +208,252 @@ router.post(
     }
   }
 );
+
+// Post tweet using stored Twitter connection
+router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { text, media_urls } = req.body;
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tweet text is required',
+      } as ApiResponse);
+    }
+
+    if (text.length > 280) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tweet text exceeds 280 character limit',
+      } as ApiResponse);
+    }
+
+    console.log('🐦 Posting tweet for user:', req.user!.user_id);
+
+    // Get user's Twitter connection
+    const { data: connections, error: connectionsError } = await getSocialConnections(
+      req.user!.user_id
+    );
+
+    if (connectionsError || !connections) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve social connections',
+      } as ApiResponse);
+    }
+
+    const twitterConnection = connections.find(
+      conn => conn.platform === 'twitter' && conn.is_active
+    );
+
+    if (!twitterConnection) {
+      return res.status(400).json({
+        success: false,
+        error: 'Twitter account not connected. Please connect your Twitter account first.',
+      } as ApiResponse);
+    }
+
+    if (!twitterConnection.access_token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Twitter access token not found. Please reconnect your Twitter account.',
+      } as ApiResponse);
+    }
+
+    console.log('✅ Twitter connection found for user:', twitterConnection.platform_username);
+
+    // Prepare tweet data
+    const tweetData: any = {
+      text: text.trim(),
+    };
+
+    // Handle media if provided - using X API v2 media upload
+    const media_ids: string[] = [];
+    const uploadedMediaInfo: Array<{
+      mediaId: string;
+      mediaKey: string;
+      viewUrl: string;
+      originalUrl: string;
+    }> = [];
+    
+    if (media_urls && Array.isArray(media_urls) && media_urls.length > 0) {
+      console.log('📸 Processing media URLs:', media_urls);
+
+      try {
+        // For each media URL, download and upload to X API v2
+        for (const mediaUrl of media_urls.slice(0, 4)) {
+          // Twitter allows max 4 media
+          console.log('⬇️ Downloading media from:', mediaUrl);
+
+          // Download media to buffer
+          const mediaResponse = await axios.get(mediaUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+          });
+
+          // Detect content type from response headers
+          const contentType = mediaResponse.headers['content-type'] || 'image/jpeg';
+          console.log('📄 Media content type:', contentType);
+
+          // Create form data for X API v2 media upload (multipart/form-data)
+          const formData = new FormData();
+          formData.append('media', mediaResponse.data, {
+            filename: `image.${contentType.split('/')[1] || 'jpg'}`,
+            contentType: contentType,
+          });
+          formData.append('media_category', 'tweet_image');
+
+          // Upload using X API v2 media endpoint with multipart/form-data
+          console.log('🚀 Using X API v2 media upload with multipart/form-data');
+          const uploadResponse = await axios.post(
+            'https://api.twitter.com/2/media/upload',
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${twitterConnection.access_token}`,
+                ...formData.getHeaders(),
+              },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity,
+            }
+          );
+
+          // Log full response to see what X API v2 returns
+          console.log('🔍 X API v2 upload response:', JSON.stringify(uploadResponse.data, null, 2));
+          
+          // X API v2 response structure: { data: { id, media_key, ... } }
+          const responseData = uploadResponse.data.data;
+          if (!responseData) {
+            console.error('❌ No data object in X API response:', uploadResponse.data);
+            throw new Error('Invalid response format from X API v2');
+          }
+          
+          const mediaId = responseData.id;
+          const mediaKey = responseData.media_key;
+          
+          if (mediaId) {
+            media_ids.push(String(mediaId));
+            
+            // Fetch the actual viewable URL from X API v2
+            let mediaViewUrl: string | undefined;
+            try {
+              const mediaDetailsResponse = await axios.get(
+                `https://api.twitter.com/2/media/${mediaId}?media.fields=url,preview_image_url`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${twitterConnection.access_token}`,
+                  },
+                }
+              );
+              
+              // Extract the actual URL from the API response
+              mediaViewUrl = mediaDetailsResponse.data.data?.url || 
+                           mediaDetailsResponse.data.data?.preview_image_url;
+              
+              console.log('📷 Media details from API:', mediaDetailsResponse.data.data);
+            } catch (urlError) {
+              console.error('⚠️ Could not fetch media URL:', urlError);
+              mediaViewUrl = undefined;
+            }
+            
+            // Store media info for response
+            uploadedMediaInfo.push({
+              mediaId: String(mediaId),
+              mediaKey: String(mediaKey),
+              viewUrl: mediaViewUrl || 'URL not available',
+              originalUrl: mediaUrl,
+            });
+            
+            console.log('✅ Media uploaded with X API v2:', {
+              mediaId,
+              mediaKey,
+              viewUrl: mediaViewUrl,
+            });
+          } else {
+            console.error('❌ No media ID found in response data:', responseData);
+            throw new Error('Media uploaded but no ID returned from X API v2');
+          }
+        }
+
+        if (media_ids.length > 0) {
+          tweetData.media = { media_ids };
+        }
+      } catch (mediaError) {
+        console.error('❌ Media upload failed:', mediaError);
+
+        if (axios.isAxiosError(mediaError)) {
+          console.error('Media upload error details:', {
+            status: mediaError.response?.status,
+            data: mediaError.response?.data,
+          });
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to upload media to Twitter',
+        } as ApiResponse);
+      }
+    }
+
+    // Post tweet to Twitter API v2
+    const tweetResponse = await axios.post('https://api.twitter.com/2/tweets', tweetData, {
+      headers: {
+        Authorization: `Bearer ${twitterConnection.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const tweetId = tweetResponse.data.data.id;
+    const tweetUrl = `https://twitter.com/${twitterConnection.platform_username}/status/${tweetId}`;
+
+    console.log('✅ Tweet posted successfully:', tweetUrl);
+
+    // Return success with tweet info
+    res.status(200).json({
+      success: true,
+      data: {
+        tweet_id: tweetId,
+        tweet_url: tweetUrl,
+        username: twitterConnection.platform_username,
+        text: tweetData.text,
+        media_info: uploadedMediaInfo.length > 0 ? uploadedMediaInfo : undefined,
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error('❌ Tweet posting error:', error);
+
+    if (axios.isAxiosError(error)) {
+      console.error('Twitter API error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      // Handle specific Twitter API errors
+      if (error.response?.status === 401) {
+        return res.status(400).json({
+          success: false,
+          error: 'Twitter access token expired. Please reconnect your Twitter account.',
+        } as ApiResponse);
+      }
+
+      if (error.response?.status === 403) {
+        return res.status(400).json({
+          success: false,
+          error: 'Twitter API access forbidden. Check your Twitter app permissions.',
+        } as ApiResponse);
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: `Twitter API error: ${error.response?.data?.detail || error.message}`,
+      } as ApiResponse);
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error during tweet posting',
+    } as ApiResponse);
+  }
+});
 
 export default router;

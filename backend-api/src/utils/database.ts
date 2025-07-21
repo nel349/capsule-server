@@ -173,6 +173,60 @@ export const createSocialConnection = async (connectionData: {
   }
 };
 
+export const upsertSocialConnection = async (connectionData: {
+  user_id: string;
+  platform: 'twitter' | 'farcaster' | 'instagram' | 'tiktok';
+  platform_user_id: string;
+  platform_username?: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: Date;
+}): Promise<{ data: DatabaseSocialConnection | null; error: any }> => {
+  try {
+    // First, try to find existing connection
+    const { data: existingConnection } = await supabase
+      .from('social_connections')
+      .select('*')
+      .eq('user_id', connectionData.user_id)
+      .eq('platform', connectionData.platform)
+      .single();
+
+    if (existingConnection) {
+      // Update existing connection
+      const { data, error } = await supabase
+        .from('social_connections')
+        .update({
+          platform_user_id: connectionData.platform_user_id,
+          platform_username: connectionData.platform_username,
+          access_token: connectionData.access_token,
+          refresh_token: connectionData.refresh_token,
+          expires_at: connectionData.expires_at,
+          is_active: true,
+          connected_at: new Date().toISOString(),
+        })
+        .eq('connection_id', existingConnection.connection_id)
+        .select()
+        .single();
+
+      return { data, error: error ? handleDatabaseError(error) : null };
+    } else {
+      // Create new connection
+      const { data, error } = await supabase
+        .from('social_connections')
+        .insert({
+          connection_id: uuidv4(),
+          ...connectionData,
+        })
+        .select()
+        .single();
+
+      return { data, error: error ? handleDatabaseError(error) : null };
+    }
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
 export const getSocialConnections = async (
   user_id: string
 ): Promise<{ data: DatabaseSocialConnection[] | null; error: any }> => {

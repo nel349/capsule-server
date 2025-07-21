@@ -1,0 +1,328 @@
+### CapsuleX Social Media API Test Cases
+### Base URL for local development
+@baseUrl = http://localhost:3001
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMzQ4ZjYyZDItNTFkNC00OGNjLWE3MzQtN2FiZTJjZGRhMjU2Iiwid2FsbGV0X2FkZHJlc3MiOiJCOFUzV0hGQjFlcjhwaXZlaktEYU42REJjOEVqS3NteVFTRVl4VHYzODdiaCIsImF1dGhfdHlwZSI6IndhbGxldCIsImlhdCI6MTc1MzA3MjUzMSwiZXhwIjoxNzUzNjc3MzMxfQ.wxIDWAwz9U6US0rqNZAKcQ5mzOs8jlcjdWsOAZ6aw-s
+
+### ========================================
+### AUTHENTICATION - Get JWT Token First!
+### ========================================
+
+### 1. Authenticate User (creates user if doesn't exist)
+POST {{baseUrl}}/api/users/auth
+Content-Type: application/json
+
+{
+  "wallet_address": "B8U3WHFB1er8pivejKDaN6DBc8EjKsmyQSEYxTv387bh",
+  "auth_type": "wallet",
+  "name": "Test User"
+}
+
+### ========================================
+### COPY THE TOKEN FROM AUTH RESPONSE ABOVE
+### Replace @authToken value with the token from the auth response
+### ========================================
+
+### ========================================
+### TWITTER OAUTH INTEGRATION TESTS
+### ========================================
+
+### Note: Twitter OAuth exchange is typically called from frontend
+### This is the endpoint that gets called after OAuth redirect
+### Frontend sends authorization code, we exchange for access tokens
+
+### 2. Twitter OAuth Token Exchange (requires frontend OAuth code)
+POST {{baseUrl}}/api/social/twitter/exchange-token
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "code": "OAUTH_AUTHORIZATION_CODE_FROM_TWITTER",
+  "codeVerifier": "PKCE_CODE_VERIFIER_FROM_FRONTEND", 
+  "redirectUri": "capsulex://oauth/twitter"
+}
+
+### ========================================
+### SOCIAL CONNECTIONS MANAGEMENT
+### ========================================
+
+### 3. Get User's Social Connections
+GET {{baseUrl}}/api/social/connections
+Authorization: Bearer {{authToken}}
+
+### 4. Connect Social Media Account Manually (if needed)
+POST {{baseUrl}}/api/social/connect
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "platform": "twitter",
+  "platform_user_id": "1234567890",
+  "platform_username": "testuser",
+  "access_token": "twitter_access_token_here",
+  "refresh_token": "twitter_refresh_token_here"
+}
+
+### ========================================
+### TWITTER POSTING TESTS
+### ========================================
+
+### 5. Post Simple Tweet
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Hello from CapsuleX backend API test! 🚀"
+}
+
+### 6. Post Tweet with URL (will generate Twitter Card)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Check out this amazing Web3 project! 🌟 https://solana.com"
+}
+
+### 7. Post Tweet with Emojis and Hashtags
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🎉 My time capsule just revealed! Created with CapsuleX on Solana blockchain. #CapsuleX #Web3 #TimeCapsula #Solana 🚀"
+}
+
+### 8. Post Tweet with Media (Single Image)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Testing CapsuleX with media upload! 📸",
+  "media_urls": ["https://picsum.photos/800/600"]
+}
+
+### 9. Post Tweet with Multiple Media
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Multiple photos from my time capsule reveal! 📷✨",
+  "media_urls": [
+    "https://picsum.photos/800/600?random=1",
+    "https://picsum.photos/800/600?random=2",
+    "https://picsum.photos/800/600?random=3"
+  ]
+}
+
+### 10. Post Capsule Reveal Tweet (Real World Example)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🎊 My 2024 time capsule just revealed! I predicted Bitcoin would hit $100k... was I right? 🤔 Created with @CapsuleX on Solana. #TimeCapsule #Crypto #Predictions",
+  "media_urls": ["https://picsum.photos/1200/800?random=crypto"]
+}
+
+### 11. Post Tweet with Long Text (Near 280 limit)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "This is a test of a very long tweet to see how our CapsuleX backend handles text that approaches the 280 character limit for Twitter posts. We want to make sure our validation works correctly and that users get proper feedback! 🚀"
+}
+
+### ========================================
+### ERROR CASES - Tweet Posting
+### ========================================
+
+### 12. Post Tweet - Empty Text
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": ""
+}
+
+### 13. Post Tweet - Text Too Long (Over 280 chars)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "This tweet is intentionally way too long to test our validation system. It should exceed the 280 character limit that Twitter enforces. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation."
+}
+
+### 14. Post Tweet - Missing Text Field
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "media_urls": ["https://picsum.photos/800/600"]
+}
+
+### 15. Post Tweet - No Authentication
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+
+{
+  "text": "This should fail due to missing authentication"
+}
+
+### 16. Post Tweet - Invalid Media URLs
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Testing with invalid media URLs",
+  "media_urls": ["not-a-valid-url", "https://invalid-domain-that-does-not-exist.com/image.jpg"]
+}
+
+### ========================================
+### TWITTER INTEGRATION TESTS - USER WITHOUT TWITTER
+### ========================================
+
+### Note: Create a new user who hasn't connected Twitter to test these scenarios
+
+### 17. Authenticate New User (No Twitter Connected)
+POST {{baseUrl}}/api/users/auth
+Content-Type: application/json
+
+{
+  "wallet_address": "DifferentWalletAddressForTesting123456789012345",
+  "auth_type": "wallet",
+  "name": "User Without Twitter"
+}
+
+### 18. Try to Post Tweet Without Twitter Connection
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer NEW_USER_TOKEN_HERE
+
+{
+  "text": "This should fail because user hasn't connected Twitter"
+}
+
+### ========================================
+### ADVANCED TWITTER CONTENT TESTS
+### ========================================
+
+### 19. Post Tweet with Open Graph URL (Rich Preview)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🎯 CapsuleX: Create time capsules on Solana! https://solana.com #Web3 #Blockchain"
+}
+
+### 20. Post Tweet with GitHub URL (Code Preview)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Check out this amazing Web3 project! 💻 https://github.com/solana-labs/solana"
+}
+
+### 21. Post Tweet with YouTube URL (Video Preview)
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Learning about Solana development 📹 https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+}
+
+### 22. Post Tweet with Multiple URLs
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "Great resources: https://solana.com and https://docs.solana.com 📚"
+}
+
+### ========================================
+### REAL WORLD CAPSULE SCENARIOS
+### ========================================
+
+### 23. Birthday Capsule Reveal
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🎂 Happy Birthday to me! My time capsule from last year just revealed. I wrote myself a letter about my goals and dreams. Some came true, others didn't, but the journey was worth it! ✨ #CapsuleX #Birthday #TimeCapsula"
+}
+
+### 24. New Year's Resolution Check
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🗓️ New Year's resolution check! My 2024 capsule revealed today. I promised to: ✅ Learn blockchain ✅ Get fit ❌ Learn Spanish (oops!) 😅 Creating my 2025 capsule now! #NewYear #Goals #CapsuleX"
+}
+
+### 25. Graduation Memory Capsule
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "🎓 Just graduated! My time capsule from freshman year revealed all my hopes and fears. So grateful for the journey and excited for what's next! #Graduation #Memories #CapsuleX #College",
+  "media_urls": ["https://picsum.photos/1200/800?random=graduation"]
+}
+
+### 26. Crypto Prediction Capsule
+POST {{baseUrl}}/api/social/post-tweet
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "text": "💰 My crypto prediction capsule from 2023 just opened! I predicted: BTC $80k ✅ ETH $4k ✅ SOL $150 ✅ Not bad! 😎 What are your 2025 predictions? #Crypto #Predictions #CapsuleX #Web3"
+}
+
+### ========================================
+### TESTING NOTES
+### ========================================
+
+# Before running these tests:
+# 1. Replace {{authToken}} with a valid JWT token from authentication
+# 2. Make sure your local server is running on port 3001
+# 3. Ensure user has completed Twitter OAuth flow first
+# 4. For media tests, ensure media URLs are accessible
+# 5. Check Twitter API rate limits (300 tweets per 15-minute window)
+
+# Expected Response Formats:
+# Success: { "success": true, "data": { "tweet_id": "123", "tweet_url": "https://twitter.com/user/status/123", "username": "user", "text": "tweet text" } }
+# Error: { "success": false, "error": "Error message" }
+
+# Common Status Codes:
+# 200 - Tweet posted successfully
+# 400 - Bad Request (validation errors, text too long, no Twitter connection)
+# 401 - Unauthorized (missing/invalid JWT token)
+# 403 - Forbidden (Twitter API permissions issue)
+# 500 - Internal Server Error
+
+# Twitter API Error Scenarios:
+# - Token expired: User needs to reconnect Twitter
+# - Rate limit exceeded: Too many tweets in short time
+# - Duplicate tweet: Twitter prevents identical tweets
+# - Media upload failed: Invalid media URL or format
+# - Account suspended: Twitter account issues
+
+# Rich Content Features:
+# - URLs: Twitter automatically creates preview cards
+# - Media: Images/videos uploaded to Twitter's CDN
+# - Hashtags: Automatically linked and discoverable
+# - Mentions: @username links to user profiles
+# - Emojis: Full Unicode emoji support
