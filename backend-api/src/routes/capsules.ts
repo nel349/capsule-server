@@ -8,13 +8,14 @@ import {
 import { authenticateToken } from '../middleware/auth';
 import { CreateCapsuleRequest, ApiResponse, AuthenticatedRequest } from '../types';
 import { SolanaService } from '../services/solana';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
+import { CAPSULEX_PROGRAM_CONFIG } from '../config/solana';
 
 const router = express.Router();
 
-// Initialize SolanaService (it will handle IDL loading internally)
+// Initialize SolanaService using the cluster from config
 const solanaService = new SolanaService(
-  process.env.SOLANA_RPC_URL || 'http://localhost:8899', // Use local by default
+  process.env.SOLANA_RPC_URL || CAPSULEX_PROGRAM_CONFIG.cluster,
   'confirmed'
 );
 
@@ -245,6 +246,99 @@ router.patch('/:capsule_id/status', authenticateToken, async (req: Authenticated
     res.status(500).json({
       success: false,
       error: 'Internal server error',
+    } as ApiResponse);
+  }
+});
+
+// Get all capsules owned by a wallet address (on-chain data)
+router.get('/wallet/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    // Validate wallet address
+    if (!solanaService.isValidPublicKey(address)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid wallet address format',
+      } as ApiResponse);
+    }
+
+    // Initialize with a dummy keypair for read-only operations
+    const dummyKeypair = Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+      
+    // Fetch capsules from on-chain
+    const capsules = await solanaService.getCapsulesByOwner(new PublicKey(address));
+
+    // Group capsules by status for easy frontend consumption
+    const grouped = {
+      pending: capsules.filter(c => c.status === 'pending'),
+      ready_to_reveal: capsules.filter(c => c.status === 'ready_to_reveal'),
+      revealed: capsules.filter(c => c.status === 'revealed'),
+    };
+
+    res.json({
+      success: true,
+      data: {
+        wallet_address: address,
+        total_capsules: capsules.length,
+        summary: {
+          pending: grouped.pending.length,
+          ready_to_reveal: grouped.ready_to_reveal.length,
+          revealed: grouped.revealed.length,
+        },
+        capsules: grouped,
+        all_capsules: capsules, // Flat list for easier iteration
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error('Get capsules by wallet error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    } as ApiResponse);
+  }
+});
+
+// Get capsules ready for reveal (can be filtered by wallet)
+router.get('/check-reveals', async (req, res) => {
+  try {
+    const { wallet } = req.query;
+    
+    // Validate wallet address if provided
+    let ownerPublicKey: PublicKey | undefined;
+    if (wallet) {
+      if (!solanaService.isValidPublicKey(wallet as string)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid wallet address format',
+        } as ApiResponse);
+      }
+      ownerPublicKey = new PublicKey(wallet as string);
+    }
+
+    // Initialize with a dummy keypair for read-only operations
+    const dummyKeypair = Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+    
+    // Fetch revealable capsules
+    const revealableCapsules = await solanaService.getRevealableCapsules(ownerPublicKey);
+
+    res.json({
+      success: true,
+      data: {
+        total_ready: revealableCapsules.length,
+        wallet_filter: wallet || 'all',
+        capsules: revealableCapsules,
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error('Check reveals error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error',
     } as ApiResponse);
   }
 });

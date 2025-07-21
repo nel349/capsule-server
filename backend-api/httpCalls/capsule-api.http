@@ -1,7 +1,7 @@
 ### CapsuleX API Test Cases
 ### Base URL for local development
 @baseUrl = http://localhost:3001
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiODZlYmU3ODUtOGI2Ni00YTBmLThkMzQtZjM4MzExZGUzZDU5Iiwid2FsbGV0X2FkZHJlc3MiOiI5V3pEWHdCYm1rZzhaVGJOTXFVeHZRUkF5clp6RHNHWWRMVkw5ell0QVdXTSIsImF1dGhfdHlwZSI6InByaXZ5IiwiaWF0IjoxNzUyNTU1Mjc3LCJleHAiOjE3NTMxNjAwNzd9.3Xz59y8b-plxwzFj7O1qXKASEEg2noksZv5bx6PJdrk
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMmI2OGYzMDQtYTg0MC00NzJmLThhMTktODc4NzJkMjI1ZjNhIiwid2FsbGV0X2FkZHJlc3MiOiI1YTVvUnBxeGt0WWN0OWR6RFNzTVlDaGtqNmhDSnhCQWVoSGZ4SmZjWTNjZCIsImF1dGhfdHlwZSI6IndhbGxldCIsImlhdCI6MTc1MzEzNjI0MiwiZXhwIjoxNzUzNzQxMDQyfQ.I8dcSgjsKN7vyFo6Iv4Ed27Sk5FkTwldellNHtHW48o
 
 ### ========================================
 ### AUTHENTICATION - Get JWT Token First!
@@ -12,7 +12,7 @@ POST {{baseUrl}}/api/users/auth
 Content-Type: application/json
 
 {
-  "wallet_address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+  "wallet_address": "5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd",
   "auth_type": "wallet"
 }
 
@@ -269,3 +269,48 @@ Authorization: Bearer {{authToken}}
 # 401 - Unauthorized (missing/invalid token)
 # 404 - Not Found (capsule not found)
 # 500 - Internal Server Error
+
+### Get capsules by user (requires auth)
+GET http://localhost:3001/api/capsules/my-capsules
+Authorization: Bearer {{authToken}}
+
+### Create new capsule
+POST http://localhost:3001/api/capsules/create
+Content-Type: application/json
+Authorization: Bearer your_jwt_token_here
+
+{
+  "content_encrypted": "encrypted_content_here",
+  "content_hash": "sha256_hash_here",
+  "reveal_date": "2024-12-31T23:59:59Z",
+  "has_media": false,
+  "media_urls": [],
+  "test_mode": true
+}
+
+### Get revealed capsules (public)
+GET http://localhost:3001/api/capsules/revealed?limit=10
+
+### Update capsule status
+PATCH http://localhost:3001/api/capsules/capsule_id_here/status
+Content-Type: application/json
+Authorization: Bearer your_jwt_token_here
+
+{
+  "status": "revealed",
+  "revealed_at": "2024-01-15T10:00:00Z",
+  "posted_to_social": true
+}
+
+### 🆕 Get all capsules owned by a wallet address (on-chain)
+GET http://localhost:3001/api/capsules/wallet/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+### 🆕 Get capsules ready for reveal (all wallets)
+GET http://localhost:3001/api/capsules/check-reveals
+
+### 🆕 Get capsules ready for reveal (specific wallet)
+GET http://localhost:3001/api/capsules/check-reveals?wallet=5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+
+### lets use the wallet address from the auth token
+GET http://localhost:3001/api/capsules/wallet/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd

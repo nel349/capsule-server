@@ -656,4 +656,111 @@ export class SolanaService {
       return [];
     }
   }
+
+  /**
+   * Get all capsules owned by a specific wallet address
+   */
+  async getCapsulesByOwner(owner: PublicKey): Promise<Array<{
+    publicKey: PublicKey;
+    account: any;
+    status: 'pending' | 'ready_to_reveal' | 'revealed';
+    timeToReveal?: number; // seconds until reveal
+  }>> {
+    const program = this.getProgram();
+
+    try {
+      // Fetch all capsule accounts filtering by creator (owner)
+      const capsules = await program.account.capsule.all([
+        {
+          memcmp: {
+            offset: 8, // Skip discriminator
+            bytes: owner.toBase58(),
+          },
+        },
+      ]);
+
+      // print the data of the capsules
+      console.log('Capsules:', capsules);
+
+      // Add status and timing information to each capsule
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      return capsules.map(capsule => {
+        const account = capsule.account;
+        const revealTime = account.revealDate.toNumber();
+        const timeToReveal = revealTime - currentTime;
+        
+        let status: 'pending' | 'ready_to_reveal' | 'revealed';
+        
+        if (account.isRevealed) {
+          status = 'revealed';
+        } else if (timeToReveal <= 0 && account.isActive) {
+          status = 'ready_to_reveal';
+        } else {
+          status = 'pending';
+        }
+
+        return {
+          publicKey: capsule.publicKey,
+          account: {
+            ...account,
+            revealDate: revealTime,
+            createdAt: account.createdAt.toNumber(),
+          },
+          status,
+          timeToReveal: timeToReveal > 0 ? timeToReveal : undefined,
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching capsules by owner:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get capsules that are ready to be revealed
+   */
+  async getRevealableCapsules(owner?: PublicKey): Promise<Array<{
+    publicKey: PublicKey;
+    account: any;
+  }>> {
+    const program = this.getProgram();
+
+    try {
+      const filters = [];
+      
+      // If owner is specified, filter by creator
+      if (owner) {
+        filters.push({
+          memcmp: {
+            offset: 8, // Skip discriminator
+            bytes: owner.toBase58(),
+          },
+        });
+      }
+
+      const capsules = await program.account.capsule.all(filters);
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      // Filter to only include capsules that can be revealed
+      return capsules
+        .filter(capsule => {
+          const account = capsule.account;
+          return !account.isRevealed && 
+                 account.isActive && 
+                 account.revealDate.toNumber() <= currentTime;
+        })
+        .map(capsule => ({
+          publicKey: capsule.publicKey,
+          account: {
+            ...capsule.account,
+            revealDate: capsule.account.revealDate.toNumber(),
+            createdAt: capsule.account.createdAt.toNumber(),
+          },
+        }));
+    } catch (error) {
+      console.error('Error fetching revealable capsules:', error);
+      return [];
+    }
+  }
 }
