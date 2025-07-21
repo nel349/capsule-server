@@ -264,23 +264,24 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
 
     // Check if we should mock Twitter API for development/demo
     const mockTwitterApi = process.env.MOCK_TWITTER_API === 'true';
-    
+
     if (mockTwitterApi) {
       console.log('🎭 Mock mode: Simulating Twitter post');
-      
+
       // Generate mock response data
       const mockTweetId = `mock_${Date.now()}`;
       const mockTweetUrl = `https://twitter.com/${twitterConnection.platform_username}/status/${mockTweetId}`;
-      
+
       // Mock media info if media URLs provided
-      const mockMediaInfo = media_urls && Array.isArray(media_urls) && media_urls.length > 0 
-        ? media_urls.map((url, index) => ({
-            mediaId: `mock_media_${Date.now()}_${index}`,
-            mediaKey: `mock_key_${Date.now()}_${index}`,
-            viewUrl: url, // Use original URL as mock view URL
-            originalUrl: url,
-          }))
-        : [];
+      const mockMediaInfo =
+        media_urls && Array.isArray(media_urls) && media_urls.length > 0
+          ? media_urls.map((url, index) => ({
+              mediaId: `mock_media_${Date.now()}_${index}`,
+              mediaKey: `mock_key_${Date.now()}_${index}`,
+              viewUrl: url, // Use original URL as mock view URL
+              originalUrl: url,
+            }))
+          : [];
 
       // Return mock success response
       return res.status(200).json({
@@ -309,7 +310,7 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
       viewUrl: string;
       originalUrl: string;
     }> = [];
-    
+
     if (media_urls && Array.isArray(media_urls) && media_urls.length > 0) {
       console.log('📸 Processing media URLs:', media_urls);
 
@@ -354,20 +355,20 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
 
           // Log full response to see what X API v2 returns
           console.log('🔍 X API v2 upload response:', JSON.stringify(uploadResponse.data, null, 2));
-          
+
           // X API v2 response structure: { data: { id, media_key, ... } }
           const responseData = uploadResponse.data.data;
           if (!responseData) {
             console.error('❌ No data object in X API response:', uploadResponse.data);
             throw new Error('Invalid response format from X API v2');
           }
-          
+
           const mediaId = responseData.id;
           const mediaKey = responseData.media_key;
-          
+
           if (mediaId) {
             media_ids.push(String(mediaId));
-            
+
             // Fetch the actual viewable URL from X API v2
             let mediaViewUrl: string | undefined;
             try {
@@ -379,17 +380,18 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
                   },
                 }
               );
-              
+
               // Extract the actual URL from the API response
-              mediaViewUrl = mediaDetailsResponse.data.data?.url || 
-                           mediaDetailsResponse.data.data?.preview_image_url;
-              
+              mediaViewUrl =
+                mediaDetailsResponse.data.data?.url ||
+                mediaDetailsResponse.data.data?.preview_image_url;
+
               console.log('📷 Media details from API:', mediaDetailsResponse.data.data);
             } catch (urlError) {
               console.error('⚠️ Could not fetch media URL:', urlError);
               mediaViewUrl = undefined;
             }
-            
+
             // Store media info for response
             uploadedMediaInfo.push({
               mediaId: String(mediaId),
@@ -397,7 +399,7 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
               viewUrl: mediaViewUrl || 'URL not available',
               originalUrl: mediaUrl,
             });
-            
+
             console.log('✅ Media uploaded with X API v2:', {
               mediaId,
               mediaKey,

@@ -16,13 +16,17 @@
   - Target: Crypto experts
   - Full self-custody control
 
-### 3. **Social Media Setup Page** ✅ **New Required Step**
+### 3. **Social Media Setup Page** ✅ **IMPLEMENTED**
 - **Required Connections**:
-  - ✅ **X/Twitter** (required before creating capsules)
+  - ✅ **X/Twitter** (OAuth 2.0 with PKCE flow complete)
+    - Backend: Token exchange endpoint `/api/social/twitter/exchange-token`
+    - Frontend: Profile settings with Twitter connect/reconnect
+    - Scopes: `tweet.read`, `tweet.write`, `users.read`, `media.write`, `offline.access`
 - **Optional Connections**:
   - 🔮 **Farcaster** (future integration)
   - 🔮 **Other social media** (extensible system)
-- **Flow**: If user skips during initial setup, required before first capsule creation
+- **Mock Mode**: ✅ Development/demo toggle in Profile settings
+- **Flow**: Users can connect Twitter in Profile tab, required before posting
 
 ### 4. **Create Capsule Flow** ✅ **WITH SOL ONRAMP**
 **UI Form Fields**:
@@ -61,12 +65,15 @@
 - Countdown timers for upcoming reveals
 - ✅ **No in-app social features** - users interact on the actual X post after reveal
 
-### 7. **Reveal Time**
+### 7. **Reveal Time** ✅ **BACKEND READY**
 **Automated Process**:
 - Scheduler detects reveal_date has passed
 - Calls smart contract `revealCapsule`
 - Decrypts content
 - **Critical**: Posts to user's connected X account
+  - ✅ **Backend API**: `/api/social/post-tweet` with media support
+  - ✅ **X API v2 Integration**: Media upload + tweet posting
+  - ✅ **Mock Mode Available**: For development/demos
 - ✅ **Include CapsuleX signature/link** in X post for verification
 - ✅ **Simple retry logic** for X API failures
 - Updates database: `revealed_at`, `posted_to_x`, `x_post_id`
@@ -126,20 +133,21 @@ User Registration
 
 ## Database Schema Updates Required
 
-### Additional Tables for Dual Auth
+### Database Schema Updates ✅ **IMPLEMENTED**
 ```sql
--- Enhanced users table
+-- Enhanced users table ✅ DEPLOYED
 users (
   user_id UUID PRIMARY KEY,
   wallet_address TEXT UNIQUE NOT NULL,
   auth_type TEXT NOT NULL,              -- 'privy' | 'wallet'
   privy_user_id TEXT UNIQUE,            -- If Privy user
   email TEXT,                           -- If Privy user
+  name TEXT,                            -- Display name
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Social connections
+-- Social connections ✅ DEPLOYED WITH ENHANCEMENTS
 social_connections (
   connection_id UUID PRIMARY KEY,
   user_id UUID REFERENCES users(user_id),
@@ -148,11 +156,13 @@ social_connections (
   platform_username TEXT,
   access_token TEXT ENCRYPTED,
   refresh_token TEXT ENCRYPTED,
+  expires_at TIMESTAMP,                 -- ✅ Token expiration tracking
   is_active BOOLEAN DEFAULT TRUE,
-  connected_at TIMESTAMP DEFAULT NOW()
+  connected_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Enhanced capsules table
+-- Enhanced capsules table (Ready for implementation)
 capsules (
   capsule_id UUID PRIMARY KEY,
   user_id UUID REFERENCES users(user_id),
@@ -180,11 +190,27 @@ capsules (
 3. **Solana Pay research** - Does it handle fiat onramp?
 4. **Privy integration** - Best practices for Solana + Privy
 
-### 📋 **Setup Priority with New Requirements**
-1. **Supabase + enhanced schema** (users, social_connections, capsules)
-2. **Privy account setup** + Solana configuration
-3. **Project structure** with dual auth architecture
-4. **Environment variables** (including Privy, Moonpay research)
-5. **X/Twitter developer account** + OAuth setup
+### 📋 **Implementation Status**
+1. ✅ **Supabase + enhanced schema** (users, social_connections deployed)
+2. 🔮 **Privy account setup** + Solana configuration (future)
+3. ✅ **Project structure** with wallet-first auth architecture  
+4. ✅ **Environment variables** configured
+5. ✅ **X/Twitter developer account** + OAuth setup complete
+6. ✅ **Backend APIs** for social media integration
+7. ✅ **Mock mode** for development and demos
 
-Ready to proceed with the updated understanding?
+## 🎯 **Current Hackathon-Ready Features**
+- ✅ Wallet authentication (Phantom, Solflare)
+- ✅ Twitter OAuth integration with media support
+- ✅ Backend API for tweet posting (`/api/social/post-tweet`)
+- ✅ Mock mode for demo without X API limits
+- ✅ Profile settings with social connections
+- ✅ Centralized API configuration
+- 🔄 **Ready for capsule creation integration**
+
+## 🚀 **Next Priority: Capsule Integration**
+1. **Connect tweet posting to capsule reveal process**
+2. **Test end-to-end flow**: Create capsule → Reveal → Post to Twitter  
+3. **Polish for Solana Mobile Hackathon demo**
+
+**Status: Ready for production demo with mock Twitter mode! 🎭**
