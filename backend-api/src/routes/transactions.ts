@@ -1,12 +1,12 @@
-import express from 'express';
-import { createSOLTransaction, getSOLTransactions, updateSOLTransaction } from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import { CreateSOLTransactionRequest, ApiResponse, AuthenticatedRequest } from '../types';
+import express from "express";
+import { createSOLTransaction, getSOLTransactions, updateSOLTransaction } from "../utils/database";
+import { authenticateToken } from "../middleware/auth";
+import { CreateSOLTransactionRequest, ApiResponse, AuthenticatedRequest } from "../types";
 
 const router = express.Router();
 
 // Create SOL transaction (requires authentication)
-router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const {
       transaction_type,
@@ -18,14 +18,14 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     if (!transaction_type || !sol_amount) {
       return res.status(400).json({
         success: false,
-        error: 'transaction_type and sol_amount are required',
+        error: "transaction_type and sol_amount are required",
       } as ApiResponse);
     }
 
     if (sol_amount <= 0) {
       return res.status(400).json({
         success: false,
-        error: 'sol_amount must be greater than 0',
+        error: "sol_amount must be greater than 0",
       } as ApiResponse);
     }
 
@@ -49,16 +49,16 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
       data: transaction,
     } as ApiResponse);
   } catch (error) {
-    console.error('Create SOL transaction error:', error);
+    console.error("Create SOL transaction error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get user's SOL transactions (requires authentication)
-router.get('/my-transactions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get("/my-transactions", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { data: transactions, error } = await getSOLTransactions(req.user!.user_id);
 
@@ -74,17 +74,17 @@ router.get('/my-transactions', authenticateToken, async (req: AuthenticatedReque
       data: transactions || [],
     } as ApiResponse);
   } catch (error) {
-    console.error('Get SOL transactions error:', error);
+    console.error("Get SOL transactions error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Update transaction status (for processing webhooks)
 router.patch(
-  '/:transaction_id/status',
+  "/:transaction_id/status",
   authenticateToken,
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -94,7 +94,7 @@ router.patch(
       if (!status) {
         return res.status(400).json({
           success: false,
-          error: 'status is required',
+          error: "status is required",
         } as ApiResponse);
       }
 
@@ -115,7 +115,7 @@ router.patch(
       if (!transaction) {
         return res.status(404).json({
           success: false,
-          error: 'Transaction not found',
+          error: "Transaction not found",
         } as ApiResponse);
       }
 
@@ -124,10 +124,10 @@ router.patch(
         data: transaction,
       } as ApiResponse);
     } catch (error) {
-      console.error('Update transaction status error:', error);
+      console.error("Update transaction status error:", error);
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
+        error: "Internal server error",
       } as ApiResponse);
     }
   }

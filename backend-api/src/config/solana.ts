@@ -1,13 +1,13 @@
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey } from "@solana/web3.js";
 
 // CapsuleX Program Configuration
 export const CAPSULEX_PROGRAM_CONFIG = {
-  cluster: 'https://api.devnet.solana.com',
-  programId: 'J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH',
-  authority: 'FnnLFxD5jZh9dhMbPBYvon3nBWm2gmJDaQnXJhYD2G12',
-  vaultPda: '2c9QnE9n793XdjzmbWTAjbUFnhLzdgTAWBeV1o5WytXB',
+  cluster: "https://api.devnet.solana.com",
+  programId: "J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH",
+  authority: "FnnLFxD5jZh9dhMbPBYvon3nBWm2gmJDaQnXJhYD2G12",
+  vaultPda: "2c9QnE9n793XdjzmbWTAjbUFnhLzdgTAWBeV1o5WytXB",
   initializationTx:
-    '51mxMwtmpuCUaArR68mm3b5H9T7GPhrVUfmn1tWp88L5VADVmorsKoETnXnJfqBJPM4Rrr5eXtP7WMNrjAcDz7wq',
+    "51mxMwtmpuCUaArR68mm3b5H9T7GPhrVUfmn1tWp88L5VADVmorsKoETnXnJfqBJPM4Rrr5eXtP7WMNrjAcDz7wq",
 } as const;
 
 // Program Constants as PublicKey objects
@@ -18,4 +18,4 @@ export const PROGRAM_CONSTANTS = {
 } as const;
 
 // Export individual constants for convenience
-export const { PROGRAM_ID, AUTHORITY, VAULT_PDA } = PROGRAM_CONSTANTS; 
+export const { PROGRAM_ID, AUTHORITY, VAULT_PDA } = PROGRAM_CONSTANTS;

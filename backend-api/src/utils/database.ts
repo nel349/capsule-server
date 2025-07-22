@@ -5,20 +5,20 @@ import {
   DatabaseSocialConnection,
   DatabaseSOLTransaction,
   handleDatabaseError,
-} from './supabase';
-import { v4 as uuidv4 } from 'uuid';
+} from "./supabase";
+import { v4 as uuidv4 } from "uuid";
 
 // User operations
 export const createUser = async (userData: {
   wallet_address: string;
-  auth_type: 'privy' | 'wallet';
+  auth_type: "privy" | "wallet";
   privy_user_id?: string;
   email?: string;
   name?: string;
 }): Promise<{ data: DatabaseUser | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('users')
+      .from("users")
       .insert({
         user_id: uuidv4(),
         ...userData,
@@ -37,9 +37,9 @@ export const getUserByWallet = async (
 ): Promise<{ data: DatabaseUser | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('wallet_address', wallet_address)
+      .from("users")
+      .select("*")
+      .eq("wallet_address", wallet_address)
       .single();
 
     return { data, error: error ? handleDatabaseError(error) : null };
@@ -53,9 +53,9 @@ export const getUserByPrivyId = async (
 ): Promise<{ data: DatabaseUser | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('privy_user_id', privy_user_id)
+      .from("users")
+      .select("*")
+      .eq("privy_user_id", privy_user_id)
       .single();
 
     return { data, error: error ? handleDatabaseError(error) : null };
@@ -77,7 +77,7 @@ export const createCapsule = async (capsuleData: {
 }): Promise<{ data: DatabaseCapsule | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('capsules')
+      .from("capsules")
       .insert({
         capsule_id: uuidv4(),
         sol_fee_amount: 0.00005, // Default SOL fee
@@ -97,10 +97,10 @@ export const getCapsulesByUser = async (
 ): Promise<{ data: DatabaseCapsule[] | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('capsules')
-      .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
+      .from("capsules")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
 
     return { data, error: error ? handleDatabaseError(error) : null };
   } catch (error) {
@@ -113,11 +113,11 @@ export const getRevealedCapsules = async (
 ): Promise<{ data: DatabaseCapsule[] | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('capsules')
-      .select('*')
-      .in('status', ['revealed', 'posted'])
-      .not('revealed_at', 'is', null)
-      .order('revealed_at', { ascending: false })
+      .from("capsules")
+      .select("*")
+      .in("status", ["revealed", "posted"])
+      .not("revealed_at", "is", null)
+      .order("revealed_at", { ascending: false })
       .limit(limit);
 
     return { data, error: error ? handleDatabaseError(error) : null };
@@ -128,16 +128,16 @@ export const getRevealedCapsules = async (
 
 export const updateCapsuleStatus = async (
   capsule_id: string,
-  status: 'pending' | 'revealed' | 'posted' | 'failed' | 'cancelled',
+  status: "pending" | "revealed" | "posted" | "failed" | "cancelled",
   additionalData?: { revealed_at?: string; social_post_id?: string; posted_to_social?: boolean }
 ): Promise<{ data: DatabaseCapsule | null; error: any }> => {
   try {
     const updateData = { status, ...additionalData };
 
     const { data, error } = await supabase
-      .from('capsules')
+      .from("capsules")
       .update(updateData)
-      .eq('capsule_id', capsule_id)
+      .eq("capsule_id", capsule_id)
       .select()
       .single();
 
@@ -150,7 +150,7 @@ export const updateCapsuleStatus = async (
 // Social connection operations
 export const createSocialConnection = async (connectionData: {
   user_id: string;
-  platform: 'twitter' | 'farcaster' | 'instagram' | 'tiktok';
+  platform: "twitter" | "farcaster" | "instagram" | "tiktok";
   platform_user_id: string;
   platform_username?: string;
   access_token?: string;
@@ -159,7 +159,7 @@ export const createSocialConnection = async (connectionData: {
 }): Promise<{ data: DatabaseSocialConnection | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('social_connections')
+      .from("social_connections")
       .insert({
         connection_id: uuidv4(),
         ...connectionData,
@@ -175,7 +175,7 @@ export const createSocialConnection = async (connectionData: {
 
 export const upsertSocialConnection = async (connectionData: {
   user_id: string;
-  platform: 'twitter' | 'farcaster' | 'instagram' | 'tiktok';
+  platform: "twitter" | "farcaster" | "instagram" | "tiktok";
   platform_user_id: string;
   platform_username?: string;
   access_token?: string;
@@ -185,16 +185,16 @@ export const upsertSocialConnection = async (connectionData: {
   try {
     // First, try to find existing connection
     const { data: existingConnection } = await supabase
-      .from('social_connections')
-      .select('*')
-      .eq('user_id', connectionData.user_id)
-      .eq('platform', connectionData.platform)
+      .from("social_connections")
+      .select("*")
+      .eq("user_id", connectionData.user_id)
+      .eq("platform", connectionData.platform)
       .single();
 
     if (existingConnection) {
       // Update existing connection
       const { data, error } = await supabase
-        .from('social_connections')
+        .from("social_connections")
         .update({
           platform_user_id: connectionData.platform_user_id,
           platform_username: connectionData.platform_username,
@@ -204,7 +204,7 @@ export const upsertSocialConnection = async (connectionData: {
           is_active: true,
           connected_at: new Date().toISOString(),
         })
-        .eq('connection_id', existingConnection.connection_id)
+        .eq("connection_id", existingConnection.connection_id)
         .select()
         .single();
 
@@ -212,7 +212,7 @@ export const upsertSocialConnection = async (connectionData: {
     } else {
       // Create new connection
       const { data, error } = await supabase
-        .from('social_connections')
+        .from("social_connections")
         .insert({
           connection_id: uuidv4(),
           ...connectionData,
@@ -232,10 +232,10 @@ export const getSocialConnections = async (
 ): Promise<{ data: DatabaseSocialConnection[] | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('social_connections')
-      .select('*')
-      .eq('user_id', user_id)
-      .eq('is_active', true);
+      .from("social_connections")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("is_active", true);
 
     return { data, error: error ? handleDatabaseError(error) : null };
   } catch (error) {
@@ -246,14 +246,14 @@ export const getSocialConnections = async (
 // SOL transaction operations
 export const createSOLTransaction = async (transactionData: {
   user_id: string;
-  transaction_type: 'onramp' | 'capsule_fee' | 'refund';
+  transaction_type: "onramp" | "capsule_fee" | "refund";
   sol_amount: number;
   usd_amount?: number;
   moonpay_transaction_id?: string;
 }): Promise<{ data: DatabaseSOLTransaction | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('sol_transactions')
+      .from("sol_transactions")
       .insert({
         transaction_id: uuidv4(),
         ...transactionData,
@@ -272,10 +272,10 @@ export const getSOLTransactions = async (
 ): Promise<{ data: DatabaseSOLTransaction[] | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('sol_transactions')
-      .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
+      .from("sol_transactions")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
 
     return { data, error: error ? handleDatabaseError(error) : null };
   } catch (error) {
@@ -286,7 +286,7 @@ export const getSOLTransactions = async (
 export const updateSOLTransaction = async (
   transaction_id: string,
   updateData: {
-    status?: 'pending' | 'processing' | 'completed' | 'failed';
+    status?: "pending" | "processing" | "completed" | "failed";
     solana_tx_signature?: string;
     moonpay_status?: string;
     completed_at?: string;
@@ -294,9 +294,9 @@ export const updateSOLTransaction = async (
 ): Promise<{ data: DatabaseSOLTransaction | null; error: any }> => {
   try {
     const { data, error } = await supabase
-      .from('sol_transactions')
+      .from("sol_transactions")
       .update(updateData)
-      .eq('transaction_id', transaction_id)
+      .eq("transaction_id", transaction_id)
       .select()
       .single();
 

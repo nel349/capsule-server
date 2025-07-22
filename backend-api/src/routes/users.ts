@@ -1,29 +1,29 @@
-import express from 'express';
-import { createUser, getUserByWallet, getUserByPrivyId } from '../utils/database';
-import { generateAuthToken } from '../middleware/auth';
-import { CreateUserRequest, ApiResponse } from '../types';
+import express from "express";
+import { createUser, getUserByWallet, getUserByPrivyId } from "../utils/database";
+import { generateAuthToken } from "../middleware/auth";
+import { CreateUserRequest, ApiResponse } from "../types";
 
 const router = express.Router();
 
 // Create or authenticate user
-router.post('/auth', async (req, res) => {
+router.post("/auth", async (req, res) => {
   try {
     const { wallet_address, auth_type, privy_user_id, email, name }: CreateUserRequest = req.body;
 
     if (!wallet_address || !auth_type) {
       return res.status(400).json({
         success: false,
-        error: 'wallet_address and auth_type are required',
+        error: "wallet_address and auth_type are required",
       } as ApiResponse);
     }
 
     // Check if user already exists
     let existingUser = null;
 
-    if (auth_type === 'wallet') {
+    if (auth_type === "wallet") {
       const { data } = await getUserByWallet(wallet_address);
       existingUser = data;
-    } else if (auth_type === 'privy' && privy_user_id) {
+    } else if (auth_type === "privy" && privy_user_id) {
       const { data } = await getUserByPrivyId(privy_user_id);
       existingUser = data;
     }
@@ -53,7 +53,7 @@ router.post('/auth', async (req, res) => {
     if (!user) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to create or retrieve user',
+        error: "Failed to create or retrieve user",
       } as ApiResponse);
     }
 
@@ -79,16 +79,16 @@ router.post('/auth', async (req, res) => {
       },
     } as ApiResponse);
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error("Auth error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get user profile
-router.get('/profile/:wallet_address', async (req, res) => {
+router.get("/profile/:wallet_address", async (req, res) => {
   try {
     const { wallet_address } = req.params;
     const { data: user, error } = await getUserByWallet(wallet_address);
@@ -103,7 +103,7 @@ router.get('/profile/:wallet_address', async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found',
+        error: "User not found",
       } as ApiResponse);
     }
 
@@ -119,10 +119,10 @@ router.get('/profile/:wallet_address', async (req, res) => {
       },
     } as ApiResponse);
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error("Get profile error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });

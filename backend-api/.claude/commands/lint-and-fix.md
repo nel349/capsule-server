@@ -9,6 +9,7 @@ Please run a comprehensive code quality check and automatically fix all issues:
 5. **Report results**: Summarize what was fixed and any remaining issues that need manual attention
 
 **Security focus**: Pay special attention to:
+
 - No `console.log` statements left in production code (should be `console.error` or proper logging)
 - No hardcoded secrets or API keys
 - No `eval()` or dangerous dynamic code execution

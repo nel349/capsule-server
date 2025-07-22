@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ContentValidator } from "../client-validation";
 
 describe("Client-Side Content Validation Tests", () => {
-  
   describe("SHA256 Hash Validation", () => {
     it("Should accept valid SHA256 hex strings", () => {
       const validHashes = [
@@ -13,7 +12,7 @@ describe("Client-Side Content Validation Tests", () => {
         "ABCDEF1234567890abcdef1234567890ABCDEF1234567890abcdef1234567890",
       ];
 
-      validHashes.forEach(hash => {
+      validHashes.forEach((hash) => {
         expect(ContentValidator.isValidSHA256Hex(hash)).to.be.true;
       });
     });
@@ -29,7 +28,7 @@ describe("Client-Side Content Validation Tests", () => {
         " a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcde", // Leading space
       ];
 
-      invalidHashes.forEach(hash => {
+      invalidHashes.forEach((hash) => {
         expect(ContentValidator.isValidSHA256Hex(hash)).to.be.false;
       });
     });
@@ -43,7 +42,7 @@ describe("Client-Side Content Validation Tests", () => {
         "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdGHJKLMNPQRST", // 59 chars (max)
       ];
 
-      validCIDs.forEach(cid => {
+      validCIDs.forEach((cid) => {
         expect(ContentValidator.isValidIPFSCID(cid)).to.be.true;
       });
     });
@@ -59,7 +58,7 @@ describe("Client-Side Content Validation Tests", () => {
         "", // Empty
       ];
 
-      invalidCIDs.forEach(cid => {
+      invalidCIDs.forEach((cid) => {
         expect(ContentValidator.isValidIPFSCID(cid)).to.be.false;
       });
     });
@@ -76,7 +75,7 @@ describe("Client-Side Content Validation Tests", () => {
         "https://example.com:8080/secure-path",
       ];
 
-      validURLs.forEach(url => {
+      validURLs.forEach((url) => {
         expect(ContentValidator.isValidHTTPSURL(url)).to.be.true;
       });
     });
@@ -93,7 +92,7 @@ describe("Client-Side Content Validation Tests", () => {
         "https://" + "a".repeat(500), // Too long (over 500 chars)
       ];
 
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         expect(ContentValidator.isValidHTTPSURL(url)).to.be.false;
       });
     });
@@ -111,7 +110,7 @@ describe("Client-Side Content Validation Tests", () => {
         "INSTAGRAM.COM",
       ];
 
-      validPlatforms.forEach(platform => {
+      validPlatforms.forEach((platform) => {
         expect(ContentValidator.isValidSocialPlatform(platform)).to.be.true;
       });
     });
@@ -126,7 +125,7 @@ describe("Client-Side Content Validation Tests", () => {
         "x", // Incomplete
       ];
 
-      invalidPlatforms.forEach(platform => {
+      invalidPlatforms.forEach((platform) => {
         expect(ContentValidator.isValidSocialPlatform(platform)).to.be.false;
       });
     });
@@ -140,18 +139,18 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should validate Document storage type", () => {
-      const documentStorage = { 
+      const documentStorage = {
         type: "Document" as const,
-        cid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG"
+        cid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
       };
       const result = ContentValidator.validateContentStorage(documentStorage);
       expect(result.valid).to.be.true;
     });
 
     it("Should reject Document with invalid CID", () => {
-      const documentStorage = { 
+      const documentStorage = {
         type: "Document" as const,
-        cid: "InvalidCID123"
+        cid: "InvalidCID123",
       };
       const result = ContentValidator.validateContentStorage(documentStorage);
       expect(result.valid).to.be.false;
@@ -159,24 +158,26 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should validate SocialArchive storage type", () => {
-      const socialStorage = { 
+      const socialStorage = {
         type: "SocialArchive" as const,
         originalUrl: "https://x.com/user/status/123",
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
+        contentHash:
+          "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef",
       };
       const result = ContentValidator.validateContentStorage(socialStorage);
       expect(result.valid).to.be.true;
     });
 
     it("Should reject SocialArchive with invalid URL", () => {
-      const socialStorage = { 
+      const socialStorage = {
         type: "SocialArchive" as const,
         originalUrl: "http://insecure.com", // HTTP not HTTPS
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
+        contentHash:
+          "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef",
       };
       const result = ContentValidator.validateContentStorage(socialStorage);
       expect(result.valid).to.be.false;
@@ -184,27 +185,29 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should validate MediaBundle storage type", () => {
-      const mediaStorage = { 
+      const mediaStorage = {
         type: "MediaBundle" as const,
         primaryCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         attachments: [
           "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH",
-          "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdK"
+          "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdK",
         ],
         manifestCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ",
-        totalSizeBytes: 50000000
+        totalSizeBytes: 50000000,
       };
       const result = ContentValidator.validateContentStorage(mediaStorage);
       expect(result.valid).to.be.true;
     });
 
     it("Should reject MediaBundle with too many attachments", () => {
-      const mediaStorage = { 
+      const mediaStorage = {
         type: "MediaBundle" as const,
         primaryCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-        attachments: Array(51).fill("QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH"), // 51 > 50
+        attachments: Array(51).fill(
+          "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH"
+        ), // 51 > 50
         manifestCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ",
-        totalSizeBytes: 50000000
+        totalSizeBytes: 50000000,
       };
       const result = ContentValidator.validateContentStorage(mediaStorage);
       expect(result.valid).to.be.false;
@@ -212,12 +215,12 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should reject MediaBundle with content too large", () => {
-      const mediaStorage = { 
+      const mediaStorage = {
         type: "MediaBundle" as const,
         primaryCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         attachments: ["QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH"],
         manifestCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ",
-        totalSizeBytes: 2_000_000_000 // 2GB > 1GB limit
+        totalSizeBytes: 2_000_000_000, // 2GB > 1GB limit
       };
       const result = ContentValidator.validateContentStorage(mediaStorage);
       expect(result.valid).to.be.false;
@@ -225,11 +228,12 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should validate ExternalWithBackup storage type", () => {
-      const externalStorage = { 
+      const externalStorage = {
         type: "ExternalWithBackup" as const,
         originalUrl: "https://example.com/resource",
         backupCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-        verificationHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
+        verificationHash:
+          "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef",
       };
       const result = ContentValidator.validateContentStorage(externalStorage);
       expect(result.valid).to.be.true;
@@ -247,7 +251,8 @@ describe("Client-Side Content Validation Tests", () => {
     it("Should validate complete capsule content successfully", () => {
       const encryptedContent = "Encrypted content here";
       const contentStorage = { type: "Text" as const };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
+      const contentIntegrityHash =
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         encryptedContent,
@@ -276,7 +281,8 @@ describe("Client-Side Content Validation Tests", () => {
     it("Should reject Text storage with content too long", () => {
       const longContent = "a".repeat(281); // Over 280 char limit
       const contentStorage = { type: "Text" as const };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
+      const contentIntegrityHash =
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         longContent,
@@ -285,19 +291,23 @@ describe("Client-Side Content Validation Tests", () => {
       );
 
       expect(result.valid).to.be.false;
-      expect(result.error).to.include("Text content too long for on-chain storage");
+      expect(result.error).to.include(
+        "Text content too long for on-chain storage"
+      );
     });
 
     it("Should validate complex SocialArchive content", () => {
       const encryptedContent = "Archived social media content";
-      const contentStorage = { 
+      const contentStorage = {
         type: "SocialArchive" as const,
         originalUrl: "https://x.com/user/status/1234567890",
         archivedCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
         platform: "x.com",
-        contentHash: "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef"
+        contentHash:
+          "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef",
       };
-      const contentIntegrityHash = "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
+      const contentIntegrityHash =
+        "a1b2c3d4e5f67890123456789012345678901234567890abcdefabcdefabcdef";
 
       const result = ContentValidator.validateCapsuleContent(
         encryptedContent,
@@ -329,7 +339,8 @@ describe("Client-Side Content Validation Tests", () => {
     });
 
     it("Should be case sensitive for hex validation", () => {
-      const mixedCaseHash = "A1B2c3d4E5F67890123456789012345678901234567890ABCDEFABCDEFABCDEF";
+      const mixedCaseHash =
+        "A1B2c3d4E5F67890123456789012345678901234567890ABCDEFABCDEFABCDEF";
       expect(ContentValidator.isValidSHA256Hex(mixedCaseHash)).to.be.true;
     });
   });

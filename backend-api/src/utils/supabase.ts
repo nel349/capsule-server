@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
@@ -9,7 +9,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error(
-    'Missing required Supabase environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY'
+    "Missing required Supabase environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
   );
 }
 
@@ -20,7 +20,7 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false,
   },
   db: {
-    schema: 'public',
+    schema: "public",
   },
 });
 
@@ -35,7 +35,7 @@ export interface DatabaseError {
 export interface DatabaseUser {
   user_id: string;
   wallet_address: string;
-  auth_type: 'privy' | 'wallet';
+  auth_type: "privy" | "wallet";
   privy_user_id?: string;
   email?: string;
   name?: string;
@@ -46,7 +46,7 @@ export interface DatabaseUser {
 export interface DatabaseSocialConnection {
   connection_id: string;
   user_id: string;
-  platform: 'twitter' | 'farcaster' | 'instagram' | 'tiktok';
+  platform: "twitter" | "farcaster" | "instagram" | "tiktok";
   platform_user_id: string;
   platform_username?: string;
   access_token?: string;
@@ -72,19 +72,19 @@ export interface DatabaseCapsule {
   sol_fee_amount: number;
   can_edit: boolean;
   created_at: string;
-  status: 'pending' | 'revealed' | 'posted' | 'failed' | 'cancelled';
+  status: "pending" | "revealed" | "posted" | "failed" | "cancelled";
 }
 
 export interface DatabaseSOLTransaction {
   transaction_id: string;
   user_id: string;
-  transaction_type: 'onramp' | 'capsule_fee' | 'refund';
+  transaction_type: "onramp" | "capsule_fee" | "refund";
   sol_amount: number;
   usd_amount?: number;
   solana_tx_signature?: string;
   moonpay_transaction_id?: string;
   moonpay_status?: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   completed_at?: string;
 }
@@ -92,11 +92,11 @@ export interface DatabaseSOLTransaction {
 // Test database connectivity
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase.from('users').select('user_id').limit(1);
+    const { error } = await supabase.from("users").select("user_id").limit(1);
 
     return !error;
   } catch (error) {
-    console.error('Database connection test failed:', error);
+    console.error("Database connection test failed:", error);
     return false;
   }
 };
@@ -113,6 +113,6 @@ export const handleDatabaseError = (error: any): { error: string; code?: string 
 
   // Generic error
   return {
-    error: error?.message || 'Database operation failed',
+    error: error?.message || "Database operation failed",
   };
 };

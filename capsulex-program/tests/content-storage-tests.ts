@@ -8,12 +8,16 @@ import { expect } from "chai";
 import crypto from "crypto";
 
 // Helper functions for PDA generation
-function getCapsulePda(creator: PublicKey, revealDate: anchor.BN, programId: PublicKey) {
+function getCapsulePda(
+  creator: PublicKey,
+  revealDate: anchor.BN,
+  programId: PublicKey
+) {
   const [pda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from(CAPSULE_SEED),
       creator.toBuffer(),
-      Buffer.from(revealDate.toArray('le', 8))
+      Buffer.from(revealDate.toArray("le", 8)),
     ],
     programId
   );
@@ -37,7 +41,7 @@ function getVaultPda(programId: PublicKey) {
 }
 
 function createSHA256Hash(content: string): string {
-  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+  return crypto.createHash("sha256").update(content, "utf8").digest("hex");
 }
 
 function getDefaultAccounts({ provider, capsulePda, nftMintPda, programId }) {
@@ -60,11 +64,12 @@ describe("Content Storage System Tests", () => {
 
   before(async () => {
     console.log("Starting Content Storage Tests");
-    
+
     // Initialize program if needed
     const vaultPda = getVaultPda(program.programId);
     try {
-      await program.methods.initializeProgram()
+      await program.methods
+        .initializeProgram()
         .accounts({
           authority: provider.wallet.publicKey,
           vault: vaultPda,
@@ -83,25 +88,37 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash(originalContent);
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3600);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-      const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
 
-      const tx = await program.methods.createCapsule(
-        originalContent, // Not encrypted for test simplicity
-        { text: {} },
-        contentHash,
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
         revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+        program.programId
+      );
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
+
+      const tx = await program.methods
+        .createCapsule(
+          originalContent, // Not encrypted for test simplicity
+          { text: {} },
+          contentHash,
+          revealDate,
+          false
+        )
+        .accounts(accounts as any)
+        .rpc();
 
       // Verify capsule creation
       const capsule = await program.account.capsule.fetch(capsulePda);
       expect(capsule.encryptedContent).to.equal(originalContent);
       expect(capsule.contentIntegrityHash).to.equal(contentHash);
       expect(capsule.contentStorage).to.deep.equal({ text: {} });
-      
+
       console.log("✅ Text storage capsule created successfully");
     });
 
@@ -110,20 +127,32 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash(longContent);
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3601);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       try {
-        await program.methods.createCapsule(
-          longContent,
-          { text: {} },
-          contentHash,
-          revealDate,
-          false
-        ).accounts(accounts as any).rpc();
-        
+        await program.methods
+          .createCapsule(
+            longContent,
+            { text: {} },
+            contentHash,
+            revealDate,
+            false
+          )
+          .accounts(accounts as any)
+          .rpc();
+
         expect.fail("Should have failed for content too long");
       } catch (error) {
         expect(error.message).to.include("ContentHashTooLong");
@@ -134,28 +163,41 @@ describe("Content Storage System Tests", () => {
 
   describe("Document Storage Type", () => {
     it("Should create capsule with Document storage", async () => {
-      const originalContent = "Long document content that exceeds the on-chain limit...";
+      const originalContent =
+        "Long document content that exceeds the on-chain limit...";
       const mockCID = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG"; // Valid IPFS CID
       const contentHash = createSHA256Hash(originalContent);
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3602);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-      const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
 
-      const tx = await program.methods.createCapsule(
-        mockCID, // Store CID instead of content
-        { document: { cid: mockCID } },
-        contentHash,
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
         revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+        program.programId
+      );
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
+
+      const tx = await program.methods
+        .createCapsule(
+          mockCID, // Store CID instead of content
+          { document: { cid: mockCID } },
+          contentHash,
+          revealDate,
+          false
+        )
+        .accounts(accounts as any)
+        .rpc();
 
       const capsule = await program.account.capsule.fetch(capsulePda);
       expect(capsule.encryptedContent).to.equal(mockCID);
       expect(capsule.contentStorage.document.cid).to.equal(mockCID);
-      
+
       console.log("✅ Document storage capsule created successfully");
     });
 
@@ -164,20 +206,32 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash("test content");
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3603);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       try {
-        await program.methods.createCapsule(
-          invalidCID,
-          { document: { cid: invalidCID } },
-          contentHash,
-          revealDate,
-          false
-        ).accounts(accounts as any).rpc();
-        
+        await program.methods
+          .createCapsule(
+            invalidCID,
+            { document: { cid: invalidCID } },
+            contentHash,
+            revealDate,
+            false
+          )
+          .accounts(accounts as any)
+          .rpc();
+
         expect.fail("Should have failed for invalid CID");
       } catch (error) {
         expect(error.message).to.include("InvalidCID");
@@ -195,31 +249,45 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash("archived tweet content");
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3604);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-      const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
 
-      const tx = await program.methods.createCapsule(
-        archivedCID,
-        { 
-          socialArchive: { 
-            originalUrl: originalUrl,
-            archivedCid: archivedCID,
-            platform,
-            captureTimestamp: new anchor.BN(captureTimestamp),
-            contentHash: contentHash 
-          } 
-        },
-        contentHash,
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
         revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+        program.programId
+      );
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
+
+      const tx = await program.methods
+        .createCapsule(
+          archivedCID,
+          {
+            socialArchive: {
+              originalUrl: originalUrl,
+              archivedCid: archivedCID,
+              platform,
+              captureTimestamp: new anchor.BN(captureTimestamp),
+              contentHash: contentHash,
+            },
+          },
+          contentHash,
+          revealDate,
+          false
+        )
+        .accounts(accounts as any)
+        .rpc();
 
       const capsule = await program.account.capsule.fetch(capsulePda);
-      expect(capsule.contentStorage.socialArchive.originalUrl).to.equal(originalUrl);
+      expect(capsule.contentStorage.socialArchive.originalUrl).to.equal(
+        originalUrl
+      );
       expect(capsule.contentStorage.socialArchive.platform).to.equal(platform);
-      
+
       console.log("✅ SocialArchive storage capsule created successfully");
     });
 
@@ -229,28 +297,40 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash("content");
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3605);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       try {
-        await program.methods.createCapsule(
-          archivedCID,
-          { 
-            socialArchive: { 
-              originalUrl: invalidUrl,
-              archivedCid: archivedCID,
-              platform: "x.com",
-              captureTimestamp: new anchor.BN(Date.now()),
-              contentHash: contentHash 
-            } 
-          },
-          contentHash,
-          revealDate,
-          false
-        ).accounts(accounts as any).rpc();
-        
+        await program.methods
+          .createCapsule(
+            archivedCID,
+            {
+              socialArchive: {
+                originalUrl: invalidUrl,
+                archivedCid: archivedCID,
+                platform: "x.com",
+                captureTimestamp: new anchor.BN(Date.now()),
+                contentHash: contentHash,
+              },
+            },
+            contentHash,
+            revealDate,
+            false
+          )
+          .accounts(accounts as any)
+          .rpc();
+
         expect.fail("Should have failed for non-HTTPS URL");
       } catch (error) {
         expect(error.message).to.include("InvalidURL");
@@ -264,38 +344,56 @@ describe("Content Storage System Tests", () => {
       const primaryCID = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
       const attachmentCIDs = [
         "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdH",
-        "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdI"
+        "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdI",
       ];
       const manifestCID = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdJ";
       const totalSizeBytes = 50000000; // 50MB
       const contentHash = createSHA256Hash("media bundle content");
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3606);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-      const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
 
-      const tx = await program.methods.createCapsule(
-        primaryCID,
-        { 
-          mediaBundle: { 
-            primaryCid: primaryCID,
-            attachments: attachmentCIDs,
-            manifestCid: manifestCID,
-            totalSizeBytes: new anchor.BN(totalSizeBytes) 
-          } 
-        },
-        contentHash,
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
         revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+        program.programId
+      );
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
+
+      const tx = await program.methods
+        .createCapsule(
+          primaryCID,
+          {
+            mediaBundle: {
+              primaryCid: primaryCID,
+              attachments: attachmentCIDs,
+              manifestCid: manifestCID,
+              totalSizeBytes: new anchor.BN(totalSizeBytes),
+            },
+          },
+          contentHash,
+          revealDate,
+          false
+        )
+        .accounts(accounts as any)
+        .rpc();
 
       const capsule = await program.account.capsule.fetch(capsulePda);
-      expect(capsule.contentStorage.mediaBundle.primaryCid).to.equal(primaryCID);
-      expect(capsule.contentStorage.mediaBundle.attachments).to.deep.equal(attachmentCIDs);
-      expect(capsule.contentStorage.mediaBundle.totalSizeBytes.toNumber()).to.equal(totalSizeBytes);
-      
+      expect(capsule.contentStorage.mediaBundle.primaryCid).to.equal(
+        primaryCID
+      );
+      expect(capsule.contentStorage.mediaBundle.attachments).to.deep.equal(
+        attachmentCIDs
+      );
+      expect(
+        capsule.contentStorage.mediaBundle.totalSizeBytes.toNumber()
+      ).to.equal(totalSizeBytes);
+
       console.log("✅ MediaBundle storage capsule created successfully");
     });
 
@@ -307,27 +405,39 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash("content");
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3607);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       try {
-        await program.methods.createCapsule(
-          primaryCID,
-          { 
-            mediaBundle: { 
-              primaryCid: primaryCID,
-              attachments: tooManyAttachments,
-              manifestCid: manifestCID,
-              totalSizeBytes: new anchor.BN(1000000) 
-            } 
-          },
-          contentHash,
-          revealDate,
-          false
-        ).accounts(accounts as any).rpc();
-        
+        await program.methods
+          .createCapsule(
+            primaryCID,
+            {
+              mediaBundle: {
+                primaryCid: primaryCID,
+                attachments: tooManyAttachments,
+                manifestCid: manifestCID,
+                totalSizeBytes: new anchor.BN(1000000),
+              },
+            },
+            contentHash,
+            revealDate,
+            false
+          )
+          .accounts(accounts as any)
+          .rpc();
+
         expect.fail("Should have failed for too many attachments");
       } catch (error) {
         expect(error.message).to.include("TooManyAttachments");
@@ -342,20 +452,26 @@ describe("Content Storage System Tests", () => {
       const invalidHash = "tooshort"; // Not 64 characters
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3608);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       try {
-        await program.methods.createCapsule(
-          content,
-          { text: {} },
-          invalidHash,
-          revealDate,
-          false
-        ).accounts(accounts as any).rpc();
-        
+        await program.methods
+          .createCapsule(content, { text: {} }, invalidHash, revealDate, false)
+          .accounts(accounts as any)
+          .rpc();
+
         expect.fail("Should have failed for invalid hash length");
       } catch (error) {
         expect(error.message).to.include("InvalidContentHash");
@@ -368,23 +484,29 @@ describe("Content Storage System Tests", () => {
       const validHash = createSHA256Hash(content); // Proper 64-char SHA256
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 3609);
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
-      const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
 
-      const tx = await program.methods.createCapsule(
-        content,
-        { text: {} },
-        validHash,
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
         revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+        program.programId
+      );
+      const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
+
+      const tx = await program.methods
+        .createCapsule(content, { text: {} }, validHash, revealDate, false)
+        .accounts(accounts as any)
+        .rpc();
 
       const capsule = await program.account.capsule.fetch(capsulePda);
       expect(capsule.contentIntegrityHash).to.equal(validHash);
       expect(capsule.contentIntegrityHash.length).to.equal(64);
-      
+
       console.log("✅ Valid hash accepted successfully");
     });
   });
@@ -395,32 +517,46 @@ describe("Content Storage System Tests", () => {
       const contentHash = createSHA256Hash(originalContent);
       const currentTime = Math.floor(Date.now() / 1000);
       const revealDate = new anchor.BN(currentTime + 7777); // Unique timestamp to avoid conflicts
-      
-      const capsulePda = getCapsulePda(provider.wallet.publicKey, revealDate, program.programId);
+
+      const capsulePda = getCapsulePda(
+        provider.wallet.publicKey,
+        revealDate,
+        program.programId
+      );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
-      const accounts = getDefaultAccounts({ provider, capsulePda, nftMintPda, programId: program.programId });
+      const accounts = getDefaultAccounts({
+        provider,
+        capsulePda,
+        nftMintPda,
+        programId: program.programId,
+      });
 
       // Create capsule
-      await program.methods.createCapsule(
-        originalContent,
-        { text: {} },
-        contentHash,
-        revealDate,
-        false
-      ).accounts(accounts as any).rpc();
+      await program.methods
+        .createCapsule(
+          originalContent,
+          { text: {} },
+          contentHash,
+          revealDate,
+          false
+        )
+        .accounts(accounts as any)
+        .rpc();
 
       // For testing purposes, we'll verify the content integrity without waiting for reveal date
       // In a real scenario, this would only work after the reveal date
-      
+
       // Verify content integrity (client-side simulation)
-      const capsuleBeforeReveal = await program.account.capsule.fetch(capsulePda);
+      const capsuleBeforeReveal = await program.account.capsule.fetch(
+        capsulePda
+      );
       const storedContent = capsuleBeforeReveal.encryptedContent;
       const storedHash = capsuleBeforeReveal.contentIntegrityHash;
       const verificationHash = createSHA256Hash(storedContent);
 
       expect(verificationHash).to.equal(storedHash);
       expect(capsuleBeforeReveal.isRevealed).to.be.false; // Not revealed yet
-      
+
       console.log("✅ Content integrity verification successful");
     });
   });

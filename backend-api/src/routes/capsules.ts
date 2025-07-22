@@ -1,26 +1,26 @@
-import express from 'express';
+import express from "express";
 import {
   createCapsule,
   getCapsulesByUser,
   getRevealedCapsules,
   updateCapsuleStatus,
-} from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import { CreateCapsuleRequest, ApiResponse, AuthenticatedRequest } from '../types';
-import { SolanaService } from '../services/solana';
-import { Keypair, PublicKey } from '@solana/web3.js';
-import { CAPSULEX_PROGRAM_CONFIG } from '../config/solana';
+} from "../utils/database";
+import { authenticateToken } from "../middleware/auth";
+import { CreateCapsuleRequest, ApiResponse, AuthenticatedRequest } from "../types";
+import { SolanaService } from "../services/solana";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { CAPSULEX_PROGRAM_CONFIG } from "../config/solana";
 
 const router = express.Router();
 
 // Initialize SolanaService using the cluster from config
 const solanaService = new SolanaService(
   process.env.SOLANA_RPC_URL || CAPSULEX_PROGRAM_CONFIG.cluster,
-  'confirmed'
+  "confirmed"
 );
 
 // Create new capsule (requires authentication)
-router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const {
       content_encrypted,
@@ -37,7 +37,7 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     if (!content_encrypted || !content_hash || !reveal_date) {
       return res.status(400).json({
         success: false,
-        error: 'content_encrypted, content_hash, and reveal_date are required',
+        error: "content_encrypted, content_hash, and reveal_date are required",
       } as ApiResponse);
     }
 
@@ -46,7 +46,7 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     if (revealDateTime <= new Date()) {
       return res.status(400).json({
         success: false,
-        error: 'reveal_date must be in the future',
+        error: "reveal_date must be in the future",
       } as ApiResponse);
     }
 
@@ -56,7 +56,7 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     // Test Solana integration if test_mode is enabled
     if (test_mode) {
       try {
-        console.log('🔧 Testing Solana integration...');
+        console.log("🔧 Testing Solana integration...");
 
         // Create a test keypair (in production, you'd use a proper wallet)
         const testKeypair = Keypair.generate();
@@ -65,28 +65,28 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
         await solanaService.initializeProgram(testKeypair);
 
         // Test 1: Initialize program vault (only needed once)
-        console.log('1️⃣ Testing initializeProgramVault...');
+        console.log("1️⃣ Testing initializeProgramVault...");
         try {
           const vaultTx = await solanaService.initializeProgramVault(testKeypair);
-          console.log('✅ Program vault initialized:', vaultTx);
+          console.log("✅ Program vault initialized:", vaultTx);
           console.log(
-            '🔗 View transaction: https://explorer.solana.com/tx/' +
+            "🔗 View transaction: https://explorer.solana.com/tx/" +
               vaultTx +
-              '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899'
+              "?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899"
           );
         } catch (error: any) {
           if (
-            error.message?.includes('already in use') ||
-            error.message?.includes('Already initialized')
+            error.message?.includes("already in use") ||
+            error.message?.includes("Already initialized")
           ) {
-            console.log('✅ Program vault already initialized');
+            console.log("✅ Program vault already initialized");
           } else {
-            console.log('⚠️ Vault initialization failed:', error.message);
+            console.log("⚠️ Vault initialization failed:", error.message);
           }
         }
 
         // Test 2: Create capsule on-chain
-        console.log('2️⃣ Testing createCapsule...');
+        console.log("2️⃣ Testing createCapsule...");
         const capsuleTx = await solanaService.createCapsule({
           content: content_encrypted, // In production, use decrypted content
           contentHash: content_hash,
@@ -95,22 +95,22 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
           isGamified: is_gamified,
         });
 
-        console.log('✅ Capsule created on-chain:', capsuleTx);
+        console.log("✅ Capsule created on-chain:", capsuleTx);
         console.log(
-          '🔗 View transaction: https://explorer.solana.com/tx/' +
+          "🔗 View transaction: https://explorer.solana.com/tx/" +
             capsuleTx +
-            '?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899'
+            "?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899"
         );
         onChainTx = capsuleTx;
         solFeeAmount = 0.001; // Example fee
 
         // Test 3: Get capsule data
-        console.log('3️⃣ Testing getCapsuleData...');
+        console.log("3️⃣ Testing getCapsuleData...");
         const revealDateBN = solanaService.dateToBN(revealDateTime);
         const capsuleData = await solanaService.getCapsuleData(testKeypair.publicKey, revealDateBN);
-        console.log('✅ Capsule data retrieved:', capsuleData);
+        console.log("✅ Capsule data retrieved:", capsuleData);
       } catch (solanaError: any) {
-        console.error('❌ Solana integration test failed:', solanaError);
+        console.error("❌ Solana integration test failed:", solanaError);
         return res.status(500).json({
           success: false,
           error: `Solana integration failed: ${solanaError.message}`,
@@ -141,19 +141,19 @@ router.post('/create', authenticateToken, async (req: AuthenticatedRequest, res)
     res.status(201).json({
       success: true,
       data: capsule,
-      solana_test: test_mode ? 'completed' : 'skipped',
+      solana_test: test_mode ? "completed" : "skipped",
     } as ApiResponse);
   } catch (error) {
-    console.error('Create capsule error:', error);
+    console.error("Create capsule error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get user's capsules (requires authentication)
-router.get('/my-capsules', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get("/my-capsules", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { data: capsules, error } = await getCapsulesByUser(req.user!.user_id);
 
@@ -169,16 +169,16 @@ router.get('/my-capsules', authenticateToken, async (req: AuthenticatedRequest, 
       data: capsules || [],
     } as ApiResponse);
   } catch (error) {
-    console.error('Get user capsules error:', error);
+    console.error("Get user capsules error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get revealed capsules (public, no auth required)
-router.get('/revealed', async (req, res) => {
+router.get("/revealed", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     const { data: capsules, error } = await getRevealedCapsules(limit);
@@ -195,16 +195,16 @@ router.get('/revealed', async (req, res) => {
       data: capsules || [],
     } as ApiResponse);
   } catch (error) {
-    console.error('Get revealed capsules error:', error);
+    console.error("Get revealed capsules error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Update capsule status (for reveals and social posting)
-router.patch('/:capsule_id/status', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.patch("/:capsule_id/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { capsule_id } = req.params;
     const { status, revealed_at, social_post_id, posted_to_social } = req.body;
@@ -212,7 +212,7 @@ router.patch('/:capsule_id/status', authenticateToken, async (req: Authenticated
     if (!status) {
       return res.status(400).json({
         success: false,
-        error: 'status is required',
+        error: "status is required",
       } as ApiResponse);
     }
 
@@ -233,7 +233,7 @@ router.patch('/:capsule_id/status', authenticateToken, async (req: Authenticated
     if (!capsule) {
       return res.status(404).json({
         success: false,
-        error: 'Capsule not found',
+        error: "Capsule not found",
       } as ApiResponse);
     }
 
@@ -242,39 +242,39 @@ router.patch('/:capsule_id/status', authenticateToken, async (req: Authenticated
       data: capsule,
     } as ApiResponse);
   } catch (error) {
-    console.error('Update capsule status error:', error);
+    console.error("Update capsule status error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get all capsules owned by a wallet address (on-chain data)
-router.get('/wallet/:address', async (req, res) => {
+router.get("/wallet/:address", async (req, res) => {
   try {
     const { address } = req.params;
-    
+
     // Validate wallet address
     if (!solanaService.isValidPublicKey(address)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid wallet address format',
+        error: "Invalid wallet address format",
       } as ApiResponse);
     }
 
     // Initialize with a dummy keypair for read-only operations
     const dummyKeypair = Keypair.generate();
     await solanaService.initializeProgram(dummyKeypair);
-      
+
     // Fetch capsules from on-chain
     const capsules = await solanaService.getCapsulesByOwner(new PublicKey(address));
 
     // Group capsules by status for easy frontend consumption
     const grouped = {
-      pending: capsules.filter(c => c.status === 'pending'),
-      ready_to_reveal: capsules.filter(c => c.status === 'ready_to_reveal'),
-      revealed: capsules.filter(c => c.status === 'revealed'),
+      pending: capsules.filter(c => c.status === "pending"),
+      ready_to_reveal: capsules.filter(c => c.status === "ready_to_reveal"),
+      revealed: capsules.filter(c => c.status === "revealed"),
     };
 
     res.json({
@@ -292,27 +292,27 @@ router.get('/wallet/:address', async (req, res) => {
       },
     } as ApiResponse);
   } catch (error) {
-    console.error('Get capsules by wallet error:', error);
+    console.error("Get capsules by wallet error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error",
     } as ApiResponse);
   }
 });
 
 // Get capsules ready for reveal (can be filtered by wallet)
-router.get('/check-reveals', async (req, res) => {
+router.get("/check-reveals", async (req, res) => {
   try {
     const { wallet } = req.query;
-    
+
     // Validate wallet address if provided
     let ownerPublicKey: PublicKey | undefined;
     if (wallet) {
       if (!solanaService.isValidPublicKey(wallet as string)) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid wallet address format',
+          error: "Invalid wallet address format",
         } as ApiResponse);
       }
       ownerPublicKey = new PublicKey(wallet as string);
@@ -321,7 +321,7 @@ router.get('/check-reveals', async (req, res) => {
     // Initialize with a dummy keypair for read-only operations
     const dummyKeypair = Keypair.generate();
     await solanaService.initializeProgram(dummyKeypair);
-    
+
     // Fetch revealable capsules
     const revealableCapsules = await solanaService.getRevealableCapsules(ownerPublicKey);
 
@@ -329,16 +329,16 @@ router.get('/check-reveals', async (req, res) => {
       success: true,
       data: {
         total_ready: revealableCapsules.length,
-        wallet_filter: wallet || 'all',
+        wallet_filter: wallet || "all",
         capsules: revealableCapsules,
       },
     } as ApiResponse);
   } catch (error) {
-    console.error('Check reveals error:', error);
+    console.error("Check reveals error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error",
     } as ApiResponse);
   }
 });

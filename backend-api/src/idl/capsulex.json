@@ -1,0 +1,2315 @@
+{
+  "address": "J1r7tHjxEuCcSYVrikUKxzyeeccuC3QbyHjUbY8Pw7uH",
+  "metadata": {
+    "name": "capsulex",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "complete_game",
+      "discriminator": [
+        105,
+        69,
+        184,
+        5,
+        143,
+        182,
+        92,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "capsule"
+        },
+        {
+          "name": "creator_leaderboard",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  97,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.creator",
+                "account": "Game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_capsule",
+      "discriminator": [
+        195,
+        104,
+        42,
+        180,
+        127,
+        169,
+        62,
+        3
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "capsule",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  112,
+                  115,
+                  117,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "reveal_date"
+              }
+            ]
+          }
+        },
+        {
+          "name": "nft_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  112,
+                  115,
+                  117,
+                  108,
+                  101,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "capsule"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "encrypted_content",
+          "type": "string"
+        },
+        {
+          "name": "content_storage",
+          "type": {
+            "defined": {
+              "name": "ContentStorage"
+            }
+          }
+        },
+        {
+          "name": "content_integrity_hash",
+          "type": "string"
+        },
+        {
+          "name": "reveal_date",
+          "type": "i64"
+        },
+        {
+          "name": "is_gamified",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "initialize_game",
+      "discriminator": [
+        44,
+        62,
+        102,
+        247,
+        126,
+        208,
+        130,
+        215
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "capsule"
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "capsule"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "capsule_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "max_guesses",
+          "type": "u32"
+        },
+        {
+          "name": "max_winners",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "initialize_leaderboard",
+      "discriminator": [
+        47,
+        23,
+        34,
+        39,
+        46,
+        108,
+        91,
+        176
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user"
+        },
+        {
+          "name": "leaderboard",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  97,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "user",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize_program",
+      "discriminator": [
+        176,
+        107,
+        205,
+        168,
+        24,
+        157,
+        175,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "mint_capsule_nft",
+      "discriminator": [
+        157,
+        233,
+        60,
+        113,
+        103,
+        186,
+        247,
+        209
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "capsule",
+          "writable": true
+        },
+        {
+          "name": "nft_mint",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "nft_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "mint_trophy_nft",
+      "discriminator": [
+        53,
+        65,
+        131,
+        97,
+        82,
+        246,
+        31,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true
+        },
+        {
+          "name": "leaderboard"
+        },
+        {
+          "name": "trophy_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  111,
+                  112,
+                  104,
+                  121,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "arg",
+                "path": "trophy_type"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "trophy_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "trophy_type",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "mint_winner_badge",
+      "discriminator": [
+        181,
+        60,
+        45,
+        164,
+        157,
+        254,
+        89,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "winner",
+          "writable": true
+        },
+        {
+          "name": "game"
+        },
+        {
+          "name": "badge_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  100,
+                  103,
+                  101,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              },
+              {
+                "kind": "account",
+                "path": "winner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "winner_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "winner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "badge_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "badge_type",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "reveal_capsule",
+      "discriminator": [
+        217,
+        13,
+        28,
+        128,
+        0,
+        255,
+        1,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "revealer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "capsule",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  112,
+                  115,
+                  117,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "capsule.creator",
+                "account": "Capsule"
+              },
+              {
+                "kind": "arg",
+                "path": "reveal_date"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "reveal_date",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "submit_guess",
+      "discriminator": [
+        61,
+        124,
+        32,
+        227,
+        64,
+        198,
+        252,
+        3
+      ],
+      "accounts": [
+        {
+          "name": "guesser",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "guess",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  101,
+                  115,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              },
+              {
+                "kind": "account",
+                "path": "guesser"
+              },
+              {
+                "kind": "account",
+                "path": "game.current_guesses",
+                "account": "Game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "guess_content",
+          "type": "string"
+        },
+        {
+          "name": "is_anonymous",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "update_leaderboard",
+      "discriminator": [
+        72,
+        95,
+        102,
+        32,
+        118,
+        158,
+        247,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user"
+        },
+        {
+          "name": "leaderboard",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  97,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "user",
+          "type": "pubkey"
+        },
+        {
+          "name": "points",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "verify_guess",
+      "discriminator": [
+        45,
+        170,
+        104,
+        146,
+        146,
+        102,
+        230,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "guess",
+          "writable": true
+        },
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "capsule"
+        },
+        {
+          "name": "leaderboard",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  97,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guess.guesser",
+                "account": "Guess"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "decrypted_content",
+          "type": "string"
+        },
+        {
+          "name": "verification_window_hours",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "semantic_result",
+          "type": "bool"
+        },
+        {
+          "name": "oracle_timestamp",
+          "type": "i64"
+        },
+        {
+          "name": "oracle_nonce",
+          "type": "string"
+        },
+        {
+          "name": "oracle_signature",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Capsule",
+      "discriminator": [
+        212,
+        231,
+        77,
+        219,
+        58,
+        13,
+        118,
+        241
+      ]
+    },
+    {
+      "name": "Game",
+      "discriminator": [
+        27,
+        90,
+        166,
+        125,
+        74,
+        100,
+        121,
+        18
+      ]
+    },
+    {
+      "name": "Guess",
+      "discriminator": [
+        199,
+        136,
+        162,
+        22,
+        201,
+        176,
+        249,
+        195
+      ]
+    },
+    {
+      "name": "LeaderboardEntry",
+      "discriminator": [
+        187,
+        21,
+        182,
+        152,
+        7,
+        55,
+        20,
+        16
+      ]
+    },
+    {
+      "name": "ProgramVault",
+      "discriminator": [
+        19,
+        247,
+        127,
+        147,
+        186,
+        67,
+        82,
+        61
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "CapsuleCreated",
+      "discriminator": [
+        113,
+        132,
+        247,
+        198,
+        217,
+        47,
+        201,
+        223
+      ]
+    },
+    {
+      "name": "CapsuleNftMinted",
+      "discriminator": [
+        39,
+        86,
+        188,
+        158,
+        25,
+        167,
+        138,
+        63
+      ]
+    },
+    {
+      "name": "CapsuleRevealed",
+      "discriminator": [
+        38,
+        218,
+        116,
+        91,
+        16,
+        17,
+        230,
+        195
+      ]
+    },
+    {
+      "name": "GameCompleted",
+      "discriminator": [
+        103,
+        26,
+        106,
+        108,
+        240,
+        191,
+        179,
+        120
+      ]
+    },
+    {
+      "name": "GameInitialized",
+      "discriminator": [
+        82,
+        221,
+        11,
+        2,
+        244,
+        52,
+        240,
+        250
+      ]
+    },
+    {
+      "name": "GuessSubmitted",
+      "discriminator": [
+        9,
+        204,
+        248,
+        63,
+        138,
+        8,
+        159,
+        123
+      ]
+    },
+    {
+      "name": "LeaderboardInitialized",
+      "discriminator": [
+        135,
+        70,
+        99,
+        96,
+        246,
+        187,
+        226,
+        226
+      ]
+    },
+    {
+      "name": "LeaderboardUpdated",
+      "discriminator": [
+        28,
+        209,
+        133,
+        1,
+        229,
+        195,
+        230,
+        228
+      ]
+    },
+    {
+      "name": "PointsAwarded",
+      "discriminator": [
+        201,
+        95,
+        152,
+        50,
+        215,
+        83,
+        188,
+        38
+      ]
+    },
+    {
+      "name": "ProgramInitialized",
+      "discriminator": [
+        43,
+        70,
+        110,
+        241,
+        199,
+        218,
+        221,
+        245
+      ]
+    },
+    {
+      "name": "TrophyNftMinted",
+      "discriminator": [
+        90,
+        139,
+        171,
+        205,
+        108,
+        106,
+        108,
+        88
+      ]
+    },
+    {
+      "name": "WinnerBadgeMinted",
+      "discriminator": [
+        145,
+        113,
+        233,
+        144,
+        51,
+        59,
+        168,
+        32
+      ]
+    },
+    {
+      "name": "WinnerFound",
+      "discriminator": [
+        21,
+        176,
+        140,
+        230,
+        243,
+        252,
+        250,
+        172
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidRevealDate",
+      "msg": "Invalid reveal date. Must be between 1 hour and 1 year from now."
+    },
+    {
+      "code": 6001,
+      "name": "ContentHashTooLong",
+      "msg": "Content hash is too long. Maximum length is 280 characters."
+    },
+    {
+      "code": 6002,
+      "name": "CapsuleNotReady",
+      "msg": "Capsule is not yet ready to be revealed."
+    },
+    {
+      "code": 6003,
+      "name": "CapsuleAlreadyRevealed",
+      "msg": "Capsule has already been revealed."
+    },
+    {
+      "code": 6004,
+      "name": "CapsuleNotActive",
+      "msg": "Capsule is not active."
+    },
+    {
+      "code": 6005,
+      "name": "UnauthorizedCreator",
+      "msg": "Only the capsule creator can perform this action."
+    },
+    {
+      "code": 6006,
+      "name": "UnauthorizedRevealer",
+      "msg": "Only the capsule creator or app authority can reveal this capsule."
+    },
+    {
+      "code": 6007,
+      "name": "GameNotActive",
+      "msg": "Game is not active."
+    },
+    {
+      "code": 6008,
+      "name": "MaxGuessesReached",
+      "msg": "Maximum number of guesses reached for this game."
+    },
+    {
+      "code": 6009,
+      "name": "GuessContentTooLong",
+      "msg": "Guess content is too long. Maximum length is 280 characters."
+    },
+    {
+      "code": 6010,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds for paid guess."
+    },
+    {
+      "code": 6011,
+      "name": "WinnerAlreadyFound",
+      "msg": "Winner has already been found for this game."
+    },
+    {
+      "code": 6012,
+      "name": "IncorrectGuess",
+      "msg": "Guess is not correct."
+    },
+    {
+      "code": 6013,
+      "name": "RewardsAlreadyDistributed",
+      "msg": "Rewards have already been distributed."
+    },
+    {
+      "code": 6014,
+      "name": "NoFeesToDistribute",
+      "msg": "No fees collected to distribute."
+    },
+    {
+      "code": 6015,
+      "name": "MetadataUriTooLong",
+      "msg": "Metadata URI is too long. Maximum length is 200 characters."
+    },
+    {
+      "code": 6016,
+      "name": "BadgeTypeTooLong",
+      "msg": "Badge type is too long. Maximum length is 32 characters."
+    },
+    {
+      "code": 6017,
+      "name": "InvalidFeeAmount",
+      "msg": "Invalid fee amount."
+    },
+    {
+      "code": 6018,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow occurred."
+    },
+    {
+      "code": 6019,
+      "name": "InvalidPercentage",
+      "msg": "Invalid percentage. Must be between 0 and 100."
+    },
+    {
+      "code": 6020,
+      "name": "GameNotEnded",
+      "msg": "Game has not ended yet."
+    },
+    {
+      "code": 6021,
+      "name": "NotEligibleForReward",
+      "msg": "User is not eligible for this reward."
+    },
+    {
+      "code": 6022,
+      "name": "NftMintFailed",
+      "msg": "NFT mint failed."
+    },
+    {
+      "code": 6023,
+      "name": "TokenAccountCreationFailed",
+      "msg": "Token account creation failed."
+    },
+    {
+      "code": 6024,
+      "name": "InvalidAccountOwner",
+      "msg": "Invalid account owner."
+    },
+    {
+      "code": 6025,
+      "name": "AccountNotInitialized",
+      "msg": "Account is not initialized."
+    },
+    {
+      "code": 6026,
+      "name": "InvalidProgramAuthority",
+      "msg": "Invalid program authority."
+    },
+    {
+      "code": 6027,
+      "name": "ClockNotAvailable",
+      "msg": "Clock not available."
+    },
+    {
+      "code": 6028,
+      "name": "InvalidSystemProgram",
+      "msg": "Invalid system program."
+    },
+    {
+      "code": 6029,
+      "name": "InvalidTokenProgram",
+      "msg": "Invalid token program."
+    },
+    {
+      "code": 6030,
+      "name": "InvalidAssociatedTokenProgram",
+      "msg": "Invalid associated token program."
+    },
+    {
+      "code": 6031,
+      "name": "InvalidMetadataProgram",
+      "msg": "Invalid metadata program."
+    },
+    {
+      "code": 6032,
+      "name": "CapsuleNotGamified",
+      "msg": "Capsule is not gamified."
+    },
+    {
+      "code": 6033,
+      "name": "OnlyPaidGuessesEligible",
+      "msg": "Only paid guesses are eligible for rewards."
+    },
+    {
+      "code": 6034,
+      "name": "InvalidGuessId",
+      "msg": "Invalid guess ID."
+    },
+    {
+      "code": 6035,
+      "name": "LeaderboardEntryExists",
+      "msg": "User already has a leaderboard entry."
+    },
+    {
+      "code": 6036,
+      "name": "LeaderboardEntryNotFound",
+      "msg": "Leaderboard entry not found."
+    },
+    {
+      "code": 6037,
+      "name": "InvalidOracleSignature",
+      "msg": "Invalid oracle signature."
+    },
+    {
+      "code": 6038,
+      "name": "OracleSignatureExpired",
+      "msg": "Oracle signature has expired."
+    },
+    {
+      "code": 6039,
+      "name": "InvalidCID",
+      "msg": "Invalid IPFS CID format."
+    },
+    {
+      "code": 6040,
+      "name": "InvalidURL",
+      "msg": "Invalid URL format."
+    },
+    {
+      "code": 6041,
+      "name": "UnsupportedPlatform",
+      "msg": "Unsupported social media platform."
+    },
+    {
+      "code": 6042,
+      "name": "InvalidContentHash",
+      "msg": "Invalid content integrity hash."
+    },
+    {
+      "code": 6043,
+      "name": "TooManyAttachments",
+      "msg": "Too many attachments. Maximum is 50."
+    },
+    {
+      "code": 6044,
+      "name": "ContentTooLarge",
+      "msg": "Content is too large. Maximum is 1GB."
+    }
+  ],
+  "types": [
+    {
+      "name": "Capsule",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "nft_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "encrypted_content",
+            "type": "string"
+          },
+          {
+            "name": "content_storage",
+            "type": {
+              "defined": {
+                "name": "ContentStorage"
+              }
+            }
+          },
+          {
+            "name": "content_integrity_hash",
+            "type": "string"
+          },
+          {
+            "name": "reveal_date",
+            "type": "i64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_gamified",
+            "type": "bool"
+          },
+          {
+            "name": "is_revealed",
+            "type": "bool"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CapsuleCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "capsule_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "nft_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "reveal_date",
+            "type": "i64"
+          },
+          {
+            "name": "is_gamified",
+            "type": "bool"
+          },
+          {
+            "name": "content_storage",
+            "type": {
+              "defined": {
+                "name": "ContentStorage"
+              }
+            }
+          },
+          {
+            "name": "fee_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CapsuleNftMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "capsule_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "nft_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CapsuleRevealed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "capsule_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "revealer",
+            "type": "pubkey"
+          },
+          {
+            "name": "reveal_time",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ContentStorage",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Text"
+          },
+          {
+            "name": "Document",
+            "fields": [
+              {
+                "name": "cid",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "SocialArchive",
+            "fields": [
+              {
+                "name": "original_url",
+                "type": "string"
+              },
+              {
+                "name": "archived_cid",
+                "type": "string"
+              },
+              {
+                "name": "platform",
+                "type": "string"
+              },
+              {
+                "name": "capture_timestamp",
+                "type": "i64"
+              },
+              {
+                "name": "content_hash",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "MediaBundle",
+            "fields": [
+              {
+                "name": "primary_cid",
+                "type": "string"
+              },
+              {
+                "name": "attachments",
+                "type": {
+                  "vec": "string"
+                }
+              },
+              {
+                "name": "manifest_cid",
+                "type": "string"
+              },
+              {
+                "name": "total_size_bytes",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "ExternalWithBackup",
+            "fields": [
+              {
+                "name": "original_url",
+                "type": "string"
+              },
+              {
+                "name": "backup_cid",
+                "type": "string"
+              },
+              {
+                "name": "verification_hash",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Game",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "capsule_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_guesses",
+            "type": "u32"
+          },
+          {
+            "name": "max_winners",
+            "type": "u32"
+          },
+          {
+            "name": "current_guesses",
+            "type": "u32"
+          },
+          {
+            "name": "winners_found",
+            "type": "u32"
+          },
+          {
+            "name": "total_participants",
+            "type": "u32"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "winner_found",
+            "type": "bool"
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "winners",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameCompleted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_participants",
+            "type": "u32"
+          },
+          {
+            "name": "winner_found",
+            "type": "bool"
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "capsule_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_guesses",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Guess",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "guesser",
+            "type": "pubkey"
+          },
+          {
+            "name": "guess_content",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "is_paid",
+            "type": "bool"
+          },
+          {
+            "name": "is_correct",
+            "type": "bool"
+          },
+          {
+            "name": "is_anonymous",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuessSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "guess_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "guesser",
+            "type": "pubkey"
+          },
+          {
+            "name": "guess_content",
+            "type": "string"
+          },
+          {
+            "name": "is_paid",
+            "type": "bool"
+          },
+          {
+            "name": "is_anonymous",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LeaderboardEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_points",
+            "type": "u64"
+          },
+          {
+            "name": "games_won",
+            "type": "u32"
+          },
+          {
+            "name": "games_played",
+            "type": "u32"
+          },
+          {
+            "name": "capsules_created",
+            "type": "u32"
+          },
+          {
+            "name": "total_rewards_earned",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LeaderboardInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "leaderboard_id",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LeaderboardUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "points_added",
+            "type": "u64"
+          },
+          {
+            "name": "total_points",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PointsAwarded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "points",
+            "type": "u64"
+          },
+          {
+            "name": "reason",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramVault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_fees_collected",
+            "type": "u64"
+          },
+          {
+            "name": "total_rewards_distributed",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TrophyNftMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "trophy_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "trophy_type",
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WinnerBadgeMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "badge_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "badge_type",
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WinnerFound",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "guess_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "winning_guess",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

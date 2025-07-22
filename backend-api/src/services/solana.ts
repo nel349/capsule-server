@@ -10,19 +10,19 @@ import {
   ConfirmOptions,
   Commitment,
   SYSVAR_RENT_PUBKEY,
-} from '@solana/web3.js';
-import { AnchorProvider, Program, Wallet, BN, utils } from '@coral-xyz/anchor';
-import { Capsulex } from '@capsulex/types';
-import crypto from 'crypto';
-import idl from '../../../capsulex-program/target/idl/capsulex.json';
+} from "@solana/web3.js";
+import { AnchorProvider, Program, Wallet, BN, utils } from "@coral-xyz/anchor";
+import { Capsulex } from "../types/capsulex";
+import crypto from "crypto";
+import idl from "../idl/capsulex.json";
 
 // Constants from tests
-const VAULT_SEED = 'vault';
-const CAPSULE_SEED = 'capsule';
-const CAPSULE_MINT_SEED = 'capsule_mint';
-const GAME_SEED = 'game';
-const GUESS_SEED = 'guess';
-const LEADERBOARD_SEED = 'leaderboard';
+const VAULT_SEED = "vault";
+const CAPSULE_SEED = "capsule";
+const CAPSULE_MINT_SEED = "capsule_mint";
+const GAME_SEED = "game";
+const GUESS_SEED = "guess";
+const LEADERBOARD_SEED = "leaderboard";
 
 export interface CapsuleData {
   contentHash: string;
@@ -50,10 +50,10 @@ export class SolanaService {
   private provider: AnchorProvider | null = null;
   private idl: Capsulex | null = null;
 
-  constructor(rpcUrl?: string, commitment: Commitment = 'confirmed') {
-    this.connection = new Connection(rpcUrl || clusterApiUrl('devnet'), commitment);
+  constructor(rpcUrl?: string, commitment: Commitment = "confirmed") {
+    this.connection = new Connection(rpcUrl || clusterApiUrl("devnet"), commitment);
     this.idl = idl as Capsulex;
-    console.log('✅ Loaded Capsulex IDL, Program ID:', idl.address);
+    console.log("✅ Loaded Capsulex IDL, Program ID:", idl.address);
   }
 
   /**
@@ -69,13 +69,13 @@ export class SolanaService {
   async initializeProgram(wallet: Keypair, idl?: Capsulex): Promise<void> {
     const programIdl = idl || this.idl;
     if (!programIdl) {
-      throw new Error('IDL not provided. Pass IDL in constructor or as parameter.');
+      throw new Error("IDL not provided. Pass IDL in constructor or as parameter.");
     }
 
     const anchorWallet = new Wallet(wallet);
     this.provider = new AnchorProvider(this.connection, anchorWallet, {
-      commitment: 'confirmed',
-      preflightCommitment: 'confirmed',
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
     });
     this.program = new Program<Capsulex>(programIdl, this.provider);
   }
@@ -85,7 +85,7 @@ export class SolanaService {
    */
   getProgram(): Program<Capsulex> {
     if (!this.program) {
-      throw new Error('Program not initialized. Call initializeProgram first.');
+      throw new Error("Program not initialized. Call initializeProgram first.");
     }
     return this.program;
   }
@@ -95,7 +95,7 @@ export class SolanaService {
    */
   getProvider(): AnchorProvider {
     if (!this.provider) {
-      throw new Error('Provider not initialized. Call initializeProgram first.');
+      throw new Error("Provider not initialized. Call initializeProgram first.");
     }
     return this.provider;
   }
@@ -109,7 +109,7 @@ export class SolanaService {
    */
   getCapsulePda(creator: PublicKey, revealDate: BN): PublicKey {
     const [pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(CAPSULE_SEED), creator.toBuffer(), Buffer.from(revealDate.toArray('le', 8))],
+      [Buffer.from(CAPSULE_SEED), creator.toBuffer(), Buffer.from(revealDate.toArray("le", 8))],
       this.getProgram().programId
     );
     return pda;
@@ -211,7 +211,7 @@ export class SolanaService {
    * Create SHA-256 hash (matching test pattern)
    */
   createSHA256Hash(content: string): string {
-    return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+    return crypto.createHash("sha256").update(content, "utf8").digest("hex");
   }
 
   /**
@@ -286,7 +286,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error initializing program vault:', error);
+      console.error("Error initializing program vault:", error);
       throw error;
     }
   }
@@ -335,7 +335,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error creating capsule:', error);
+      console.error("Error creating capsule:", error);
       throw error;
     }
   }
@@ -366,7 +366,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error revealing capsule:', error);
+      console.error("Error revealing capsule:", error);
       throw error;
     }
   }
@@ -400,7 +400,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error initializing game:', error);
+      console.error("Error initializing game:", error);
       throw error;
     }
   }
@@ -437,7 +437,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error submitting guess:', error);
+      console.error("Error submitting guess:", error);
       throw error;
     }
   }
@@ -466,7 +466,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error initializing leaderboard:', error);
+      console.error("Error initializing leaderboard:", error);
       throw error;
     }
   }
@@ -524,7 +524,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error verifying guess:', error);
+      console.error("Error verifying guess:", error);
       throw error;
     }
   }
@@ -556,7 +556,7 @@ export class SolanaService {
 
       return tx;
     } catch (error) {
-      console.error('Error completing game:', error);
+      console.error("Error completing game:", error);
       throw error;
     }
   }
@@ -582,7 +582,7 @@ export class SolanaService {
         nftMint: capsuleAccount.nftMint,
       };
     } catch (error) {
-      console.error('Error fetching capsule data:', error);
+      console.error("Error fetching capsule data:", error);
       return null;
     }
   }
@@ -598,7 +598,7 @@ export class SolanaService {
       const gameAccount = await program.account.game.fetch(gamePda);
       return gameAccount;
     } catch (error) {
-      console.error('Error fetching game data:', error);
+      console.error("Error fetching game data:", error);
       return null;
     }
   }
@@ -614,7 +614,7 @@ export class SolanaService {
       const guessAccount = await program.account.guess.fetch(guessPda);
       return guessAccount;
     } catch (error) {
-      console.error('Error fetching guess data:', error);
+      console.error("Error fetching guess data:", error);
       return null;
     }
   }
@@ -630,7 +630,7 @@ export class SolanaService {
       const leaderboardAccount = await program.account.leaderboardEntry.fetch(leaderboardPda);
       return leaderboardAccount;
     } catch (error) {
-      console.error('Error fetching leaderboard data:', error);
+      console.error("Error fetching leaderboard data:", error);
       return null;
     }
   }
@@ -652,7 +652,7 @@ export class SolanaService {
       ]);
       return games;
     } catch (error) {
-      console.error('Error fetching games:', error);
+      console.error("Error fetching games:", error);
       return [];
     }
   }
@@ -660,12 +660,14 @@ export class SolanaService {
   /**
    * Get all capsules owned by a specific wallet address
    */
-  async getCapsulesByOwner(owner: PublicKey): Promise<Array<{
-    publicKey: PublicKey;
-    account: any;
-    status: 'pending' | 'ready_to_reveal' | 'revealed';
-    timeToReveal?: number; // seconds until reveal
-  }>> {
+  async getCapsulesByOwner(owner: PublicKey): Promise<
+    Array<{
+      publicKey: PublicKey;
+      account: any;
+      status: "pending" | "ready_to_reveal" | "revealed";
+      timeToReveal?: number; // seconds until reveal
+    }>
+  > {
     const program = this.getProgram();
 
     try {
@@ -680,24 +682,24 @@ export class SolanaService {
       ]);
 
       // print the data of the capsules
-      console.log('Capsules:', capsules);
+      console.log("Capsules:", capsules);
 
       // Add status and timing information to each capsule
       const currentTime = Math.floor(Date.now() / 1000);
-      
+
       return capsules.map(capsule => {
         const account = capsule.account;
         const revealTime = account.revealDate.toNumber();
         const timeToReveal = revealTime - currentTime;
-        
-        let status: 'pending' | 'ready_to_reveal' | 'revealed';
-        
+
+        let status: "pending" | "ready_to_reveal" | "revealed";
+
         if (account.isRevealed) {
-          status = 'revealed';
+          status = "revealed";
         } else if (timeToReveal <= 0 && account.isActive) {
-          status = 'ready_to_reveal';
+          status = "ready_to_reveal";
         } else {
-          status = 'pending';
+          status = "pending";
         }
 
         return {
@@ -712,7 +714,7 @@ export class SolanaService {
         };
       });
     } catch (error) {
-      console.error('Error fetching capsules by owner:', error);
+      console.error("Error fetching capsules by owner:", error);
       return [];
     }
   }
@@ -720,15 +722,17 @@ export class SolanaService {
   /**
    * Get capsules that are ready to be revealed
    */
-  async getRevealableCapsules(owner?: PublicKey): Promise<Array<{
-    publicKey: PublicKey;
-    account: any;
-  }>> {
+  async getRevealableCapsules(owner?: PublicKey): Promise<
+    Array<{
+      publicKey: PublicKey;
+      account: any;
+    }>
+  > {
     const program = this.getProgram();
 
     try {
       const filters = [];
-      
+
       // If owner is specified, filter by creator
       if (owner) {
         filters.push({
@@ -746,9 +750,9 @@ export class SolanaService {
       return capsules
         .filter(capsule => {
           const account = capsule.account;
-          return !account.isRevealed && 
-                 account.isActive && 
-                 account.revealDate.toNumber() <= currentTime;
+          return (
+            !account.isRevealed && account.isActive && account.revealDate.toNumber() <= currentTime
+          );
         })
         .map(capsule => ({
           publicKey: capsule.publicKey,
@@ -759,7 +763,7 @@ export class SolanaService {
           },
         }));
     } catch (error) {
-      console.error('Error fetching revealable capsules:', error);
+      console.error("Error fetching revealable capsules:", error);
       return [];
     }
   }

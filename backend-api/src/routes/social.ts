@@ -1,18 +1,18 @@
-import express from 'express';
+import express from "express";
 import {
   createSocialConnection,
   getSocialConnections,
   upsertSocialConnection,
-} from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import { CreateSocialConnectionRequest, ApiResponse, AuthenticatedRequest } from '../types';
-import axios from 'axios';
-import FormData from 'form-data';
+} from "../utils/database";
+import { authenticateToken } from "../middleware/auth";
+import { CreateSocialConnectionRequest, ApiResponse, AuthenticatedRequest } from "../types";
+import axios from "axios";
+import FormData from "form-data";
 
 const router = express.Router();
 
 // Connect social media account (requires authentication)
-router.post('/connect', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post("/connect", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const {
       platform,
@@ -25,7 +25,7 @@ router.post('/connect', authenticateToken, async (req: AuthenticatedRequest, res
     if (!platform || !platform_user_id) {
       return res.status(400).json({
         success: false,
-        error: 'platform and platform_user_id are required',
+        error: "platform and platform_user_id are required",
       } as ApiResponse);
     }
 
@@ -48,8 +48,8 @@ router.post('/connect', authenticateToken, async (req: AuthenticatedRequest, res
     // Don't return sensitive tokens in response
     const safeConnection = {
       ...connection,
-      access_token: connection?.access_token ? '[REDACTED]' : undefined,
-      refresh_token: connection?.refresh_token ? '[REDACTED]' : undefined,
+      access_token: connection?.access_token ? "[REDACTED]" : undefined,
+      refresh_token: connection?.refresh_token ? "[REDACTED]" : undefined,
     };
 
     res.status(201).json({
@@ -57,16 +57,16 @@ router.post('/connect', authenticateToken, async (req: AuthenticatedRequest, res
       data: safeConnection,
     } as ApiResponse);
   } catch (error) {
-    console.error('Connect social account error:', error);
+    console.error("Connect social account error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Get user's social connections (requires authentication)
-router.get('/connections', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get("/connections", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { data: connections, error } = await getSocialConnections(req.user!.user_id);
 
@@ -80,8 +80,8 @@ router.get('/connections', authenticateToken, async (req: AuthenticatedRequest, 
     // Don't return sensitive tokens in response
     const safeConnections = (connections || []).map(connection => ({
       ...connection,
-      access_token: connection.access_token ? '[REDACTED]' : undefined,
-      refresh_token: connection.refresh_token ? '[REDACTED]' : undefined,
+      access_token: connection.access_token ? "[REDACTED]" : undefined,
+      refresh_token: connection.refresh_token ? "[REDACTED]" : undefined,
     }));
 
     res.json({
@@ -89,17 +89,17 @@ router.get('/connections', authenticateToken, async (req: AuthenticatedRequest, 
       data: safeConnections,
     } as ApiResponse);
   } catch (error) {
-    console.error('Get social connections error:', error);
+    console.error("Get social connections error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Twitter OAuth 2.0 token exchange endpoint
 router.post(
-  '/twitter/exchange-token',
+  "/twitter/exchange-token",
   authenticateToken,
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -108,41 +108,41 @@ router.post(
       if (!code || !codeVerifier || !redirectUri) {
         return res.status(400).json({
           success: false,
-          error: 'code, codeVerifier, and redirectUri are required',
+          error: "code, codeVerifier, and redirectUri are required",
         } as ApiResponse);
       }
 
-      console.log('🔄 Twitter token exchange - starting...');
-      console.log('🔑 Using client ID:', process.env.CLIENT_ID?.substring(0, 10) + '...');
+      console.log("🔄 Twitter token exchange - starting...");
+      console.log("🔑 Using client ID:", process.env.CLIENT_ID?.substring(0, 10) + "...");
 
       // Exchange authorization code for access token with Twitter
       // Twitter OAuth 2.0 requires Basic Auth header with client credentials
       const credentials = Buffer.from(
         `${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`
-      ).toString('base64');
+      ).toString("base64");
 
       const tokenResponse = await axios.post(
-        'https://api.twitter.com/2/oauth2/token',
+        "https://api.twitter.com/2/oauth2/token",
         new URLSearchParams({
           code: code,
-          grant_type: 'authorization_code',
+          grant_type: "authorization_code",
           redirect_uri: redirectUri,
           code_verifier: codeVerifier,
         }),
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            "Content-Type": "application/x-www-form-urlencoded",
             Authorization: `Basic ${credentials}`,
           },
         }
       );
 
-      console.log('✅ Twitter token exchange successful');
+      console.log("✅ Twitter token exchange successful");
 
       const { access_token, refresh_token, expires_in } = tokenResponse.data;
 
       // Get user information from Twitter
-      const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
+      const userResponse = await axios.get("https://api.twitter.com/2/users/me", {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
@@ -150,12 +150,12 @@ router.post(
 
       const { id: platform_user_id, username, name } = userResponse.data.data;
 
-      console.log('✅ Twitter user info retrieved:', username);
+      console.log("✅ Twitter user info retrieved:", username);
 
       // Store or update the connection in database
       const { error } = await upsertSocialConnection({
         user_id: req.user!.user_id,
-        platform: 'twitter',
+        platform: "twitter",
         platform_user_id,
         platform_username: username,
         access_token,
@@ -164,14 +164,14 @@ router.post(
       });
 
       if (error) {
-        console.error('❌ Failed to save Twitter connection:', error);
+        console.error("❌ Failed to save Twitter connection:", error);
         return res.status(500).json({
           success: false,
-          error: 'Failed to save Twitter connection',
+          error: "Failed to save Twitter connection",
         } as ApiResponse);
       }
 
-      console.log('✅ Twitter connection saved to database');
+      console.log("✅ Twitter connection saved to database");
 
       // Return success with user info (no sensitive tokens)
       res.status(200).json({
@@ -182,15 +182,15 @@ router.post(
             username,
             name,
           },
-          accessToken: '[STORED_SECURELY]',
-          refreshToken: refresh_token ? '[STORED_SECURELY]' : undefined,
+          accessToken: "[STORED_SECURELY]",
+          refreshToken: refresh_token ? "[STORED_SECURELY]" : undefined,
         },
       } as ApiResponse);
     } catch (error) {
-      console.error('❌ Twitter token exchange error:', error);
+      console.error("❌ Twitter token exchange error:", error);
 
       if (axios.isAxiosError(error)) {
-        console.error('Twitter API error details:', {
+        console.error("Twitter API error details:", {
           status: error.response?.status,
           data: error.response?.data,
         });
@@ -203,32 +203,32 @@ router.post(
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error during token exchange',
+        error: "Internal server error during token exchange",
       } as ApiResponse);
     }
   }
 );
 
 // Post tweet using stored Twitter connection
-router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { text, media_urls } = req.body;
 
     if (!text || text.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Tweet text is required',
+        error: "Tweet text is required",
       } as ApiResponse);
     }
 
     if (text.length > 280) {
       return res.status(400).json({
         success: false,
-        error: 'Tweet text exceeds 280 character limit',
+        error: "Tweet text exceeds 280 character limit",
       } as ApiResponse);
     }
 
-    console.log('🐦 Posting tweet for user:', req.user!.user_id);
+    console.log("🐦 Posting tweet for user:", req.user!.user_id);
 
     // Get user's Twitter connection
     const { data: connections, error: connectionsError } = await getSocialConnections(
@@ -238,35 +238,35 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
     if (connectionsError || !connections) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to retrieve social connections',
+        error: "Failed to retrieve social connections",
       } as ApiResponse);
     }
 
     const twitterConnection = connections.find(
-      conn => conn.platform === 'twitter' && conn.is_active
+      conn => conn.platform === "twitter" && conn.is_active
     );
 
     if (!twitterConnection) {
       return res.status(400).json({
         success: false,
-        error: 'Twitter account not connected. Please connect your Twitter account first.',
+        error: "Twitter account not connected. Please connect your Twitter account first.",
       } as ApiResponse);
     }
 
     if (!twitterConnection.access_token) {
       return res.status(400).json({
         success: false,
-        error: 'Twitter access token not found. Please reconnect your Twitter account.',
+        error: "Twitter access token not found. Please reconnect your Twitter account.",
       } as ApiResponse);
     }
 
-    console.log('✅ Twitter connection found for user:', twitterConnection.platform_username);
+    console.log("✅ Twitter connection found for user:", twitterConnection.platform_username);
 
     // Check if we should mock Twitter API for development/demo
-    const mockTwitterApi = process.env.MOCK_TWITTER_API === 'true';
+    const mockTwitterApi = process.env.MOCK_TWITTER_API === "true";
 
     if (mockTwitterApi) {
-      console.log('🎭 Mock mode: Simulating Twitter post');
+      console.log("🎭 Mock mode: Simulating Twitter post");
 
       // Generate mock response data
       const mockTweetId = `mock_${Date.now()}`;
@@ -312,36 +312,36 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
     }> = [];
 
     if (media_urls && Array.isArray(media_urls) && media_urls.length > 0) {
-      console.log('📸 Processing media URLs:', media_urls);
+      console.log("📸 Processing media URLs:", media_urls);
 
       try {
         // For each media URL, download and upload to X API v2
         for (const mediaUrl of media_urls.slice(0, 4)) {
           // Twitter allows max 4 media
-          console.log('⬇️ Downloading media from:', mediaUrl);
+          console.log("⬇️ Downloading media from:", mediaUrl);
 
           // Download media to buffer
           const mediaResponse = await axios.get(mediaUrl, {
-            responseType: 'arraybuffer',
+            responseType: "arraybuffer",
             timeout: 30000,
           });
 
           // Detect content type from response headers
-          const contentType = mediaResponse.headers['content-type'] || 'image/jpeg';
-          console.log('📄 Media content type:', contentType);
+          const contentType = mediaResponse.headers["content-type"] || "image/jpeg";
+          console.log("📄 Media content type:", contentType);
 
           // Create form data for X API v2 media upload (multipart/form-data)
           const formData = new FormData();
-          formData.append('media', mediaResponse.data, {
-            filename: `image.${contentType.split('/')[1] || 'jpg'}`,
+          formData.append("media", mediaResponse.data, {
+            filename: `image.${contentType.split("/")[1] || "jpg"}`,
             contentType: contentType,
           });
-          formData.append('media_category', 'tweet_image');
+          formData.append("media_category", "tweet_image");
 
           // Upload using X API v2 media endpoint with multipart/form-data
-          console.log('🚀 Using X API v2 media upload with multipart/form-data');
+          console.log("🚀 Using X API v2 media upload with multipart/form-data");
           const uploadResponse = await axios.post(
-            'https://api.twitter.com/2/media/upload',
+            "https://api.twitter.com/2/media/upload",
             formData,
             {
               headers: {
@@ -354,13 +354,13 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
           );
 
           // Log full response to see what X API v2 returns
-          console.log('🔍 X API v2 upload response:', JSON.stringify(uploadResponse.data, null, 2));
+          console.log("🔍 X API v2 upload response:", JSON.stringify(uploadResponse.data, null, 2));
 
           // X API v2 response structure: { data: { id, media_key, ... } }
           const responseData = uploadResponse.data.data;
           if (!responseData) {
-            console.error('❌ No data object in X API response:', uploadResponse.data);
-            throw new Error('Invalid response format from X API v2');
+            console.error("❌ No data object in X API response:", uploadResponse.data);
+            throw new Error("Invalid response format from X API v2");
           }
 
           const mediaId = responseData.id;
@@ -386,9 +386,9 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
                 mediaDetailsResponse.data.data?.url ||
                 mediaDetailsResponse.data.data?.preview_image_url;
 
-              console.log('📷 Media details from API:', mediaDetailsResponse.data.data);
+              console.log("📷 Media details from API:", mediaDetailsResponse.data.data);
             } catch (urlError) {
-              console.error('⚠️ Could not fetch media URL:', urlError);
+              console.error("⚠️ Could not fetch media URL:", urlError);
               mediaViewUrl = undefined;
             }
 
@@ -396,18 +396,18 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
             uploadedMediaInfo.push({
               mediaId: String(mediaId),
               mediaKey: String(mediaKey),
-              viewUrl: mediaViewUrl || 'URL not available',
+              viewUrl: mediaViewUrl || "URL not available",
               originalUrl: mediaUrl,
             });
 
-            console.log('✅ Media uploaded with X API v2:', {
+            console.log("✅ Media uploaded with X API v2:", {
               mediaId,
               mediaKey,
               viewUrl: mediaViewUrl,
             });
           } else {
-            console.error('❌ No media ID found in response data:', responseData);
-            throw new Error('Media uploaded but no ID returned from X API v2');
+            console.error("❌ No media ID found in response data:", responseData);
+            throw new Error("Media uploaded but no ID returned from X API v2");
           }
         }
 
@@ -415,10 +415,10 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
           tweetData.media = { media_ids };
         }
       } catch (mediaError) {
-        console.error('❌ Media upload failed:', mediaError);
+        console.error("❌ Media upload failed:", mediaError);
 
         if (axios.isAxiosError(mediaError)) {
-          console.error('Media upload error details:', {
+          console.error("Media upload error details:", {
             status: mediaError.response?.status,
             data: mediaError.response?.data,
           });
@@ -426,23 +426,23 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
 
         return res.status(500).json({
           success: false,
-          error: 'Failed to upload media to Twitter',
+          error: "Failed to upload media to Twitter",
         } as ApiResponse);
       }
     }
 
     // Post tweet to Twitter API v2
-    const tweetResponse = await axios.post('https://api.twitter.com/2/tweets', tweetData, {
+    const tweetResponse = await axios.post("https://api.twitter.com/2/tweets", tweetData, {
       headers: {
         Authorization: `Bearer ${twitterConnection.access_token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     const tweetId = tweetResponse.data.data.id;
     const tweetUrl = `https://twitter.com/${twitterConnection.platform_username}/status/${tweetId}`;
 
-    console.log('✅ Tweet posted successfully:', tweetUrl);
+    console.log("✅ Tweet posted successfully:", tweetUrl);
 
     // Return success with tweet info
     res.status(200).json({
@@ -456,10 +456,10 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
       },
     } as ApiResponse);
   } catch (error) {
-    console.error('❌ Tweet posting error:', error);
+    console.error("❌ Tweet posting error:", error);
 
     if (axios.isAxiosError(error)) {
-      console.error('Twitter API error details:', {
+      console.error("Twitter API error details:", {
         status: error.response?.status,
         data: error.response?.data,
       });
@@ -468,14 +468,14 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
       if (error.response?.status === 401) {
         return res.status(400).json({
           success: false,
-          error: 'Twitter access token expired. Please reconnect your Twitter account.',
+          error: "Twitter access token expired. Please reconnect your Twitter account.",
         } as ApiResponse);
       }
 
       if (error.response?.status === 403) {
         return res.status(400).json({
           success: false,
-          error: 'Twitter API access forbidden. Check your Twitter app permissions.',
+          error: "Twitter API access forbidden. Check your Twitter app permissions.",
         } as ApiResponse);
       }
 
@@ -487,17 +487,17 @@ router.post('/post-tweet', authenticateToken, async (req: AuthenticatedRequest, 
 
     res.status(500).json({
       success: false,
-      error: 'Internal server error during tweet posting',
+      error: "Internal server error during tweet posting",
     } as ApiResponse);
   }
 });
 
 // Get app settings (requires authentication)
-router.get('/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get("/settings", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const settings = {
-      mock_twitter_api: process.env.MOCK_TWITTER_API === 'true',
-      environment: process.env.NODE_ENV || 'development',
+      mock_twitter_api: process.env.MOCK_TWITTER_API === "true",
+      environment: process.env.NODE_ENV || "development",
     };
 
     res.json({
@@ -505,40 +505,40 @@ router.get('/settings', authenticateToken, async (req: AuthenticatedRequest, res
       data: settings,
     } as ApiResponse);
   } catch (error) {
-    console.error('Get settings error:', error);
+    console.error("Get settings error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });
 
 // Update app settings (requires authentication)
-router.post('/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post("/settings", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { mock_twitter_api } = req.body;
 
     // Update environment variable for current session
-    if (typeof mock_twitter_api === 'boolean') {
+    if (typeof mock_twitter_api === "boolean") {
       process.env.MOCK_TWITTER_API = mock_twitter_api.toString();
-      console.log('🎭 Mock Twitter API setting updated:', mock_twitter_api);
+      console.log("🎭 Mock Twitter API setting updated:", mock_twitter_api);
     }
 
     const updatedSettings = {
-      mock_twitter_api: process.env.MOCK_TWITTER_API === 'true',
-      environment: process.env.NODE_ENV || 'development',
+      mock_twitter_api: process.env.MOCK_TWITTER_API === "true",
+      environment: process.env.NODE_ENV || "development",
     };
 
     res.json({
       success: true,
       data: updatedSettings,
-      message: 'Settings updated successfully',
+      message: "Settings updated successfully",
     } as ApiResponse);
   } catch (error) {
-    console.error('Update settings error:', error);
+    console.error("Update settings error:", error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     } as ApiResponse);
   }
 });

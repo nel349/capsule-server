@@ -1,17 +1,20 @@
 # CapsuleX Backend API - Development Guide
 
 ## Project Overview
+
 CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Handles time capsule creation, user authentication, social media integration, and SOL transactions.
 
 ## Key Commands
+
 - `npm run dev`: Start development server with hot reload
-- `npm run build`: Build TypeScript to dist/ folder  
+- `npm run build`: Build TypeScript to dist/ folder
 - `npm run start`: Start production server (requires build first)
 - `npm run lint`: Check code with ESLint
 - `npm run lint:fix`: Auto-fix ESLint issues
 - `npm run format`: Format code with Prettier
 
 ## Important Files
+
 - `src/app.ts`: Main Express application and server setup
 - `src/utils/supabase.ts`: Supabase client and database types
 - `src/utils/database.ts`: Database operation functions
@@ -21,6 +24,7 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - `scripts/setup-database.sql`: Database schema for Supabase
 
 ## Code Style & Standards
+
 - **TypeScript**: Strict mode enabled, use proper typing
 - **ESLint + Prettier**: Configured for security and consistency
 - **No console.log**: Use proper error handling, console.error for errors only
@@ -28,6 +32,7 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - **Error handling**: Always return proper API responses with success/error structure
 
 ## API Response Format
+
 ```typescript
 {
   success: boolean;
@@ -38,6 +43,7 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 ```
 
 ## Database Tables
+
 - `users`: User accounts (wallet + Privy auth)
 - `social_connections`: Twitter/social media connections
 - `capsules`: Time capsules with encrypted content
@@ -45,12 +51,14 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - `sol_transactions`: SOL payment tracking
 
 ## Environment Setup
+
 1. Copy `.env.example` to `.env`
 2. Set up Supabase project and get credentials
 3. Run database schema from `../scripts/setup-database.sql`
 4. Configure JWT_SECRET for authentication
 
 ## Security Requirements
+
 - All routes except public ones require authentication
 - Sensitive tokens (access_token, refresh_token) are never returned in API responses
 - Input validation on all user inputs
@@ -58,20 +66,24 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
 - Proper CORS configuration per environment
 
 ## Development Roadmap
+
 **See BACKEND_API_ROADMAP.md for complete development plan**
 
 ### Current Status:
+
 - ✅ Solana Program: 100% complete (time capsules, games, NFTs, leaderboards)
 - ✅ Basic Backend API: 20% complete (auth, basic CRUD, database)
 - ❌ Missing: 80% of backend APIs needed for frontend consumption
 
 ### Next Priorities:
+
 1. **PHASE 1**: Game System Integration (POST/GET game endpoints)
-2. **PHASE 2**: Leaderboard & Achievement APIs  
+2. **PHASE 2**: Leaderboard & Achievement APIs
 3. **PHASE 3**: NFT Management endpoints
 4. **PHASE 4**: Content Discovery & Search
 
 ## Testing
+
 - Health check endpoint: `GET /health`
 - Database connectivity test included in health check
 - Use custom slash commands for comprehensive testing:
@@ -80,6 +92,7 @@ CapsuleX backend API built with Node.js, TypeScript, Express, and Supabase. Hand
   - `/project:review-security`: Security code review
 
 ## Important Notes
+
 - This is a defensive security-focused backend - no malicious code allowed
 - Always run linting and type checking before commits
 - Database uses Row Level Security (RLS) - backend uses service_role to bypass

@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -9,7 +9,7 @@ export interface ApiResponse<T = any> {
 
 export interface CreateUserRequest {
   wallet_address: string;
-  auth_type: 'privy' | 'wallet';
+  auth_type: "privy" | "wallet";
   privy_user_id?: string;
   email?: string;
   name?: string;
@@ -26,7 +26,7 @@ export interface CreateCapsuleRequest {
 }
 
 export interface CreateSocialConnectionRequest {
-  platform: 'twitter' | 'farcaster' | 'instagram' | 'tiktok';
+  platform: "twitter" | "farcaster" | "instagram" | "tiktok";
   platform_user_id: string;
   platform_username?: string;
   access_token?: string;
@@ -35,7 +35,7 @@ export interface CreateSocialConnectionRequest {
 }
 
 export interface CreateSOLTransactionRequest {
-  transaction_type: 'onramp' | 'capsule_fee' | 'refund';
+  transaction_type: "onramp" | "capsule_fee" | "refund";
   sol_amount: number;
   usd_amount?: number;
   moonpay_transaction_id?: string;
@@ -45,6 +45,6 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     user_id: string;
     wallet_address: string;
-    auth_type: 'privy' | 'wallet';
+    auth_type: "privy" | "wallet";
   };
 }
