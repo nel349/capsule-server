@@ -67,8 +67,7 @@ pub struct RevealCapsule<'info> {
         seeds = [CAPSULE_SEED, capsule.creator.as_ref(), &reveal_date.to_le_bytes()],
         bump = capsule.bump,
         constraint = capsule.creator == revealer.key() || 
-                     revealer.key() == crate::constants::APP_AUTHORITY @ CapsuleXError::UnauthorizedRevealer,
-        constraint = capsule.can_reveal() @ CapsuleXError::CapsuleNotReady
+                     revealer.key() == crate::constants::APP_AUTHORITY @ CapsuleXError::UnauthorizedRevealer
     )]
     pub capsule: Account<'info, Capsule>,
 }
