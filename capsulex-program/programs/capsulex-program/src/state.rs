@@ -81,7 +81,8 @@ impl Capsule {
     
     pub fn can_reveal(&self) -> bool {
         let clock = Clock::get().unwrap();
-        clock.unix_timestamp >= self.reveal_date && self.is_active
+        // Allow reveals up to 10 seconds before reveal_date to account for simulation timing
+        (clock.unix_timestamp + 10) >= self.reveal_date && self.is_active
     }
     
     pub fn reveal(&mut self) {
