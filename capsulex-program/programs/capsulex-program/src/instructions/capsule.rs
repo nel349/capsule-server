@@ -60,13 +60,14 @@ pub struct CreateCapsule<'info> {
 #[instruction(reveal_date: i64)]
 pub struct RevealCapsule<'info> {
     #[account(mut)]
-    pub creator: Signer<'info>,
+    pub revealer: Signer<'info>,
     
     #[account(
         mut,
-        seeds = [CAPSULE_SEED, creator.key().as_ref(), &reveal_date.to_le_bytes()],
+        seeds = [CAPSULE_SEED, capsule.creator.as_ref(), &reveal_date.to_le_bytes()],
         bump = capsule.bump,
-        constraint = capsule.creator == creator.key() @ CapsuleXError::UnauthorizedCreator,
+        constraint = capsule.creator == revealer.key() || 
+                     revealer.key() == crate::constants::APP_AUTHORITY @ CapsuleXError::UnauthorizedRevealer,
         constraint = capsule.can_reveal() @ CapsuleXError::CapsuleNotReady
     )]
     pub capsule: Account<'info, Capsule>,
@@ -176,9 +177,11 @@ pub fn create_capsule(
 pub fn reveal_capsule(ctx: Context<RevealCapsule>, _reveal_date: i64) -> Result<()> {
     let capsule = &mut ctx.accounts.capsule;
     
-    // Check if capsule can be revealed
-    require!(capsule.can_reveal(), CapsuleXError::CapsuleNotReady);
+    // Check if already revealed
     require!(!capsule.is_revealed, CapsuleXError::CapsuleAlreadyRevealed);
+    
+    // Check if capsule can be revealed (time check)
+    require!(capsule.can_reveal(), CapsuleXError::CapsuleNotReady);
     
     // Reveal the capsule (no key management needed - done on device)
     capsule.reveal();
@@ -186,6 +189,7 @@ pub fn reveal_capsule(ctx: Context<RevealCapsule>, _reveal_date: i64) -> Result<
     emit!(CapsuleRevealed {
         capsule_id: capsule.key(),
         creator: capsule.creator,
+        revealer: ctx.accounts.revealer.key(),
         reveal_time: Clock::get()?.unix_timestamp,
     });
     
@@ -208,5 +212,6 @@ pub struct CapsuleCreated {
 pub struct CapsuleRevealed {
     pub capsule_id: Pubkey,
     pub creator: Pubkey,
+    pub revealer: Pubkey,
     pub reveal_time: i64,
 } 

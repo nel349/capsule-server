@@ -346,10 +346,10 @@ export class SolanaService {
   async revealCapsule(params: {
     creator: PublicKey;
     revealDate: BN;
-    payer: Keypair;
+    revealer: Keypair;
   }): Promise<string> {
     const program = this.getProgram();
-    const { creator, revealDate, payer } = params;
+    const { creator, revealDate, revealer } = params;
 
     // Derive capsule PDA
     const capsulePda = this.getCapsulePda(creator, revealDate);
@@ -358,10 +358,10 @@ export class SolanaService {
       const tx = await program.methods
         .revealCapsule(revealDate)
         .accounts({
-          creator: payer.publicKey,
+          revealer: revealer.publicKey,
           capsule: capsulePda,
         } as any)
-        .signers([payer])
+        .signers([revealer])
         .rpc();
 
       return tx;

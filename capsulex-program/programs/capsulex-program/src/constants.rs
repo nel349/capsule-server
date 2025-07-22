@@ -1,5 +1,11 @@
 // Constants for the CapsuleX program
 
+use anchor_lang::prelude::*;
+
+// Hardcoded app authority - this is the local wallet for testing  
+// In production, this would be the team's authority wallet
+pub const APP_AUTHORITY: Pubkey = anchor_lang::solana_program::pubkey!("FnnLFxD5jZh9dhMbPBYvon3nBWm2gmJDaQnXJhYD2G12");
+
 // Program constants based on Helius fee analysis
 pub const SOLANA_BASE_FEE: u64 = 5000; // 0.000005 SOL in lamports
 

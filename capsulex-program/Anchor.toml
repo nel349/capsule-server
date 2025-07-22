@@ -20,16 +20,16 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-test-game = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/game-tests.ts"
-test-semantic = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/semantic-integration-tests.ts"
-test-capsulex = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/capsulex-program.ts"
-test-nft = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/nft-tests.ts"
-test-content-storage = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/content-storage-tests.ts"
-test-validation-efficiency = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/validation-efficiency-tests.ts"
-test-client-validation = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/client-validation-tests.ts"
-
+test-game = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/game-tests.ts"
+test-semantic = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/semantic-integration-tests.ts"
+test-capsulex = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/capsulex-program.ts"
+test-nft = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/nft-tests.ts"
+test-content-storage = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/content-storage-tests.ts"
+test-validation-efficiency = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/validation-efficiency-tests.ts"
+test-client-validation = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/client-validation-tests.ts"
+test-authority-reveal = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/authority-reveal-tests.ts"
 # This is a test for the semantic integration test specifically "Accepts semantically equivalent answers" test
-test-specific = "anchor build && anchor deploy && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/content-storage-tests.ts --grep 'Should verify content integrity after reveal'"
+test-specific = "anchor build && anchor deploy --provider.cluster localnet && pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/content-storage-tests.ts --grep 'Should verify content integrity after reveal'"
 
 # Initialize program script
 init-program = "pnpm ts-node scripts/init-program.ts"

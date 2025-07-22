@@ -20,6 +20,9 @@ pub enum CapsuleXError {
     #[msg("Only the capsule creator can perform this action.")]
     UnauthorizedCreator,
     
+    #[msg("Only the capsule creator or app authority can reveal this capsule.")]
+    UnauthorizedRevealer,
+    
     #[msg("Game is not active.")]
     GameNotActive,
     
