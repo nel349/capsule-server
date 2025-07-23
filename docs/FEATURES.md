@@ -28,9 +28,9 @@ This document outlines the features for CapsuleX, a planned decentralized mobile
 - [x] **Development Mode** - Graceful fallback when semantic service unavailable
 - [x] **Clock Synchronization** - Uniform time system prevents signature expiry issues
 
-## 2. Time Capsule Creation & NFT Minting - ❌ NOT IMPLEMENTED with Mobile App
-- [ ] **AES Encryption System** - Content encryption with device key storage
-- [ ] ** Twitter Content Posting** - Posting the hint or lead post to X (this notifies the user that the capsule has been created)
+## 2. Time Capsule Creation & NFT Minting - 🚧 PARTIALLY IMPLEMENTED with Mobile App
+- [x] **AES Encryption System** - Content encryption with device key storage ✅ COMPLETED
+- [x] **Twitter Audience Notification Post** - Posting the hint or notification post to X (this notifies the user that the capsule has been created)
 - [x] Time capsule creation
 - [ ] IPFS/Filecoin storage integration  
 - [ ] SOL onramp integration with Moonpay
@@ -39,6 +39,7 @@ This document outlines the features for CapsuleX, a planned decentralized mobile
 - [ ] AR hints and geofencing - out of scope for MVP
 - [ ] Push notifications - out of scope for MVP
 - [x] Comprehensive monetization - this is attended in MONETIZATION_STRATEGY.md
+- [ ] add gamification to the app
 - [ ] **AI-Powered Answer Validation** - 4-tier hybrid system with Oracle security
 - [ ] **Semantic Equivalence Detection** - Handles synonyms and cultural references
 - [ ] **Oracle Signature System** - Ed25519 cryptographic validation prevents cheating

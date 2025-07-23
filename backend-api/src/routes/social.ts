@@ -513,6 +513,145 @@ router.get("/settings", authenticateToken, async (req: AuthenticatedRequest, res
   }
 });
 
+// Post Twitter audience notification when capsule is created
+router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { capsule_id, reveal_date, hint_text, include_capsule_link = true } = req.body;
+
+    if (!capsule_id || !reveal_date) {
+      return res.status(400).json({
+        success: false,
+        error: "capsule_id and reveal_date are required",
+      } as ApiResponse);
+    }
+
+    console.log("📢 Creating audience notification post for capsule:", capsule_id);
+
+    // Get user's Twitter connection
+    const { data: connections, error: connectionsError } = await getSocialConnections(
+      req.user!.user_id
+    );
+
+    if (connectionsError || !connections) {
+      return res.status(500).json({
+        success: false,
+        error: "Failed to retrieve social connections",
+      } as ApiResponse);
+    }
+
+    const twitterConnection = connections.find(
+      conn => conn.platform === "twitter" && conn.is_active
+    );
+
+    if (!twitterConnection) {
+      return res.status(400).json({
+        success: false,
+        error: "Twitter account not connected. Please connect your Twitter account first.",
+      } as ApiResponse);
+    }
+
+    // Format reveal date nicely
+    const revealDateTime = new Date(reveal_date);
+    const formattedDate = revealDateTime.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    // Create audience notification text
+    const baseText = hint_text || "🔮 I just created a time capsule that will be revealed on";
+    const capsuleLink = include_capsule_link ? `\n\n🔗 Track the reveal: https://capsulex.com/capsule/${capsule_id}` : "";
+    const hashtags = "\n\n#TimeCapsule #CapsuleX #FutureSelf #BlockchainReveal";
+    
+    const fullText = `${baseText} ${formattedDate}! ⏰${capsuleLink}${hashtags}`;
+
+    // Check character limit
+    if (fullText.length > 280) {
+      // Trim if too long
+      const maxLength = 280 - hashtags.length - 3; // Leave room for "..."
+      const trimmedBase = baseText.substring(0, maxLength - formattedDate.length - 20);
+      const trimmedText = `${trimmedBase}... ${formattedDate}! ⏰${hashtags}`;
+      
+      // Use internal post-tweet endpoint
+      const postResponse = await axios.post(
+        `${req.protocol}://${req.get('host')}/api/social/post-tweet`,
+        { text: trimmedText },
+        {
+          headers: {
+            'Authorization': req.headers.authorization,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!postResponse.data.success) {
+        throw new Error(postResponse.data.error || 'Failed to post tweet');
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...postResponse.data.data,
+          notification_type: 'audience_notification',
+          capsule_id,
+          original_text: fullText,
+          posted_text: trimmedText,
+          was_trimmed: true,
+        },
+      } as ApiResponse);
+    } else {
+      // Use internal post-tweet endpoint
+      const postResponse = await axios.post(
+        `${req.protocol}://${req.get('host')}/api/social/post-tweet`,
+        { text: fullText },
+        {
+          headers: {
+            'Authorization': req.headers.authorization,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!postResponse.data.success) {
+        throw new Error(postResponse.data.error || 'Failed to post tweet');
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...postResponse.data.data,
+          notification_type: 'audience_notification',
+          capsule_id,
+          posted_text: fullText,
+          was_trimmed: false,
+        },
+      } as ApiResponse);
+    }
+  } catch (error) {
+    console.error("❌ Audience notification error:", error);
+
+    if (axios.isAxiosError(error)) {
+      console.error("Internal API error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      return res.status(error.response?.status || 500).json({
+        success: false,
+        error: error.response?.data?.error || error.message,
+      } as ApiResponse);
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during audience notification",
+    } as ApiResponse);
+  }
+});
+
 // Update app settings (requires authentication)
 router.post("/settings", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
