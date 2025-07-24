@@ -44,6 +44,15 @@ function getNftMintPda(capsule: PublicKey, programId: PublicKey) {
   return pda;
 }
 
+// get game PDA
+function getGamePda(capsulePda: PublicKey, programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("game"), capsulePda.toBuffer()],
+    programId
+  );
+  return pda;
+}
+
 // Helper function to get vault PDA
 function getVaultPda(programId: PublicKey) {
   const [pda] = PublicKey.findProgramAddressSync(
@@ -53,12 +62,13 @@ function getVaultPda(programId: PublicKey) {
   return pda;
 }
 
-function getDefaultAccounts({ provider, capsulePda, nftMintPda, programId }) {
+function getDefaultAccounts({ provider, capsulePda, nftMintPda, gamePda, programId }) {
   return {
     creator: provider.wallet.publicKey,
     capsule: capsulePda,
     nftMint: nftMintPda,
     vault: getVaultPda(programId),
+    game: getGamePda(capsulePda, programId),
     systemProgram: SystemProgram.programId,
     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -126,6 +136,7 @@ describe("CapsuleX NFT Instructions", () => {
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: getGamePda(capsulePda, program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -196,10 +207,12 @@ describe("CapsuleX NFT Instructions", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
+      gamePda,
       programId: program.programId,
     });
 
@@ -209,21 +222,6 @@ describe("CapsuleX NFT Instructions", () => {
     await program.methods
       .createCapsule(content, { text: {} }, contentHash, revealDate, true)
       .accounts(accounts as any)
-      .rpc();
-
-    const [gamePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("game"), capsulePda.toBuffer()],
-      program.programId
-    );
-
-    await program.methods
-      .initializeGame(capsulePda, 5, 1)
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
       .rpc();
 
     // Try to mint badge without being a winner (non-winner attempts)

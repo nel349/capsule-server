@@ -13,6 +13,15 @@ function createSHA256Hash(content: string): string {
   return crypto.createHash("sha256").update(content, "utf8").digest("hex");
 }
 
+// get game PDA
+function getGamePda(capsulePda: PublicKey, programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("game"), capsulePda.toBuffer()],
+    programId
+  );
+  return pda;
+}
+
 describe("capsulex-program", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
@@ -73,13 +82,13 @@ describe("capsulex-program", () => {
     );
 
     // Find the NFT mint PDA
-    const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
+    const [nftMintPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(CAPSULE_MINT_SEED), capsulePda.toBuffer()],
       program.programId
     );
 
     const contentHash = createSHA256Hash(originalContent);
-    const tx = await program.methods
+    await program.methods
       .createCapsule(
         encryptedContent,
         { text: {} },
@@ -92,6 +101,7 @@ describe("capsulex-program", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: getGamePda(capsulePda, program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -123,7 +133,6 @@ describe("capsulex-program", () => {
       "My 2024 predictions: Bitcoin will hit $150k, AI will revolutionize healthcare, and remote work becomes the norm for 80% of tech jobs. Let's see how this ages! #TimeCapsule2024 #Predictions";
     const currentTime = Math.floor(Date.now() / 1000);
     const revealDate = new anchor.BN(currentTime + 30 * 24 * 60 * 60); // 30 days from now
-    const isGamified = true; // Make it gamified so others can guess
 
     // Generate encryption key (in production, this would be done by the Solana program)
     const encryptionKey = "MySuperSecretKey123456789012345678"; // 32-char key for AES-256
@@ -134,12 +143,8 @@ describe("capsulex-program", () => {
       encryptionKey
     ).toString();
 
-    // console.log(`Creating time capsule with content: "${actualContent.substring(0, 280)}..."`);
-    // console.log(`Encrypted content length: ${encryptedContent.length} characters`);
-    // console.log(`To be revealed on: ${new Date(revealDate.toNumber() * 1000).toLocaleDateString()} (in 30 days)`);
-
     // Find the capsule PDA using reveal_date (timestamp-based addressing)
-    const [capsulePda, capsuleBump] = PublicKey.findProgramAddressSync(
+    const [capsulePda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from(CAPSULE_SEED),
         provider.wallet.publicKey.toBuffer(),
@@ -149,25 +154,26 @@ describe("capsulex-program", () => {
     );
 
     // Find the NFT mint PDA
-    const [nftMintPda, nftMintBump] = PublicKey.findProgramAddressSync(
+    const [nftMintPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(CAPSULE_MINT_SEED), capsulePda.toBuffer()],
       program.programId
     );
 
     const contentHash = createSHA256Hash(actualContent);
-    const tx = await program.methods
+    await program.methods
       .createCapsule(
         encryptedContent,
         { text: {} },
         contentHash,
         revealDate,
-        isGamified
+        true
       )
       .accounts({
         creator: provider.wallet.publicKey,
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: getGamePda(capsulePda, program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -254,17 +260,20 @@ describe("capsulex-program", () => {
     capsulePda,
     nftMintPda,
     vaultPda,
+    gamePda,
   }: {
     provider: anchor.AnchorProvider;
     capsulePda: PublicKey;
     nftMintPda: PublicKey;
     vaultPda: PublicKey;
+    gamePda: PublicKey;
   }) {
     return {
       creator: provider.wallet.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: vaultPda,
+      game: gamePda,
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -285,11 +294,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
     try {
       const contentHash = createSHA256Hash(longContent);
@@ -321,14 +332,16 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
     const contentHash = createSHA256Hash(ipfsHash);
-    const tx = await program.methods
+    await program.methods
       .createCapsule(
         ipfsHash, // Store only the IPFS hash on-chain
         { document: { cid: ipfsHash } },
@@ -376,11 +389,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
 
     // Step 2: Create the time capsule (this stores the encrypted content and locks the key)
@@ -445,11 +460,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
 
     try {
@@ -490,11 +507,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
     // Create capsule
     const contentHash = createSHA256Hash(content);
@@ -538,11 +557,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
     // Create capsule
     const contentHash = createSHA256Hash(content);
@@ -587,11 +608,13 @@ describe("capsulex-program", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = getDefaultAccounts({
       provider,
       capsulePda,
       nftMintPda,
       vaultPda,
+      gamePda,
     });
     // Create capsule
     const contentHash = createSHA256Hash(content);

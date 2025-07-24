@@ -36,6 +36,14 @@ function getNftMintPda(capsule: PublicKey, programId: PublicKey) {
   )[0];
 }
 
+function getGamePda(capsulePda: PublicKey, programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("game"), capsulePda.toBuffer()],
+    programId
+  );
+  return pda;
+}
+
 function getDefaultAccounts({
   provider,
   capsulePda,
@@ -158,6 +166,7 @@ describe("Authority Reveal Tests", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
 
     // Create capsule as regular user
     const contentHash = createSHA256Hash(content);
@@ -174,6 +183,7 @@ describe("Authority Reveal Tests", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: gamePda, // Added gamePda
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -224,6 +234,7 @@ describe("Authority Reveal Tests", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
 
     // Create capsule as regular user
     const contentHash = createSHA256Hash(content);
@@ -240,6 +251,7 @@ describe("Authority Reveal Tests", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: gamePda, // Added gamePda
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -290,6 +302,7 @@ describe("Authority Reveal Tests", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
 
     // Create capsule as regular user
     const contentHash = createSHA256Hash(content);
@@ -306,6 +319,7 @@ describe("Authority Reveal Tests", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: gamePda, // Added gamePda
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -358,6 +372,7 @@ describe("Authority Reveal Tests", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
 
     // Create capsule as regular user
     const contentHash = createSHA256Hash(content);
@@ -374,6 +389,7 @@ describe("Authority Reveal Tests", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: gamePda, // Added gamePda
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -425,6 +441,7 @@ describe("Authority Reveal Tests", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
 
     // Create capsule as regular user
     const contentHash = createSHA256Hash(content);
@@ -441,6 +458,7 @@ describe("Authority Reveal Tests", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: vaultPda,
+        game: gamePda, // Added gamePda
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,

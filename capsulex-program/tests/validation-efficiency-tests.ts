@@ -40,16 +40,25 @@ function getVaultPda(programId: PublicKey) {
   return pda;
 }
 
+function getGamePda(capsulePda: PublicKey, programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("game"), capsulePda.toBuffer()],
+    programId
+  );
+  return pda;
+}
+
 function createSHA256Hash(content: string): string {
   return crypto.createHash("sha256").update(content, "utf8").digest("hex");
 }
 
-function getDefaultAccounts({ provider, capsulePda, nftMintPda, programId }) {
+function getDefaultAccounts({ provider, capsulePda, nftMintPda, gamePda, programId }) {
   return {
     creator: provider.wallet.publicKey,
     capsule: capsulePda,
     nftMint: nftMintPda,
     vault: getVaultPda(programId),
+    game: getGamePda(capsulePda, programId),
     systemProgram: SystemProgram.programId,
     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
     rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -94,10 +103,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -148,10 +159,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -195,10 +208,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -242,10 +257,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -288,10 +305,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -344,10 +363,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -404,10 +425,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
         nftMintPda,
+        gamePda,
         programId: program.programId,
       });
 
@@ -463,10 +486,12 @@ describe("On-Chain Validation Efficiency Tests", () => {
         program.programId
       );
       const nftMintPda = getNftMintPda(capsulePda, program.programId);
+      const gamePda = getGamePda(capsulePda, program.programId);
       const accounts = getDefaultAccounts({
         provider,
         capsulePda,
-        nftMintPda,
+        nftMintPda, 
+        gamePda,
         programId: program.programId,
       });
 

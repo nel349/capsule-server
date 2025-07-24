@@ -27,20 +27,20 @@ export const authenticateToken = async (
     // Verify JWT token
     const decoded = jwt.verify(token, jwtSecret) as any;
 
-    console.log("🔐 Auth middleware - Token decoded:", {
-      wallet_address: decoded.wallet_address,
-      user_id: decoded.user_id,
-      exp: new Date(decoded.exp * 1000),
-    });
+    // console.log("🔐 Auth middleware - Token decoded:", {
+    //   wallet_address: decoded.wallet_address,
+    //   user_id: decoded.user_id,
+    //   exp: new Date(decoded.exp * 1000),
+    // });
 
     // Get user from database
     const { data: user, error } = await getUserByWallet(decoded.wallet_address);
 
-    console.log("🔍 Auth middleware - Database lookup:", {
-      wallet_address: decoded.wallet_address,
-      userFound: !!user,
-      error: error?.error || "none",
-    });
+    // console.log("🔍 Auth middleware - Database lookup:", {
+    //   wallet_address: decoded.wallet_address,
+    //   userFound: !!user,
+    //   error: error?.error || "none",
+    // });
 
     if (error || !user) {
       console.error("❌ Auth middleware - User lookup failed:", {
