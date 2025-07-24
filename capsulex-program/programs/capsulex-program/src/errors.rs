@@ -137,4 +137,7 @@ pub enum CapsuleXError {
     
     #[msg("Content is too large. Maximum is 1GB.")]
     ContentTooLarge,
+    
+    #[msg("Invalid game account provided.")]
+    InvalidGameAccount,
 } 

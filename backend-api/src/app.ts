@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 // Import routes
 import usersRouter from './routes/users';
 import capsulesRouter from './routes/capsules';
+import gamesRouter from './routes/games';
 import socialRouter from './routes/social';
 import transactionsRouter from './routes/transactions';
 
@@ -61,6 +62,7 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/users', usersRouter);
 app.use('/api/capsules', capsulesRouter);
+app.use('/api/games', gamesRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/transactions', transactionsRouter);
 

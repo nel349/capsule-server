@@ -54,7 +54,7 @@ This document outlines the features for CapsuleX, a planned decentralized mobile
 - [ ] **Multi-recipient Capsules** - Multiple wallet address support
 - [ ] **Ephemeral NFTs** - Auto-destruct post-reveal functionality
 
-## 3. Mobile Application Architecture - ✅ COMPLETED
+## 3. Mobile Application Architecture - in progress
 - [x] **React Native Foundation** - Cross-platform mobile development
 - [x] **UI/UX Implementation** - Time capsule creation and game interfaces
 - [ ] **Camera Integration** - Photo/video capture for content creation - out of scope for MVP
@@ -62,7 +62,7 @@ This document outlines the features for CapsuleX, a planned decentralized mobile
 - [ ] **Offline Mode** - Background sync capabilities - out of scope for MVP
 - [ ] **App Store Deployment** - iOS and Android distribution
 
-## 4. X (Twitter) Integration & Social Features - ✅ COMPLETED
+## 4. X (Twitter) Integration & Social Features - in progress
 - [x] **OAuth Integration** - X API authentication for posting permissions
 - [] **Automated Hint Posting** - Text/emoji hints with Solana Blinks
 - [] **Solana Blinks** - One-tap guessing links in X posts

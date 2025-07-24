@@ -56,6 +56,15 @@ function getVaultPda(programId: PublicKey) {
   return pda;
 }
 
+// get game PDA
+function getGamePda(capsulePda: PublicKey, programId: PublicKey) {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("game"), capsulePda.toBuffer()],
+    programId
+  );
+  return pda;
+}
+
 function getDefaultAccounts({ provider, capsulePda, nftMintPda, programId }) {
   return {
     creator: provider.wallet.publicKey,
@@ -122,17 +131,21 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    // Get the game PDA (will be created automatically by createCapsule when is_gamified=true)
+    const gamePda = getGamePda(capsulePda, program.programId);
+
     const accounts = {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: gamePda, // Add game account for gamified capsule
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     };
 
-    // Create gamified capsule first (capsule creator creates their capsule)
+    // Create gamified capsule (this will automatically initialize the game when is_gamified=true)
     const content = "test content for game";
     const contentHash = createSHA256Hash(content);
     await program.methods
@@ -141,31 +154,12 @@ describe("CapsuleX Game Instructions", () => {
         { text: {} },
         contentHash,
         revealDate,
-        true // is_gamified
+        true // is_gamified - this will trigger automatic game initialization
       )
       .accounts(accounts as any)
       .rpc();
 
-    // Initialize game
-    const [gamePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("game"), capsulePda.toBuffer()],
-      program.programId
-    );
-
-    // Initialize game (capsule creator initializes their game)
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        50, // max_guesses (no more guess fees!)
-        3 // max_winners
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .rpc();
+    // Game should now be automatically initialized - no separate initializeGame call needed!
 
     // Verify game initialization
     const game = await program.account.game.fetch(gamePda);
@@ -195,10 +189,12 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
     const nftMintPda = getNftMintPda(capsulePda, program.programId);
+    const gamePda = getGamePda(capsulePda, program.programId);
     const accounts = {
       creator: capsuleCreator.publicKey,
       capsule: capsulePda,
       nftMint: nftMintPda,
+      game: gamePda,
       vault: getVaultPda(program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
@@ -213,24 +209,7 @@ describe("CapsuleX Game Instructions", () => {
       .accounts(accounts as any)
       .rpc();
 
-    const [gamePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("game"), capsulePda.toBuffer()],
-      program.programId
-    );
 
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        10, // max_guesses
-        3
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .rpc();
 
     // Submit public guess (game player submits guess)
     const [freePda] = PublicKey.findProgramAddressSync(
@@ -310,6 +289,7 @@ describe("CapsuleX Game Instructions", () => {
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: getGamePda(capsulePda, program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -328,19 +308,6 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
 
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        5, // max_guesses
-        3 // max_winners
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .rpc();
 
     // Create multiple game players
     const gamePlayer1 = anchor.web3.Keypair.generate();
@@ -450,6 +417,7 @@ describe("CapsuleX Game Instructions", () => {
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: getGamePda(capsulePda, program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -481,20 +449,7 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
 
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        10, // max_guesses
-        3 // max_winners
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .signers([capsuleCreator.payer])
-      .rpc();
+
 
     // Submit correct guess (game player submits guess)
     const [correctGuessPda] = PublicKey.findProgramAddressSync(
@@ -658,6 +613,7 @@ describe("CapsuleX Game Instructions", () => {
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: getGamePda(capsulePda, program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -677,19 +633,6 @@ describe("CapsuleX Game Instructions", () => {
       program.programId
     );
 
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        5, // max_guesses
-        3 // max_winners
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .rpc();
 
     // Create game player who will be the winner
     const gamePlayerWinner = anchor.web3.Keypair.generate();
@@ -843,6 +786,7 @@ describe("CapsuleX Game Instructions", () => {
       capsule: capsulePda,
       nftMint: nftMintPda,
       vault: getVaultPda(program.programId),
+      game: getGamePda(capsulePda, program.programId),
       systemProgram: SystemProgram.programId,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -861,20 +805,7 @@ describe("CapsuleX Game Instructions", () => {
       [Buffer.from("game"), capsulePda.toBuffer()],
       program.programId
     );
-    await program.methods
-      .initializeGame(
-        capsulePda,
-        5, // max_guesses
-        3 // max_winners
-      )
-      .accounts({
-        creator: capsuleCreator.publicKey,
-        capsule: capsulePda,
-        game: gamePda,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      .signers([capsuleCreator])
-      .rpc();
+
 
     // Submit guess (game player submits their own guess)
     const [guessPda] = PublicKey.findProgramAddressSync(
@@ -961,6 +892,7 @@ describe("CapsuleX Game Instructions", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: getVaultPda(program.programId),
+        game: getGamePda(capsulePda, program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -979,15 +911,7 @@ describe("CapsuleX Game Instructions", () => {
         program.programId
       );
 
-      await program.methods
-        .initializeGame(capsulePda, 5, 2)
-        .accounts({
-          creator: capsuleCreator.publicKey,
-          capsule: capsulePda,
-          game: gamePda,
-          systemProgram: SystemProgram.programId,
-        } as any)
-        .rpc();
+
 
       // Creator should be able to complete game immediately (no guesses yet)
       const [creatorLeaderboardPda] = PublicKey.findProgramAddressSync(
@@ -1048,6 +972,7 @@ describe("CapsuleX Game Instructions", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: getVaultPda(program.programId),
+        game: getGamePda(capsulePda, program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -1066,19 +991,6 @@ describe("CapsuleX Game Instructions", () => {
         program.programId
       );
 
-      await program.methods
-        .initializeGame(
-          capsulePda,
-          5, // max_guesses
-          2 // max_winners
-        )
-        .accounts({
-          creator: capsuleCreator.publicKey,
-          capsule: capsulePda,
-          game: gamePda,
-          systemProgram: SystemProgram.programId,
-        } as any)
-        .rpc();
 
       // Submit a guess but don't find winner
       const [guessPda] = PublicKey.findProgramAddressSync(
@@ -1181,6 +1093,7 @@ describe("CapsuleX Game Instructions", () => {
         capsule: capsulePda,
         nftMint: nftMintPda,
         vault: getVaultPda(program.programId),
+        game: getGamePda(capsulePda, program.programId),
         systemProgram: SystemProgram.programId,
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -1199,16 +1112,6 @@ describe("CapsuleX Game Instructions", () => {
         program.programId
       );
 
-      await program.methods
-        .initializeGame(capsulePda, 2, 1)
-        .accounts({
-          // max_guesses=2, max_winners=1
-          creator: capsuleCreator.publicKey,
-          capsule: capsulePda,
-          game: gamePda,
-          systemProgram: SystemProgram.programId,
-        } as any)
-        .rpc();
 
       // Submit 2 guesses to reach max
       for (let i = 0; i < 2; i++) {

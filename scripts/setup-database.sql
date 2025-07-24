@@ -54,6 +54,9 @@ CREATE TABLE capsules (
   on_chain_tx TEXT NOT NULL, -- Solana transaction signature
   sol_fee_amount NUMERIC(20, 9) DEFAULT 0.00005, -- SOL amount charged
   
+  -- Gamification fields
+  is_gamified BOOLEAN DEFAULT FALSE, -- Whether this capsule has a guessing game
+  
   -- Management fields
   can_edit BOOLEAN DEFAULT TRUE, -- Allow edit before reveal
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

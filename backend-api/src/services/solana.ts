@@ -81,6 +81,25 @@ export class SolanaService {
   }
 
   /**
+   * Initialize the program for read-only operations (no wallet required)
+   */
+  async initializeProgramReadOnly(idl?: Capsulex): Promise<void> {
+    const programIdl = idl || this.idl;
+    if (!programIdl) {
+      throw new Error("IDL not provided. Pass IDL in constructor or as parameter.");
+    }
+
+    // Create a read-only provider without a wallet
+    this.provider = new AnchorProvider(
+      this.connection, 
+      {} as any, // Empty wallet for read-only operations
+      { commitment: "confirmed", preflightCommitment: "confirmed" }
+    );
+
+    this.program = new Program<Capsulex>(programIdl, this.provider);
+  }
+
+  /**
    * Get the program instance
    */
   getProgram(): Program<Capsulex> {
@@ -682,7 +701,7 @@ export class SolanaService {
       ]);
 
       // print the data of the capsules
-      console.log("Capsules:", capsules);
+      // console.log("Capsules:", capsules);
 
       // Add status and timing information to each capsule
       const currentTime = Math.floor(Date.now() / 1000);

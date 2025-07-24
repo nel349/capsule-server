@@ -74,16 +74,36 @@ export const createCapsule = async (capsuleData: {
   reveal_date: string;
   on_chain_tx: string;
   sol_fee_amount?: number;
+  is_gamified?: boolean;
 }): Promise<{ data: DatabaseCapsule | null; error: any }> => {
+  try {
+    const insertData = {
+      capsule_id: uuidv4(),
+      sol_fee_amount: capsuleData.sol_fee_amount ?? 0.00005, // Default SOL fee
+      is_gamified: capsuleData.is_gamified ?? false, // Default to non-gamified
+      ...capsuleData,
+    };
+    
+    const { data, error } = await supabase
+      .from("capsules")
+      .insert(insertData)
+      .select()
+      .single();
+
+    return { data, error: error ? handleDatabaseError(error) : null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
+export const getCapsuleById = async (
+  capsule_id: string
+): Promise<{ data: DatabaseCapsule | null; error: any }> => {
   try {
     const { data, error } = await supabase
       .from("capsules")
-      .insert({
-        capsule_id: uuidv4(),
-        sol_fee_amount: 0.00005, // Default SOL fee
-        ...capsuleData,
-      })
-      .select()
+      .select("*")
+      .eq("capsule_id", capsule_id)
       .single();
 
     return { data, error: error ? handleDatabaseError(error) : null };

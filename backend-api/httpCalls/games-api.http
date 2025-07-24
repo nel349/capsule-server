@@ -1,0 +1,244 @@
+### CapsuleX Games API Test Cases
+### Base URL for local development
+@baseUrl = http://localhost:3001
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMzQ4ZjYyZDItNTFkNC00OGNjLWE3MzQtN2FiZTJjZGRhMjU2Iiwid2FsbGV0X2FkZHJlc3MiOiJCOFUzV0hGQjFlcjhwaXZlaktEYU42REJjOEVqS3NteVFTRVl4VHYzODdiaCIsImF1dGhfdHlwZSI6IndhbGxldCIsImlhdCI6MTc1MzMxMDgwNSwiZXhwIjoxNzUzOTE1NjA1fQ.6vgloE_Bpimck5k1t3lPVlTZZ4cwAXCpVoj4Kwz75Ek
+
+### Sample test capsule IDs for testing (replace with actual IDs from your database)
+@testCapsuleId = 9bf8175d-f7a1-4050-8b1d-13748dcfd2c9
+@testCapsuleIdWithGame = b0cb2d50-a8ef-4bbe-a18a-a4549c44ca30
+@testCapsuleIdNoGame = b2c3d4e5-f6a7-4890-b123-234567890bcd
+
+### ========================================
+### AUTHENTICATION - Get JWT Token First!
+### ========================================
+
+### 1. Authenticate User (creates user if doesn't exist)
+POST {{baseUrl}}/api/users/auth
+Content-Type: application/json
+
+{
+  "wallet_address": "B8U3WHFB1er8pivejKDaN6DBc8EjKsmyQSEYxTv387bh",
+  "auth_type": "wallet"
+}
+
+### ========================================
+### COPY THE TOKEN FROM AUTH RESPONSE ABOVE
+### Replace @authToken value with the token from the auth response
+### ========================================
+
+### ========================================
+### PHASE 1: IMPLEMENTED ENDPOINTS
+### ========================================
+
+### ✅ GET /api/games/:capsule_id - Get Game Details
+### 2. Get Game Details - Valid Capsule with Game
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}
+
+### 3. Get Game Details - Another Valid Game
+GET {{baseUrl}}/api/games/{{testCapsuleId}}
+
+### ========================================
+### ERROR CASES - Get Game Details
+### ========================================
+
+### 4. Get Game Details - Capsule Not Found
+GET {{baseUrl}}/api/games/00000000-0000-0000-0000-000000000000
+
+### 5. Get Game Details - Invalid Capsule ID Format
+GET {{baseUrl}}/api/games/invalid-capsule-id
+
+### 6. Get Game Details - Empty Capsule ID
+GET {{baseUrl}}/api/games/
+
+### 7. Get Game Details - Capsule Exists But No Game (should fail gracefully)
+GET {{baseUrl}}/api/games/{{testCapsuleIdNoGame}}
+
+### ========================================
+### PHASE 1: PENDING ENDPOINTS (will return 404 for now)
+### ========================================
+
+### 🚧 GET /api/games/active - Get Active Games (NOT YET IMPLEMENTED)
+### 8. Get Active Games - Default Parameters
+GET {{baseUrl}}/api/games/active
+
+### 9. Get Active Games - With Limit
+GET {{baseUrl}}/api/games/active?limit=10
+
+### 10. Get Active Games - Exclude Creator
+GET {{baseUrl}}/api/games/active?exclude_creator=5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+### 11. Get Active Games - Multiple Parameters
+GET {{baseUrl}}/api/games/active?limit=5&exclude_creator=5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+### 🚧 GET /api/games/:capsule_id/guesses - Get Game Guesses (NOT YET IMPLEMENTED)
+### 12. Get Game Guesses - Default Parameters
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses
+
+### 13. Get Game Guesses - With Pagination
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses?limit=20&offset=0
+
+### 14. Get Game Guesses - Show Anonymous Count
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses?include_stats=true
+
+### ========================================
+### PHASE 2: FUTURE ENDPOINTS (will return 404 for now)
+### ========================================
+
+### 🚧 GET /api/games/my-participation - My Participated Games (NOT YET IMPLEMENTED)
+### 15. Get My Participated Games
+GET {{baseUrl}}/api/games/my-participation
+Authorization: Bearer {{authToken}}
+
+### 16. Get My Participated Games - With Filters
+GET {{baseUrl}}/api/games/my-participation?status=active&limit=10
+Authorization: Bearer {{authToken}}
+
+### 🚧 GET /api/leaderboard/user/:wallet_address - User Leaderboard Stats (NOT YET IMPLEMENTED)
+### 17. Get User Leaderboard Stats
+GET {{baseUrl}}/api/leaderboard/user/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+### 18. Get User Leaderboard Stats - Different User
+GET {{baseUrl}}/api/leaderboard/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM
+
+### ========================================
+### REALISTIC TEST SCENARIOS
+### ========================================
+
+### 19. Game Creation Flow Test
+# First create a gamified capsule, then get its game details
+POST {{baseUrl}}/api/capsules/create
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "content_encrypted": "U2FsdGVkX1+GameTestContent2024==",
+  "content_hash": "game123456789012345678901234567890abcdefabcdefabcdef",
+  "has_media": false,
+  "media_urls": [],
+  "reveal_date": "2024-12-31T23:59:59Z",
+  "on_chain_tx": "GameTestTxHash123456789",
+  "sol_fee_amount": 0.00005,
+  "is_gamified": true
+}
+
+### 20. Get Game Details for Newly Created Capsule
+# Replace CAPSULE_ID_FROM_RESPONSE with the capsule_id from the create response above
+GET {{baseUrl}}/api/games/CAPSULE_ID_FROM_RESPONSE
+
+### ========================================
+### GAME DISCOVERY FLOW TEST
+### ========================================
+
+### 21. Full Game Discovery Flow
+# Step 1: Get list of active games
+GET {{baseUrl}}/api/games/active?limit=5
+
+# Step 2: Get details for a specific game (replace with ID from active games)
+GET {{baseUrl}}/api/games/GAME_CAPSULE_ID_FROM_ACTIVE_LIST
+
+# Step 3: Get current guesses for that game
+GET {{baseUrl}}/api/games/GAME_CAPSULE_ID_FROM_ACTIVE_LIST/guesses?limit=10
+
+### ========================================
+### USER PARTICIPATION FLOW TEST
+### ========================================
+
+### 22. User Game Participation Flow
+# Step 1: Get games user is participating in
+GET {{baseUrl}}/api/games/my-participation
+Authorization: Bearer {{authToken}}
+
+# Step 2: Get user's leaderboard stats
+GET {{baseUrl}}/api/leaderboard/user/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+
+# Step 3: Get specific game user is participating in
+GET {{baseUrl}}/api/games/USER_PARTICIPATED_GAME_ID
+
+### ========================================
+### EDGE CASES AND STRESS TESTS
+### ========================================
+
+### 23. Large Game with Many Guesses
+GET {{baseUrl}}/api/games/LARGE_GAME_CAPSULE_ID/guesses?limit=100
+
+### 24. Very Long Capsule ID
+GET {{baseUrl}}/api/games/this-is-a-very-long-invalid-capsule-id-that-should-fail-gracefully
+
+### 25. Special Characters in Parameters
+GET {{baseUrl}}/api/games/active?exclude_creator=<script>alert('test')</script>
+
+### 26. SQL Injection Attempt (should be safely handled)
+GET {{baseUrl}}/api/games/'; DROP TABLE games; --
+
+### ========================================
+### PERFORMANCE TESTS
+### ========================================
+
+### 27. Large Limit Request
+GET {{baseUrl}}/api/games/active?limit=1000
+
+### 28. Multiple Concurrent Game Detail Requests
+GET {{baseUrl}}/api/games/{{testCapsuleId}}
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}
+
+### ========================================
+### EXPECTED RESPONSE FORMATS
+### ========================================
+
+# GET /api/games/:capsule_id Success Response:
+# Status: 200 OK
+# {
+#   "success": true,
+#   "data": {
+#     "game_id": "game_pda_address",
+#     "capsule_id": "uuid",
+#     "creator": "wallet_address",
+#     "max_guesses": 50,
+#     "max_winners": 3,
+#     "current_guesses": 15,
+#     "winners_found": 0,
+#     "is_active": true,
+#     "winner": null,
+#     "total_participants": 8,
+#     "reveal_date": "2024-01-20T15:00:00Z",
+#     "created_at": "2024-01-15T10:00:00Z",
+#     "content_hint": "Text content",
+#     "is_revealed": false
+#   }
+# }
+
+# Error Response Format:
+# Status: 404 Not Found / 400 Bad Request / 500 Internal Server Error
+# {
+#   "success": false,
+#   "error": "Detailed error message"
+# }
+
+### ========================================
+### TESTING NOTES
+### ========================================
+
+# Before running these tests:
+# 1. Start your local server: npm run dev
+# 2. Update @authToken with a valid JWT token
+# 3. Replace test capsule IDs with actual IDs from your database
+# 4. Ensure you have some gamified capsules in your database for testing
+# 5. Check that the Solana service is properly configured and connected
+
+# Test Categories:
+# ✅ Implemented: GET /api/games/:capsule_id
+# 🚧 Next Phase: GET /api/games/active, GET /api/games/:capsule_id/guesses
+# 🔮 Future: GET /api/games/my-participation, GET /api/leaderboard/user/:wallet_address
+
+# Common HTTP Status Codes:
+# 200 - Success (game found and returned)
+# 404 - Not Found (capsule/game not found)
+# 400 - Bad Request (invalid capsule ID format)
+# 500 - Internal Server Error (blockchain/database issues)
+
+# Testing Tips:
+# - Test happy path first (valid game that exists)
+# - Test error cases (non-existent games, invalid IDs)
+# - Test edge cases (special characters, very long inputs)
+# - Test performance with large datasets
+# - Verify response format matches expected structure

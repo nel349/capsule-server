@@ -129,6 +129,7 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       reveal_date,
       on_chain_tx: onChainTx,
       sol_fee_amount: solFeeAmount,
+      is_gamified,
     });
 
     if (error) {

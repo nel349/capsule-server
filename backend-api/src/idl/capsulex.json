@@ -162,6 +162,10 @@
           }
         },
         {
+          "name": "game",
+          "writable": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -1677,6 +1681,11 @@
       "code": 6044,
       "name": "ContentTooLarge",
       "msg": "Content is too large. Maximum is 1GB."
+    },
+    {
+      "code": 6045,
+      "name": "InvalidGameAccount",
+      "msg": "Invalid game account provided."
     }
   ],
   "types": [

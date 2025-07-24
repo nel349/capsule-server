@@ -71,6 +71,7 @@ export interface DatabaseCapsule {
   on_chain_tx: string;
   sol_fee_amount: number;
   can_edit: boolean;
+  is_gamified: boolean;
   created_at: string;
   status: "pending" | "revealed" | "posted" | "failed" | "cancelled";
 }

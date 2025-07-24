@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token};
+use anchor_lang::solana_program::rent::Rent;
 use crate::{
     constants::*, 
     errors::CapsuleXError, 
-    state::{Capsule, ContentStorage, ProgramVault}
+    state::{Capsule, ContentStorage, ProgramVault, Game}
 };
 
 // Light on-chain validation helpers (avoid expensive char iteration)
@@ -50,6 +51,11 @@ pub struct CreateCapsule<'info> {
         bump
     )]
     pub vault: Account<'info, ProgramVault>,
+    
+    // Game account - only initialized when is_gamified = true
+    /// CHECK: This account is only used when is_gamified = true. We validate this in the instruction logic.
+    #[account(mut)]
+    pub game: UncheckedAccount<'info>,
     
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -159,6 +165,63 @@ pub fn create_capsule(
         is_gamified,
         ctx.bumps.capsule,
     );
+    
+    // If gamified, initialize the game account
+    if is_gamified {
+        // Find the game PDA and bump
+        let (expected_game_key, game_bump) = Pubkey::find_program_address(
+            &[
+                GAME_SEED,
+                &capsule.key().to_bytes(),
+            ],
+            ctx.program_id,
+        );
+        
+        require!(
+            ctx.accounts.game.key() == expected_game_key,
+            CapsuleXError::InvalidGameAccount
+        );
+        
+        // Initialize the game account
+        let game_account_info = ctx.accounts.game.to_account_info();
+        let rent = Rent::get()?;
+        let game_space = Game::LEN;
+        let lamports_required = rent.minimum_balance(game_space);
+        
+        // Create the game account
+        anchor_lang::solana_program::program::invoke_signed(
+            &anchor_lang::solana_program::system_instruction::create_account(
+                &ctx.accounts.creator.key(),
+                &game_account_info.key(),
+                lamports_required,
+                game_space as u64,
+                ctx.program_id,
+            ),
+            &[
+                ctx.accounts.creator.to_account_info(),
+                game_account_info.clone(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            &[&[
+                GAME_SEED,
+                &capsule.key().to_bytes(),
+                &[game_bump],
+            ]],
+        )?;
+        
+        // Initialize the game data
+        let mut game_data = game_account_info.try_borrow_mut_data()?;
+        let game = Game::new(
+            capsule.key(),
+            ctx.accounts.creator.key(),
+            50, // max_guesses
+            3,  // max_winners
+            game_bump,
+        );
+        
+        // Serialize the game data
+        game.try_serialize(&mut game_data.as_mut())?;
+    }
     
     emit!(CapsuleCreated {
         capsule_id: capsule.key(),

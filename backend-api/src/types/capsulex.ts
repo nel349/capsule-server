@@ -168,6 +168,10 @@ export type Capsulex = {
           }
         },
         {
+          "name": "game",
+          "writable": true
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
@@ -1683,6 +1687,11 @@ export type Capsulex = {
       "code": 6044,
       "name": "contentTooLarge",
       "msg": "Content is too large. Maximum is 1GB."
+    },
+    {
+      "code": 6045,
+      "name": "invalidGameAccount",
+      "msg": "Invalid game account provided."
     }
   ],
   "types": [

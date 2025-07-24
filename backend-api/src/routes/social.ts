@@ -552,20 +552,22 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
 
     // Format reveal date nicely
     const revealDateTime = new Date(reveal_date);
-    const formattedDate = revealDateTime.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
+    const formattedDate = revealDateTime.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
     });
 
     // Create audience notification text
     const baseText = hint_text || "🔮 I just created a time capsule that will be revealed on";
-    const capsuleLink = include_capsule_link ? `\n\n🔗 Track the reveal: https://capsulex.com/capsule/${capsule_id}` : "";
+    const capsuleLink = include_capsule_link
+      ? `\n\n🔗 Track the reveal: https://capsulex.com/capsule/${capsule_id}`
+      : "";
     const hashtags = "\n\n#TimeCapsule #CapsuleX #FutureSelf #BlockchainReveal";
-    
+
     const fullText = `${baseText} ${formattedDate}! ⏰${capsuleLink}${hashtags}`;
 
     // Check character limit
@@ -574,28 +576,28 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
       const maxLength = 280 - hashtags.length - 3; // Leave room for "..."
       const trimmedBase = baseText.substring(0, maxLength - formattedDate.length - 20);
       const trimmedText = `${trimmedBase}... ${formattedDate}! ⏰${hashtags}`;
-      
+
       // Use internal post-tweet endpoint
       const postResponse = await axios.post(
-        `${req.protocol}://${req.get('host')}/api/social/post-tweet`,
+        `${req.protocol}://${req.get("host")}/api/social/post-tweet`,
         { text: trimmedText },
         {
           headers: {
-            'Authorization': req.headers.authorization,
-            'Content-Type': 'application/json'
-          }
+            Authorization: req.headers.authorization,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (!postResponse.data.success) {
-        throw new Error(postResponse.data.error || 'Failed to post tweet');
+        throw new Error(postResponse.data.error || "Failed to post tweet");
       }
 
       return res.status(200).json({
         success: true,
         data: {
           ...postResponse.data.data,
-          notification_type: 'audience_notification',
+          notification_type: "audience_notification",
           capsule_id,
           original_text: fullText,
           posted_text: trimmedText,
@@ -605,25 +607,25 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
     } else {
       // Use internal post-tweet endpoint
       const postResponse = await axios.post(
-        `${req.protocol}://${req.get('host')}/api/social/post-tweet`,
+        `${req.protocol}://${req.get("host")}/api/social/post-tweet`,
         { text: fullText },
         {
           headers: {
-            'Authorization': req.headers.authorization,
-            'Content-Type': 'application/json'
-          }
+            Authorization: req.headers.authorization,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (!postResponse.data.success) {
-        throw new Error(postResponse.data.error || 'Failed to post tweet');
+        throw new Error(postResponse.data.error || "Failed to post tweet");
       }
 
       return res.status(200).json({
         success: true,
         data: {
           ...postResponse.data.data,
-          notification_type: 'audience_notification',
+          notification_type: "audience_notification",
           capsule_id,
           posted_text: fullText,
           was_trimmed: false,
