@@ -306,6 +306,7 @@ router.get("/:capsule_id/guesses", async (req, res) => {
     const limit = parseInt(req.query.limit as string) || 50; // Default to 50 guesses
     const offset = parseInt(req.query.offset as string) || 0; // Default to 0 offset
     const includeStats = req.query.include_stats === "true";
+    const walletAddress = req.query.wallet_address as string; // Filter by specific wallet
 
     if (!capsule_id) {
       return res.status(400).json({
@@ -314,7 +315,19 @@ router.get("/:capsule_id/guesses", async (req, res) => {
       } as ApiResponse);
     }
 
-    console.log("Fetching guesses for capsule:", { capsule_id, limit, offset, includeStats });
+    // Validate wallet address format if provided
+    if (walletAddress) {
+      try {
+        new PublicKey(walletAddress);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid wallet address format",
+        } as ApiResponse);
+      }
+    }
+
+    console.log("Fetching guesses for capsule:", { capsule_id, limit, offset, includeStats, walletAddress });
 
     // Get capsule info with creator's wallet address via join
     const { data: capsuleData, error: capsuleError } = await supabase
@@ -381,7 +394,15 @@ router.get("/:capsule_id/guesses", async (req, res) => {
     }
 
     // Get all guesses for this game from blockchain
-    const allGuesses = await solanaService.getGuessesForGame(gamePda);
+    let allGuesses = await solanaService.getGuessesForGame(gamePda);
+
+    // Filter by wallet address if specified
+    if (walletAddress) {
+      const walletPubkey = new PublicKey(walletAddress);
+      allGuesses = allGuesses.filter(guess => 
+        !guess.account.isAnonymous && guess.account.guesser.equals(walletPubkey)
+      );
+    }
 
     // Sort guesses by submission time (most recent first)
     allGuesses.sort((a, b) => b.account.timestamp - a.account.timestamp);
@@ -408,6 +429,7 @@ router.get("/:capsule_id/guesses", async (req, res) => {
         limit,
         offset,
         has_more: offset + limit < allGuesses.length,
+        filtered_by_wallet: walletAddress || null,
       },
       game_info: {
         game_id: gamePda.toBase58(),
@@ -452,6 +474,156 @@ router.get("/:capsule_id/guesses", async (req, res) => {
       } as ApiResponse);
     }
 
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
+// Submit a guess (register in database AFTER transaction confirmation)
+router.post("/:capsule_id/guess", async (req, res) => {
+  try {
+    const { capsule_id } = req.params;
+    const { 
+      transaction_signature, // Required - transaction must be confirmed
+      guesser_wallet, 
+      guess_content, 
+      is_anonymous = false,
+      guess_pda, // The derived PDA address for matching with on-chain data
+      game_pda   // For additional validation
+    } = req.body;
+
+    // Validate required fields
+    if (!capsule_id || !transaction_signature || !guesser_wallet || !guess_content || !guess_pda) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: capsule_id, transaction_signature, guesser_wallet, guess_content, guess_pda",
+      } as ApiResponse);
+    }
+
+    // Validate wallet and PDA address formats
+    try {
+      new PublicKey(guesser_wallet);
+      new PublicKey(guess_pda);
+      if (game_pda) new PublicKey(game_pda);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid wallet or PDA address format",
+      } as ApiResponse);
+    }
+
+    console.log("Registering confirmed guess:", { 
+      capsule_id, 
+      guesser_wallet, 
+      guess_pda,
+      transaction_signature: transaction_signature.substring(0, 20) + "...",
+      is_anonymous 
+    });
+
+    // Get capsule info to verify it's gamified
+    const { data: capsuleData, error: capsuleError } = await supabase
+      .from("capsules")
+      .select(`
+        *,
+        users!inner(wallet_address)
+      `)
+      .eq("capsule_id", capsule_id)
+      .single();
+
+    if (capsuleError || !capsuleData) {
+      return res.status(404).json({
+        success: false,
+        error: "Capsule not found",
+      } as ApiResponse);
+    }
+
+    if (!capsuleData.is_gamified) {
+      return res.status(400).json({
+        success: false,
+        error: "This capsule is not gamified",
+      } as ApiResponse);
+    }
+
+    // Verify transaction signature exists on blockchain
+    try {
+      await solanaService.initializeProgramReadOnly();
+      const connection = solanaService.getConnection();
+      
+      const txInfo = await connection.getTransaction(transaction_signature, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      
+      if (!txInfo) {
+        return res.status(400).json({
+          success: false,
+          error: "Transaction signature not found on blockchain",
+        } as ApiResponse);
+      }
+
+      console.log("Transaction verified on blockchain:", {
+        signature: transaction_signature.substring(0, 20) + "...",
+        slot: txInfo.slot,
+      });
+    } catch (error) {
+      console.error("Transaction verification failed:", error instanceof Error ? error.message : "Unknown error");
+      return res.status(400).json({
+        success: false,
+        error: "Could not verify transaction on blockchain",
+      } as ApiResponse);
+    }
+
+    // Store the confirmed guess in database
+    const { data: guessRecord, error: insertError } = await supabase
+      .from("guesses")
+      .insert({
+        capsule_id,
+        guesser_wallet,
+        guess_content,
+        is_anonymous: Boolean(is_anonymous),
+        guess_pda, // Key for matching with on-chain data
+        game_pda: game_pda || null,
+        transaction_signature, // Already confirmed
+        status: 'confirmed', // Transaction is already confirmed
+        confirmed_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Database insert error:", insertError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to register guess in database",
+      } as ApiResponse);
+    }
+
+    console.log("Confirmed guess stored successfully:", {
+      capsule_id,
+      guesser_wallet,
+      guess_pda,
+      guess_id: guessRecord.id,
+      transaction_signature: transaction_signature.substring(0, 20) + "...",
+    });
+
+    res.json({
+      success: true,
+      data: {
+        message: "Guess confirmed and stored successfully",
+        guess_id: guessRecord.id,
+        capsule_id,
+        guess_pda,
+        transaction_signature,
+        submitted_at: guessRecord.submitted_at,
+        confirmed_at: guessRecord.confirmed_at,
+        status: guessRecord.status,
+      },
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error("Register guess error:", error);
     res.status(500).json({
       success: false,
       error: "Internal server error",

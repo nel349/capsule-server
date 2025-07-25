@@ -5,7 +5,7 @@
 
 ### Sample test capsule IDs for testing (replace with actual IDs from your database)
 @testCapsuleId = 9bf8175d-f7a1-4050-8b1d-13748dcfd2c9
-@testCapsuleIdWithGame = b0cb2d50-a8ef-4bbe-a18a-a4549c44ca30
+@testCapsuleIdWithGame = 1cedf984-b6aa-4825-8bca-6bb7e71c7c9e
 @testCapsuleIdNoGame = b2c3d4e5-f6a7-4890-b123-234567890bcd
 
 ### ========================================
@@ -79,6 +79,9 @@ GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses?limit=20&offset=0
 
 ### 14. Get Game Guesses - Show Anonymous Count
 GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses?include_stats=true
+
+### 15. Get Game Guesses - With wallet address
+GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}/guesses?wallet_address=DJtb39rheU34w3t37M21vuPfxvjzquMpWShcUPj17WjY
 
 ### ========================================
 ### PHASE 2: FUTURE ENDPOINTS (will return 404 for now)
