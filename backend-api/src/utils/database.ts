@@ -83,12 +83,8 @@ export const createCapsule = async (capsuleData: {
       is_gamified: capsuleData.is_gamified ?? false, // Default to non-gamified
       ...capsuleData,
     };
-    
-    const { data, error } = await supabase
-      .from("capsules")
-      .insert(insertData)
-      .select()
-      .single();
+
+    const { data, error } = await supabase.from("capsules").insert(insertData).select().single();
 
     return { data, error: error ? handleDatabaseError(error) : null };
   } catch (error) {

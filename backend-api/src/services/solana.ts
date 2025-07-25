@@ -91,7 +91,7 @@ export class SolanaService {
 
     // Create a read-only provider without a wallet
     this.provider = new AnchorProvider(
-      this.connection, 
+      this.connection,
       {} as any, // Empty wallet for read-only operations
       { commitment: "confirmed", preflightCommitment: "confirmed" }
     );
@@ -783,6 +783,35 @@ export class SolanaService {
         }));
     } catch (error) {
       console.error("Error fetching revealable capsules:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all guesses for a specific game
+   */
+  async getGuessesForGame(game: PublicKey): Promise<any[]> {
+    const program = this.getProgram();
+
+    try {
+      const guesses = await program.account.guess.all([
+        {
+          memcmp: {
+            offset: 8, // Skip discriminator
+            bytes: game.toBase58(),
+          },
+        },
+      ]);
+
+      return guesses.map(guess => ({
+        publicKey: guess.publicKey,
+        account: {
+          ...guess.account,
+          timestamp: guess.account.timestamp.toNumber(),
+        },
+      }));
+    } catch (error) {
+      console.error("Error fetching guesses for game:", error);
       return [];
     }
   }

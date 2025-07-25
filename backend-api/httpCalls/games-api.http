@@ -54,10 +54,10 @@ GET {{baseUrl}}/api/games/
 GET {{baseUrl}}/api/games/{{testCapsuleIdNoGame}}
 
 ### ========================================
-### PHASE 1: PENDING ENDPOINTS (will return 404 for now)
+### PHASE 1: IMPLEMENTED ENDPOINTS
 ### ========================================
 
-### 🚧 GET /api/games/active - Get Active Games (NOT YET IMPLEMENTED)
+### ✅ GET /api/games/active - Get Active Games
 ### 8. Get Active Games - Default Parameters
 GET {{baseUrl}}/api/games/active
 
@@ -226,8 +226,8 @@ GET {{baseUrl}}/api/games/{{testCapsuleIdWithGame}}
 # 5. Check that the Solana service is properly configured and connected
 
 # Test Categories:
-# ✅ Implemented: GET /api/games/:capsule_id
-# 🚧 Next Phase: GET /api/games/active, GET /api/games/:capsule_id/guesses
+# ✅ Implemented: GET /api/games/:capsule_id, GET /api/games/active
+# 🚧 Next Phase: GET /api/games/:capsule_id/guesses
 # 🔮 Future: GET /api/games/my-participation, GET /api/leaderboard/user/:wallet_address
 
 # Common HTTP Status Codes:

@@ -302,6 +302,61 @@ router.get("/wallet/:address", async (req, res) => {
   }
 });
 
+// Get single capsule by ID (public endpoint for Blinks)
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "Capsule ID is required",
+      } as ApiResponse);
+    }
+
+    // Query capsule from database using supabase client
+    const { supabase } = await import("../utils/supabase");
+    const { data: capsule, error } = await supabase
+      .from("capsules")
+      .select("*, users(wallet_address)") // Join with users table
+      .eq("capsule_id", id)
+      .single();
+
+    // Remove the separate query for creator_data
+    // const { data: creator_data, error: creatorError } = await supabase
+    //   .from("users")
+    //   .select("wallet_address, user_id")
+    //   .eq("user_id", capsule?.user_id)
+    //   .single();
+
+    if (error) {
+      console.error("Database error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to fetch capsule",
+      } as ApiResponse);
+    }
+
+    if (!capsule) {
+      return res.status(404).json({
+        success: false,
+        error: "Capsule not found",
+      } as ApiResponse);
+    }
+
+    res.json({
+      success: true,
+      data: capsule,
+    } as ApiResponse);
+  } catch (error) {
+    console.error("Get capsule by ID error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
 // Get capsules ready for reveal (can be filtered by wallet)
 router.get("/check-reveals", async (req, res) => {
   try {
