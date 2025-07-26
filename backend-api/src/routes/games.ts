@@ -327,7 +327,13 @@ router.get("/:capsule_id/guesses", async (req, res) => {
       }
     }
 
-    console.log("Fetching guesses for capsule:", { capsule_id, limit, offset, includeStats, walletAddress });
+    console.log("Fetching guesses for capsule:", {
+      capsule_id,
+      limit,
+      offset,
+      includeStats,
+      walletAddress,
+    });
 
     // Get capsule info with creator's wallet address via join
     const { data: capsuleData, error: capsuleError } = await supabase
@@ -399,8 +405,8 @@ router.get("/:capsule_id/guesses", async (req, res) => {
     // Filter by wallet address if specified
     if (walletAddress) {
       const walletPubkey = new PublicKey(walletAddress);
-      allGuesses = allGuesses.filter(guess => 
-        !guess.account.isAnonymous && guess.account.guesser.equals(walletPubkey)
+      allGuesses = allGuesses.filter(
+        guess => !guess.account.isAnonymous && guess.account.guesser.equals(walletPubkey)
       );
     }
 
@@ -485,20 +491,21 @@ router.get("/:capsule_id/guesses", async (req, res) => {
 router.post("/:capsule_id/guess", async (req, res) => {
   try {
     const { capsule_id } = req.params;
-    const { 
+    const {
       transaction_signature, // Required - transaction must be confirmed
-      guesser_wallet, 
-      guess_content, 
+      guesser_wallet,
+      guess_content,
       is_anonymous = false,
       guess_pda, // The derived PDA address for matching with on-chain data
-      game_pda   // For additional validation
+      game_pda, // For additional validation
     } = req.body;
 
     // Validate required fields
     if (!capsule_id || !transaction_signature || !guesser_wallet || !guess_content || !guess_pda) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: capsule_id, transaction_signature, guesser_wallet, guess_content, guess_pda",
+        error:
+          "Missing required fields: capsule_id, transaction_signature, guesser_wallet, guess_content, guess_pda",
       } as ApiResponse);
     }
 
@@ -514,21 +521,23 @@ router.post("/:capsule_id/guess", async (req, res) => {
       } as ApiResponse);
     }
 
-    console.log("Registering confirmed guess:", { 
-      capsule_id, 
-      guesser_wallet, 
+    console.log("Registering confirmed guess:", {
+      capsule_id,
+      guesser_wallet,
       guess_pda,
       transaction_signature: transaction_signature.substring(0, 20) + "...",
-      is_anonymous 
+      is_anonymous,
     });
 
     // Get capsule info to verify it's gamified
     const { data: capsuleData, error: capsuleError } = await supabase
       .from("capsules")
-      .select(`
+      .select(
+        `
         *,
         users!inner(wallet_address)
-      `)
+      `
+      )
       .eq("capsule_id", capsule_id)
       .single();
 
@@ -550,12 +559,12 @@ router.post("/:capsule_id/guess", async (req, res) => {
     try {
       await solanaService.initializeProgramReadOnly();
       const connection = solanaService.getConnection();
-      
+
       const txInfo = await connection.getTransaction(transaction_signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
-      
+
       if (!txInfo) {
         return res.status(400).json({
           success: false,
@@ -568,7 +577,10 @@ router.post("/:capsule_id/guess", async (req, res) => {
         slot: txInfo.slot,
       });
     } catch (error) {
-      console.error("Transaction verification failed:", error instanceof Error ? error.message : "Unknown error");
+      console.error(
+        "Transaction verification failed:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return res.status(400).json({
         success: false,
         error: "Could not verify transaction on blockchain",
@@ -586,7 +598,7 @@ router.post("/:capsule_id/guess", async (req, res) => {
         guess_pda, // Key for matching with on-chain data
         game_pda: game_pda || null,
         transaction_signature, // Already confirmed
-        status: 'confirmed', // Transaction is already confirmed
+        status: "confirmed", // Transaction is already confirmed
         confirmed_at: new Date().toISOString(),
       })
       .select()
@@ -621,7 +633,6 @@ router.post("/:capsule_id/guess", async (req, res) => {
         status: guessRecord.status,
       },
     } as ApiResponse);
-
   } catch (error: any) {
     console.error("Register guess error:", error);
     res.status(500).json({

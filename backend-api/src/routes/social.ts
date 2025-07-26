@@ -6,8 +6,14 @@ import {
 } from "../utils/database";
 import { authenticateToken } from "../middleware/auth";
 import { CreateSocialConnectionRequest, ApiResponse, AuthenticatedRequest } from "../types";
+import { supabase } from "../utils/supabase";
 import axios from "axios";
 import FormData from "form-data";
+
+
+// if DEV use localhost:3000, otherwise use capsulex.xyz
+const BASE_BLINK_URL = process.env.NODE_ENV === 'development' ?
+ 'https://capsulex-blink-production.up.railway.app' : process.env.CAPSULEX_BLINK_BASE_URL || 'https://capsulex-blink-production.up.railway.app';
 
 const router = express.Router();
 
@@ -209,6 +215,21 @@ router.post(
   }
 );
 
+// Helper function to shorten a URL using is.gd API
+const shortenUrl = async (url: string): Promise<string> => {
+  try {
+    const response = await axios.get(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`);
+    if (response.data.shorturl) {
+      return response.data.shorturl;
+    }
+    console.error("Failed to shorten URL, response:", response.data);
+    return url; // Fallback to original URL if shortening fails
+  } catch (error) {
+    console.error("Error shortening URL:", error);
+    return url; // Fallback to original URL if shortening fails
+  }
+};
+
 // Post tweet using stored Twitter connection
 router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
@@ -221,7 +242,7 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
       } as ApiResponse);
     }
 
-    if (text.length > 280) {
+    if (text.length > 280) { // 280 is the limit for content in the onchain capsule content
       return res.status(400).json({
         success: false,
         error: "Tweet text exceeds 280 character limit",
@@ -527,6 +548,18 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
 
     console.log("📢 Creating audience notification post for capsule:", capsule_id);
 
+    // Check if capsule is gamified to include Blink action URL
+    const { data: capsuleDetails, error: capsuleError } = await supabase
+      .from("capsules")
+      .select("is_gamified")
+      .eq("capsule_id", capsule_id)
+      .single();
+
+    if (capsuleError) {
+      console.error("Failed to fetch capsule details:", capsuleError);
+      // Continue without gamification check rather than failing
+    }
+
     // Get user's Twitter connection
     const { data: connections, error: connectionsError } = await getSocialConnections(
       req.user!.user_id
@@ -563,47 +596,67 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
 
     // Create audience notification text
     const baseText = hint_text || "🔮 I just created a time capsule that will be revealed on";
-    const capsuleLink = include_capsule_link
-      ? `\n\n🔗 Track the reveal: https://capsulex.com/capsule/${capsule_id}`
-      : "";
-    const hashtags = "\n\n#TimeCapsule #CapsuleX #FutureSelf #BlockchainReveal";
+    
+    const shortAppDirectLink = await shortenUrl(`${BASE_BLINK_URL}/game/${capsule_id}`);
+    // Direct link to the app via the blink service's web endpoint
+    const appDirectLink = `\n📲 Open in app: ${shortAppDirectLink}`;
 
-    const fullText = `${baseText} ${formattedDate}! ⏰${capsuleLink}${hashtags}`;
+
+    // Add Blink action URL for gamified capsules
+    const isGamified = capsuleDetails?.is_gamified || false;
+    const blinkActionUrl = isGamified 
+      ? `\n🎮 Play the guessing game: ${BASE_BLINK_URL}/api/guess/${capsule_id}`
+      : "";
+    
+
+    const fullText = `${baseText} ${formattedDate}! ⏰${appDirectLink}${blinkActionUrl}`;
+
+    console.log("🔍 Full text:", fullText);
 
     // Check character limit
     if (fullText.length > 280) {
-      // Trim if too long
-      const maxLength = 280 - hashtags.length - 3; // Leave room for "..."
-      const trimmedBase = baseText.substring(0, maxLength - formattedDate.length - 20);
-      const trimmedText = `${trimmedBase}... ${formattedDate}! ⏰${hashtags}`;
 
-      // Use internal post-tweet endpoint
-      const postResponse = await axios.post(
-        `${req.protocol}://${req.get("host")}/api/social/post-tweet`,
-        { text: trimmedText },
-        {
-          headers: {
-            Authorization: req.headers.authorization,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.log("🔍 Full text length:", fullText.length);
 
-      if (!postResponse.data.success) {
-        throw new Error(postResponse.data.error || "Failed to post tweet");
-      }
+      // // this should not happen, but just in case
+      // return res.status(400).json({
+      //   success: false,
+      //   error: "Tweet notification exceeds 280 character limit",
+      // } as ApiResponse);
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          ...postResponse.data.data,
-          notification_type: "audience_notification",
-          capsule_id,
-          original_text: fullText,
-          posted_text: trimmedText,
-          was_trimmed: true,
-        },
-      } as ApiResponse);
+      // // Trim if too long - prioritize keeping links over base text
+      // const essentialLinks = appDirectLink + blinkActionUrl;
+      // const maxLength = 280 - essentialLinks.length - 3; // Leave room for "..."
+      // const trimmedBase = baseText.substring(0, maxLength - formattedDate.length - 10);
+      // const trimmedText = `${trimmedBase}... ${formattedDate}! ⏰${essentialLinks}`;
+
+      // // Use internal post-tweet endpoint
+      // const postResponse = await axios.post(
+      //   `${req.protocol}://${req.get("host")}/api/social/post-tweet`,
+      //   { text: trimmedText },
+      //   {
+      //     headers: {
+      //       Authorization: req.headers.authorization,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      // if (!postResponse.data.success) {
+      //   throw new Error(postResponse.data.error || "Failed to post tweet");
+      // }
+
+      // return res.status(200).json({
+      //   success: true,
+      //   data: {
+      //     ...postResponse.data.data,
+      //     notification_type: "audience_notification",
+      //     capsule_id,
+      //     original_text: fullText,
+      //     posted_text: trimmedText,
+      //     was_trimmed: true,
+      //   },
+      // } as ApiResponse);
     } else {
       // Use internal post-tweet endpoint
       const postResponse = await axios.post(
