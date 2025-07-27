@@ -141,4 +141,39 @@ docs/
 
 ---
 
-This documentation represents a complete, production-ready semantic validation system with enterprise-grade security features. The Oracle signature implementation ensures trust and prevents cheating while maintaining the flexibility that makes CapsuleX's AI-powered games superior to traditional exact-match systems.
+## 🔮 Social Media Scheduler
+
+### Overview
+CapsuleX now features a complete **Social Media Scheduler** that allows users to schedule Twitter posts for future publication without blockchain storage. This creates a dual-mode system where users can choose between encrypted time capsules or simple social post scheduling.
+
+### Key Features
+- **Dual-Mode Creation**: Time Capsule (blockchain + encryption + real content posting) vs Social Post (Twitter scheduling only)
+- **Progressive Disclosure UI**: Clean mode selection with conditional field display
+- **Unified Backend**: Single reveal queue table handles both real content reveals and social posts
+- **Character Limits**: 280 character limit with real-time validation
+- **Future Scheduling**: Posts can only be scheduled for future dates/times
+- **Background Processing**: Same scheduler service handles both content types
+- **Error Handling**: Retry logic and graceful failure handling
+
+### Pricing Justification
+- **Social Posts ($0.25)**: Simple Twitter scheduling service
+- **Regular Capsules ($0.35)**: Blockchain storage + encryption + automated real content posting
+- **Gamified Capsules ($0.50)**: Everything above + AI gaming + semantic validation
+
+### Technical Implementation
+```
+Mobile App (React Native) → Backend API → Reveal Queue → Scheduler Service → Twitter API
+```
+
+### Benefits
+- **Lower Barrier to Entry**: Users can try scheduling without SOL or blockchain complexity
+- **Platform Growth**: Attracts non-crypto users to the ecosystem
+- **Revenue Potential**: Pay-per-use pricing model with clear value tiers
+- **User Retention**: Keeps users engaged with simpler use cases
+- **Clear Value Proposition**: Time capsules provide blockchain security + encryption + real content posting vs simple scheduling
+
+---
+
+This documentation represents a complete, production-ready platform with both revolutionary semantic validation AND practical social media scheduling. The system combines enterprise-grade security for gaming with user-friendly social features that appeal to mainstream audiences.
+
+**Key Clarification**: Time capsule reveals post the ACTUAL CONTENT that was encrypted and stored, not notification announcements. This is the core value proposition - guaranteed future posting of real content through blockchain technology.

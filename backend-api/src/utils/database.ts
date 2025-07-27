@@ -489,3 +489,32 @@ export const retryFailedReveal = async (
     return { data: null, error: handleDatabaseError(error) };
   }
 };
+
+// ===== Social Post Scheduling Functions =====
+
+export const addSocialPostToQueue = async (
+  user_id: string,
+  post_content: string,
+  scheduled_for: string
+): Promise<{ data: any | null; error: any }> => {
+  try {
+    const { data, error } = await supabase
+      .from("reveal_queue")
+      .insert({
+        // Don't set capsule_id for social posts - they don't have capsules
+        scheduled_for,
+        status: "pending",
+        attempts: 0,
+        max_attempts: 3,
+        post_type: "social_post",
+        post_content,
+        user_id, // Store user_id directly for social posts
+      })
+      .select()
+      .single();
+
+    return { data, error: error ? handleDatabaseError(error) : null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};

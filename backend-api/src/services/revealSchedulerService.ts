@@ -9,7 +9,10 @@ export interface RevealQueueItem {
   attempts: number;
   max_attempts: number;
   status: "pending" | "processing" | "completed" | "failed";
-  capsules: {
+  post_type: "capsule_reveal" | "social_post";
+  post_content?: string; // For social posts, this contains the content to post
+  user_id?: string; // For social posts, this contains the user_id directly
+  capsules?: {
     capsule_id: string;
     user_id: string;
     content_encrypted: string;
@@ -34,7 +37,7 @@ export interface RevealProcessingResult {
 export class RevealSchedulerService {
   private static isRunning = false;
   private static intervalId: NodeJS.Timeout | null = null;
-  private static readonly PROCESSING_INTERVAL = 30 * 1000; // 1 minute
+  private static readonly PROCESSING_INTERVAL = 60 * 1000; // 1 minute
   private static readonly MAX_CONCURRENT_JOBS = 5;
 
   /**
@@ -112,12 +115,14 @@ export class RevealSchedulerService {
       }
 
       console.log(`📋 Found ${pendingReveals.length} pending reveal(s):`);
-      
+
       // Log timing details for debugging
       pendingReveals.forEach((reveal: RevealQueueItem) => {
         const scheduledTime = new Date(reveal.scheduled_for).toISOString();
         const timeDiff = new Date(currentTime).getTime() - new Date(scheduledTime).getTime();
-        console.log(`  📅 Capsule ${reveal.capsule_id}: scheduled=${scheduledTime}, diff=${Math.round(timeDiff/1000)}s`);
+        console.log(
+          `  📅 Capsule ${reveal.capsule_id}: scheduled=${scheduledTime}, diff=${Math.round(timeDiff / 1000)}s`
+        );
       });
 
       // Process each reveal concurrently (up to MAX_CONCURRENT_JOBS)
@@ -140,12 +145,12 @@ export class RevealSchedulerService {
   }
 
   /**
-   * Process a single reveal item
+   * Process a single reveal item (capsule reveal or social post)
    */
   private static async processReveal(reveal: RevealQueueItem): Promise<RevealProcessingResult> {
-    const { queue_id, capsule_id, capsules: capsule } = reveal;
+    const { queue_id, capsule_id, post_type } = reveal;
 
-    console.log(`🔄 Processing reveal for capsule: ${capsule_id}`);
+    console.log(`🔄 Processing ${post_type} for ID: ${capsule_id}`);
 
     try {
       // Mark as processing
@@ -154,40 +159,38 @@ export class RevealSchedulerService {
         attempts: reveal.attempts + 1,
       });
 
-      // Step 1: Update capsule status to revealed
-      const capsuleUpdateResult = await this.processCapsuleReveal(capsule);
+      let result: RevealProcessingResult;
 
-      if (!capsuleUpdateResult.success) {
-        console.error(`❌ Failed to process capsule reveal: ${capsuleUpdateResult.error}`);
+      if (post_type === "social_post") {
+        // Handle social post
+        result = await this.processSocialPost(reveal);
+      } else {
+        // Handle capsule reveal (default)
+        result = await this.processCapsuleReveal(reveal);
+      }
+
+      if (!result.success) {
+        console.error(`❌ Failed to process ${post_type}: ${result.error}`);
         await this.handleRevealFailure(
           queue_id,
           reveal.attempts + 1,
-          capsuleUpdateResult.error || "Failed to process capsule reveal"
+          result.error || `Failed to process ${post_type}`
         );
-        return capsuleUpdateResult;
+        return result;
       }
 
-      // Step 2: Post to Twitter if user has connected account
-      const twitterResult = await this.postRevealToTwitter(capsule);
-
-      // Step 3: Mark as completed (even if Twitter failed - capsule reveal is what matters)
+      // Mark as completed
       await updateRevealQueueStatus(queue_id, {
         status: "completed",
-        error_message: twitterResult.error || undefined,
+        error_message: undefined,
       });
 
-      console.log(`✅ Reveal processing completed for capsule: ${capsule_id}`);
-
-      return {
-        success: true,
-        revealProcessed: true,
-        twitterPosted: twitterResult.success,
-      };
+      console.log(`✅ ${post_type} processing completed for ID: ${capsule_id}`);
+      return result;
     } catch (error) {
-      console.error(`❌ Error processing reveal ${capsule_id}:`, error);
+      console.error(`❌ Error processing ${post_type} ${capsule_id}:`, error);
 
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-
       await this.handleRevealFailure(queue_id, reveal.attempts + 1, errorMessage);
 
       return {
@@ -198,17 +201,24 @@ export class RevealSchedulerService {
   }
 
   /**
-   * Process the actual capsule reveal (update database status)
+   * Process a capsule reveal (update database status and post reveal announcement)
    */
-  private static async processCapsuleReveal(capsule: {
-    capsule_id: string;
-    user_id: string;
-    status: string;
-  }): Promise<{ success: boolean; error?: string }> {
+  private static async processCapsuleReveal(
+    reveal: RevealQueueItem
+  ): Promise<RevealProcessingResult> {
+    const { capsules: capsule } = reveal;
+
+    if (!capsule) {
+      return {
+        success: false,
+        error: "Capsule data not found for reveal",
+      };
+    }
+
     try {
       console.log(`📤 Revealing capsule: ${capsule.capsule_id}`);
 
-      // Update capsule status to revealed
+      // Step 1: Update capsule status to revealed
       const { error } = await updateCapsuleStatus(capsule.capsule_id, "revealed");
 
       if (error) {
@@ -219,11 +229,80 @@ export class RevealSchedulerService {
       }
 
       console.log(`✅ Capsule revealed: ${capsule.capsule_id}`);
-      return { success: true };
+
+      // Step 2: Post reveal announcement to Twitter if user has connected account
+      const twitterResult = await this.postRevealToTwitter(capsule);
+
+      return {
+        success: true,
+        revealProcessed: true,
+        twitterPosted: twitterResult.success,
+      };
     } catch (error) {
       return {
         success: false,
         error: `Database error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  /**
+   * Process a social media post
+   */
+  private static async processSocialPost(reveal: RevealQueueItem): Promise<RevealProcessingResult> {
+    const { post_content, user_id } = reveal;
+
+    if (!post_content || !user_id) {
+      return {
+        success: false,
+        error: "Missing post content or user ID for social post",
+      };
+    }
+
+    try {
+      console.log(`📱 Posting social content for user: ${user_id}`);
+
+      // Get fresh access token for the user
+      const tokenResult = await TwitterTokenService.getFreshAccessToken(user_id);
+
+      if (!tokenResult.success) {
+        return {
+          success: false,
+          error: `Failed to get Twitter token: ${tokenResult.error}`,
+        };
+      }
+
+      // Post directly to Twitter API
+      const twitterResponse = await fetch("https://api.twitter.com/2/tweets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenResult.access_token}`,
+        },
+        body: JSON.stringify({
+          text: post_content,
+        }),
+      });
+
+      if (!twitterResponse.ok) {
+        const errorData = (await twitterResponse.json()) as { detail?: string; error?: string };
+        return {
+          success: false,
+          error: `Twitter API error: ${errorData.detail || errorData.error || twitterResponse.statusText}`,
+        };
+      }
+
+      const tweetData = (await twitterResponse.json()) as { data?: { id: string } };
+      console.log(`✅ Social post published for user ${user_id}:`, tweetData.data?.id);
+
+      return {
+        success: true,
+        twitterPosted: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Network error: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
   }
@@ -302,7 +381,7 @@ What was scheduled for ${revealDate} is now unlocked.${gameText}
         });
 
         if (!twitterResponse.ok) {
-          const errorData = await twitterResponse.json() as { detail?: string; error?: string };
+          const errorData = (await twitterResponse.json()) as { detail?: string; error?: string };
           console.error(`❌ Twitter API error:`, errorData);
           return {
             success: false,
@@ -310,10 +389,12 @@ What was scheduled for ${revealDate} is now unlocked.${gameText}
           };
         }
 
-        const tweetData = await twitterResponse.json() as { data?: { id: string } };
-        console.log(`✅ Posted reveal to Twitter for capsule: ${capsule.capsule_id}`, tweetData.data?.id);
+        const tweetData = (await twitterResponse.json()) as { data?: { id: string } };
+        console.log(
+          `✅ Posted reveal to Twitter for capsule: ${capsule.capsule_id}`,
+          tweetData.data?.id
+        );
         return { success: true };
-
       } catch (fetchError) {
         console.error(`❌ Error calling Twitter API:`, fetchError);
         return {

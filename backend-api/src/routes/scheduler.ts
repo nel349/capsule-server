@@ -7,6 +7,7 @@ import {
   getFailedReveals,
   retryFailedReveal,
   addToRevealQueue,
+  addSocialPostToQueue,
 } from "../utils/database";
 
 const router = express.Router();
@@ -232,6 +233,85 @@ router.post("/queue", authenticateToken, async (req: AuthenticatedRequest, res) 
     res.status(500).json({
       success: false,
       error: "Failed to add to reveal queue",
+    } as ApiResponse);
+  }
+});
+
+// Schedule a social media post (requires authentication)
+router.post("/social-post", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log("📱 Social post request received:", {
+      body: req.body,
+      user: req.user,
+      headers: req.headers['content-type']
+    });
+    
+    const { post_content, scheduled_for } = req.body;
+
+    if (!post_content || !scheduled_for) {
+      console.log("❌ Missing required fields:", { post_content: !!post_content, scheduled_for: !!scheduled_for });
+      return res.status(400).json({
+        success: false,
+        error: "post_content and scheduled_for are required",
+      } as ApiResponse);
+    }
+
+    // Validate content length (280 characters for Twitter)
+    if (post_content.length > 280) {
+      console.log("❌ Content too long:", { length: post_content.length });
+      return res.status(400).json({
+        success: false,
+        error: "Post content cannot exceed 280 characters",
+      } as ApiResponse);
+    }
+
+    // Validate date format
+    const scheduledDate = new Date(scheduled_for);
+    if (isNaN(scheduledDate.getTime())) {
+      console.log("❌ Invalid date format:", { scheduled_for });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid date format for scheduled_for",
+      } as ApiResponse);
+    }
+
+    // Allow scheduling for any time (past, present, or future)
+    // Users may want to test or schedule posts immediately
+    
+    console.log("✅ Validation passed, adding to queue:", {
+      user_id: req.user!.user_id,
+      content_length: post_content.length,
+      scheduled_date: scheduledDate.toISOString()
+    });
+
+    const { data, error } = await addSocialPostToQueue(
+      req.user!.user_id,
+      post_content,
+      scheduled_for
+    );
+
+    if (error) {
+      console.log("❌ Database error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to schedule social post",
+      } as ApiResponse);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        message: "Social post scheduled successfully",
+        post_id: data.queue_id,
+        scheduled_for: scheduledDate.toISOString(),
+        content_preview: post_content.substring(0, 50) + (post_content.length > 50 ? "..." : ""),
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error("❌ Error scheduling social post:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to schedule social post",
     } as ApiResponse);
   }
 });

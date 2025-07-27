@@ -51,8 +51,8 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       } as ApiResponse);
     }
 
-    let onChainTx = on_chain_tx;
-    let solFeeAmount = sol_fee_amount;
+    const onChainTx = on_chain_tx;
+    const solFeeAmount = sol_fee_amount;
 
     // Test Solana integration if test_mode is enabled
     // if (test_mode) {

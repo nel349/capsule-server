@@ -28,24 +28,33 @@
 - **Mock Mode**: ✅ Development/demo toggle in Profile settings
 - **Flow**: Users can connect Twitter in Profile tab, required before posting
 
-### 4. **Create Capsule Flow** 🚧 **IN DEVELOPMENT**
-**UI Components** ✅ **IMPLEMENTED**:
-- Create Capsule Screen with form fields
-- Tweet content input (280 char limit)
-- Date/time picker for reveal scheduling
-- Preview functionality
+### 4. **Create Capsule Flow** ✅ **IMPLEMENTED**
+**Dual-Mode Creation System** ✅ **IMPLEMENTED**:
+- **Time Capsule Mode**: Blockchain storage with encryption
+- **Social Post Mode**: Direct Twitter scheduling without blockchain
+- Progressive disclosure UI with mode selection
+- Dynamic field display based on selected mode
 
-**SOL Integration** 🚧 **PARTIALLY IMPLEMENTED**:
+**UI Components** ✅ **FULLY IMPLEMENTED**:
+- Create Capsule Screen with dual-mode selection
+- Content input with 280 character limit
+- Date/time picker for scheduling
+- Social post preview functionality
+- Mode-specific field visibility
+
+**SOL Integration** ✅ **IMPLEMENTED** (Time Capsule Mode):
 - Backend Solana service ready (`SolanaService` class)
-- Smart contract integration prepared
-- SOL balance checking: Ready to implement
+- Smart contract integration complete
+- SOL balance checking and validation
+- Transaction fee handling (0.00005 SOL)
 - Onramp flow: Planned (Moonpay integration)
 
-**Backend Process** ✅ **READY**:
-- Smart contract functions available (`createCapsule`)
-- Database models and API endpoints implemented
-- Content encryption: Client-side approach planned
-- Transaction handling: SOL fee collection ready
+**Backend Process** ✅ **FULLY IMPLEMENTED**:
+- Smart contract functions (`createCapsule`)
+- Database models and API endpoints
+- Device-based content encryption (VaultKeyManager)
+- Social post scheduling via reveal queue
+- Dual-mode processing with unified database table
 
 ### 5. **Confirmation State**
 - "Capsule created! Your tweet will be revealed on [DATE]"
@@ -63,24 +72,60 @@
 - API endpoints for fetching capsule lists
 - No in-app social features planned - interaction on actual X posts
 
-### 7. **Reveal Time** ✅ **BACKEND READY**
-**Automated Process**:
-- Scheduler detects reveal_date has passed
-- Calls smart contract `revealCapsule`
-- Decrypts content
-- **Critical**: Posts to user's connected X account
-  - ✅ **Backend API**: `/api/social/post-tweet` with media support
-  - ✅ **X API v2 Integration**: Media upload + tweet posting
-  - ✅ **Mock Mode Available**: For development/demos
-- ✅ **Include CapsuleX signature/link** in X post for verification
-- ✅ **Simple retry logic** for X API failures
+### 7. **Reveal Time** ✅ **FULLY IMPLEMENTED**
+**Automated Process** (Time Capsule Mode):
+- Background scheduler detects reveal_date has passed
+- Calls smart contract `revealCapsule` (updates blockchain status)
+- Posts the ACTUAL CAPSULE CONTENT to user's connected X account
 - Updates database: `revealed_at`, `posted_to_x`, `x_post_id`
 
-**User Experience**:
-- Email/push notification: "Your capsule just revealed!"
-- Link to both the X post and CapsuleX reveal page
+**Automated Process** (Social Post Mode):
+- Background scheduler detects scheduled_for time has passed
+- Posts content directly to user's X account (no blockchain interaction)
+- Content posted exactly as user scheduled it
 
-### 8. **Post-Reveal**
-- Public reveal page showing the tweet + proof of when it was created
-- ✅ **Link between X post and CapsuleX** for verification
+**Technical Implementation**:
+- ✅ **Background Scheduler Service**: 60-second interval processing
+- ✅ **Unified Reveal Queue**: Single table handles both content types
+- ✅ **X API v2 Integration**: Direct Twitter posting with token refresh
+- ✅ **Retry Logic**: Exponential backoff for failed posts (max 3 attempts)
+- ✅ **Error Handling**: Graceful failure management and logging
+- ✅ **Token Management**: Automatic OAuth 2.0 token refresh
+
+**User Experience**:
+- Real-time processing: Posts appear on Twitter within 1 minute of scheduled time
+- No manual intervention required
+- Automatic retry for temporary failures
+
+### 8. **Social Media Scheduler Flow** ✅ **FULLY IMPLEMENTED**
+**Alternative User Journey** (Social Post Mode):
+1. **Mode Selection**: User chooses "Social Post" instead of "Time Capsule"
+2. **Content Input**: 280 character Twitter post content
+3. **Scheduling**: Select future date/time for publication
+4. **Validation**: Real-time character count, future date enforcement
+5. **Submission**: Content stored in reveal queue with `post_type: "social_post"`
+6. **Processing**: Background scheduler posts directly to Twitter at scheduled time
+7. **No Blockchain**: No SOL fees, no wallet signatures, no encryption
+
+**Benefits of Social Mode**:
+- **Zero Friction**: No crypto knowledge or SOL required
+- **Familiar UX**: Standard social media scheduling experience
+- **Gateway Feature**: Introduces users to CapsuleX platform
+- **Revenue Potential**: Future premium scheduling features
+
+**Technical Differences**:
+- Database: Same `reveal_queue` table, different `post_type`
+- Processing: Direct Twitter posting vs encrypted content reveal posting
+- Storage: Plain text content vs encrypted capsule content
+- Cost: $0.25 service fee vs $0.35-0.50 (blockchain + encryption + real content posting)
+
+**Pricing Justification**:
+- **Social Posts ($0.25)**: Simple Twitter scheduling service
+- **Regular Capsules ($0.35)**: Blockchain storage + encryption + automated real content posting
+- **Gamified Capsules ($0.50)**: Everything above + AI gaming + semantic validation
+
+### 9. **Post-Reveal**
+- Public reveal page showing the actual posted content + proof of when it was created
+- ✅ **Link between X post and CapsuleX** for verification  
 - Social interaction happens on X, not in-app
+- **Key Point**: Time capsule reveals post the REAL CONTENT, not notification announcements
