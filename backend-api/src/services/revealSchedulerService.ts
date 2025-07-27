@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { getPendingReveals, updateRevealQueueStatus, updateCapsuleStatus } from "../utils/database";
 import { TwitterTokenService } from "./twitterTokenService";
 import { supabase } from "../utils/supabase";

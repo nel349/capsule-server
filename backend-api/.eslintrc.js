@@ -12,6 +12,9 @@ module.exports = {
     node: true,
     jest: true,
   },
+  globals: {
+    NodeJS: 'readonly',
+  },
   ignorePatterns: ['.eslintrc.js', 'dist/', 'node_modules/', 'src/types/capsulex.ts'],
   rules: {
     // Security and best practices

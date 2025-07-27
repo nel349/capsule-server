@@ -556,7 +556,7 @@ router.get("/settings", authenticateToken, async (req: AuthenticatedRequest, res
 // Post Twitter audience notification when capsule is created
 router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const { capsule_id, reveal_date, hint_text, include_capsule_link = true } = req.body;
+    const { capsule_id, reveal_date, hint_text } = req.body;
 
     if (!capsule_id || !reveal_date) {
       return res.status(400).json({

@@ -243,13 +243,16 @@ router.post("/social-post", authenticateToken, async (req: AuthenticatedRequest,
     console.log("📱 Social post request received:", {
       body: req.body,
       user: req.user,
-      headers: req.headers['content-type']
+      headers: req.headers["content-type"],
     });
-    
+
     const { post_content, scheduled_for } = req.body;
 
     if (!post_content || !scheduled_for) {
-      console.log("❌ Missing required fields:", { post_content: !!post_content, scheduled_for: !!scheduled_for });
+      console.log("❌ Missing required fields:", {
+        post_content: !!post_content,
+        scheduled_for: !!scheduled_for,
+      });
       return res.status(400).json({
         success: false,
         error: "post_content and scheduled_for are required",
@@ -277,11 +280,11 @@ router.post("/social-post", authenticateToken, async (req: AuthenticatedRequest,
 
     // Allow scheduling for any time (past, present, or future)
     // Users may want to test or schedule posts immediately
-    
+
     console.log("✅ Validation passed, adding to queue:", {
       user_id: req.user!.user_id,
       content_length: post_content.length,
-      scheduled_date: scheduledDate.toISOString()
+      scheduled_date: scheduledDate.toISOString(),
     });
 
     const { data, error } = await addSocialPostToQueue(

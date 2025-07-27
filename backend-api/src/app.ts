@@ -11,6 +11,7 @@ import gamesRouter from './routes/games';
 import socialRouter from './routes/social';
 import transactionsRouter from './routes/transactions';
 import schedulerRouter from './routes/scheduler';
+import leaderboardRouter from './routes/leaderboard';
 
 // Import utilities
 import { testDatabaseConnection } from './utils/supabase';
@@ -37,6 +38,9 @@ app.use(
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public directory (for Blink testing)
+app.use(express.static('public'));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -68,6 +72,7 @@ app.use('/api/games', gamesRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/scheduler', schedulerRouter);
+app.use('/api/leaderboard', leaderboardRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
