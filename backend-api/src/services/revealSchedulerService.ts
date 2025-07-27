@@ -34,7 +34,7 @@ export interface RevealProcessingResult {
 export class RevealSchedulerService {
   private static isRunning = false;
   private static intervalId: NodeJS.Timeout | null = null;
-  private static readonly PROCESSING_INTERVAL = 60 * 1000; // 1 minute
+  private static readonly PROCESSING_INTERVAL = 30 * 1000; // 1 minute
   private static readonly MAX_CONCURRENT_JOBS = 5;
 
   /**
@@ -96,7 +96,8 @@ export class RevealSchedulerService {
    */
   private static async processRevealQueue() {
     try {
-      console.log("🔍 Checking for pending reveals...");
+      const currentTime = new Date().toISOString();
+      console.log(`🔍 Checking for pending reveals at server time: ${currentTime}`);
 
       const { data: pendingReveals, error } = await getPendingReveals(this.MAX_CONCURRENT_JOBS);
 
@@ -110,7 +111,14 @@ export class RevealSchedulerService {
         return;
       }
 
-      console.log(`📋 Found ${pendingReveals.length} pending reveal(s)`);
+      console.log(`📋 Found ${pendingReveals.length} pending reveal(s):`);
+      
+      // Log timing details for debugging
+      pendingReveals.forEach((reveal: RevealQueueItem) => {
+        const scheduledTime = new Date(reveal.scheduled_for).toISOString();
+        const timeDiff = new Date(currentTime).getTime() - new Date(scheduledTime).getTime();
+        console.log(`  📅 Capsule ${reveal.capsule_id}: scheduled=${scheduledTime}, diff=${Math.round(timeDiff/1000)}s`);
+      });
 
       // Process each reveal concurrently (up to MAX_CONCURRENT_JOBS)
       const processingPromises = pendingReveals.map((reveal: RevealQueueItem) =>
@@ -280,32 +288,39 @@ What was scheduled for ${revealDate} is now unlocked.${gameText}
 
 #TimeCapsule #Revealed #Solana`;
 
-      // Post tweet using internal API
-      const response = await fetch(
-        `${process.env.API_BASE_URL || "http://localhost:3001"}/api/social/post-tweet`,
-        {
+      // Post tweet directly to Twitter API (instead of internal API call)
+      try {
+        const twitterResponse = await fetch("https://api.twitter.com/2/tweets", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.INTERNAL_API_TOKEN || "internal"}`,
+            Authorization: `Bearer ${tokenResult.access_token}`,
           },
           body: JSON.stringify({
             text: tweetText,
-            user_id: capsule.user_id,
           }),
-        }
-      );
+        });
 
-      if (!response.ok) {
-        const errorData = (await response.json()) as { error?: string };
+        if (!twitterResponse.ok) {
+          const errorData = await twitterResponse.json() as { detail?: string; error?: string };
+          console.error(`❌ Twitter API error:`, errorData);
+          return {
+            success: false,
+            error: `Twitter API error: ${errorData.detail || errorData.error || twitterResponse.statusText}`,
+          };
+        }
+
+        const tweetData = await twitterResponse.json() as { data?: { id: string } };
+        console.log(`✅ Posted reveal to Twitter for capsule: ${capsule.capsule_id}`, tweetData.data?.id);
+        return { success: true };
+
+      } catch (fetchError) {
+        console.error(`❌ Error calling Twitter API:`, fetchError);
         return {
           success: false,
-          error: `Twitter API error: ${errorData.error || response.statusText}`,
+          error: `Network error: ${fetchError instanceof Error ? fetchError.message : "Unknown error"}`,
         };
       }
-
-      console.log(`✅ Posted reveal to Twitter for capsule: ${capsule.capsule_id}`);
-      return { success: true };
     } catch (error) {
       console.error(`❌ Error posting to Twitter:`, error);
       return {

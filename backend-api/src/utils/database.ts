@@ -72,6 +72,7 @@ export const createCapsule = async (capsuleData: {
   has_media?: boolean;
   media_urls?: string[];
   reveal_date: string;
+  created_at?: string; // Frontend timestamp for consistency
   on_chain_tx: string;
   sol_fee_amount?: number;
   is_gamified?: boolean;
@@ -81,6 +82,7 @@ export const createCapsule = async (capsuleData: {
       capsule_id: uuidv4(),
       sol_fee_amount: capsuleData.sol_fee_amount ?? 0.00005, // Default SOL fee
       is_gamified: capsuleData.is_gamified ?? false, // Default to non-gamified
+      created_at: capsuleData.created_at, // Use frontend timestamp instead of DEFAULT NOW()
       ...capsuleData,
     };
 

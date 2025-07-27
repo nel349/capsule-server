@@ -26,8 +26,8 @@ export interface TwitterConnection {
  */
 export class TwitterTokenService {
   private static readonly TWITTER_TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
-  private static readonly CLIENT_ID = process.env.TWITTER_CLIENT_ID;
-  private static readonly CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET;
+  private static readonly CLIENT_ID = process.env.CLIENT_ID;
+  private static readonly CLIENT_SECRET = process.env.CLIENT_SECRET;
 
   /**
    * Refresh an expired Twitter access token using a refresh token

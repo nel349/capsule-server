@@ -21,6 +21,7 @@ export interface CreateCapsuleRequest {
   has_media?: boolean;
   media_urls?: string[];
   reveal_date: string; // ISO string
+  created_at?: string; // Frontend timestamp for consistency
   on_chain_tx: string;
   sol_fee_amount?: number;
 }
