@@ -1,0 +1,170 @@
+### Reveal Scheduler API Tests
+### Base URL: http://localhost:3001/api
+
+### Variables
+@baseUrl = http://localhost:3001/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYTQzNGY4MjItZjU0MC00MDRlLWIwM2EtNjc2ZDY5NmU5ZGFhIiwid2FsbGV0X2FkZHJlc3MiOiJBVHlma25LMlBpWXNWZzlKR0xNQ1JRREpKakVKeEhteXhkNXFuMnZ2VTRVY3ciLCJhdXRoX3R5cGUiOiJwcml2eSIsImlhdCI6MTczNzg3ODQ1NCwiZXhwIjoxNzM4NDgzMjU0fQ.N5yKuQ_fhU6JgJ6A7j0YSYcqL2WdPUdPJq6QA_m1234
+# Replace with actual JWT token from login
+
+### ========================================
+### SCHEDULER MANAGEMENT
+### ========================================
+
+### Get scheduler status
+GET {{baseUrl}}/scheduler/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Start scheduler (if not running)
+POST {{baseUrl}}/scheduler/start
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Stop scheduler
+POST {{baseUrl}}/scheduler/stop
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Manually trigger processing
+POST {{baseUrl}}/scheduler/trigger
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ========================================
+### REVEAL QUEUE MANAGEMENT
+### ========================================
+
+### Get pending reveals
+GET {{baseUrl}}/scheduler/pending?limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Get failed reveals
+GET {{baseUrl}}/scheduler/failed?limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Add test capsule to reveal queue (PAST DATE - should process immediately)
+POST {{baseUrl}}/scheduler/queue
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "capsule_id": "test-capsule-123",
+  "scheduled_for": "2024-01-01T10:00:00.000Z"
+}
+
+### Add test capsule to reveal queue (FUTURE DATE - 5 minutes from now)
+POST {{baseUrl}}/scheduler/queue
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "capsule_id": "test-capsule-456",
+  "scheduled_for": "{{$datetime iso8601 offset=5m}}"
+}
+
+### Add test capsule to reveal queue (1 minute from now)
+POST {{baseUrl}}/scheduler/queue
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "capsule_id": "test-capsule-789",
+  "scheduled_for": "{{$datetime iso8601 offset=1m}}"
+}
+
+### Retry a failed reveal (replace queue_id)
+POST {{baseUrl}}/scheduler/retry/your-queue-id-here
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ========================================
+### TEST CAPSULE CREATION FOR REVEALS
+### ========================================
+
+### Create a test capsule with reveal date 2 minutes from now
+POST {{baseUrl}}/capsules/create
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "content_encrypted": "U2FsdGVkX19test123encrypted789content",
+  "content_hash": "abc123hash456",
+  "reveal_date": "{{$datetime iso8601 offset=2m}}",
+  "on_chain_tx": "test-tx-signature-123",
+  "sol_fee_amount": 0.00005,
+  "has_media": false,
+  "media_urls": [],
+  "is_gamified": false,
+  "test_mode": false
+}
+
+### Create a gamified test capsule with reveal date 3 minutes from now
+POST {{baseUrl}}/capsules/create
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "content_encrypted": "U2FsdGVkX19game456encrypted123content",
+  "content_hash": "game789hash123",
+  "reveal_date": "{{$datetime iso8601 offset=3m}}",
+  "on_chain_tx": "test-game-tx-signature-456",
+  "sol_fee_amount": 0.00005,
+  "has_media": true,
+  "media_urls": ["https://example.com/image1.jpg"],
+  "is_gamified": true,
+  "test_mode": false
+}
+
+### ========================================
+### TWITTER INTEGRATION TESTS
+### ========================================
+
+### Check user's Twitter connection
+GET {{baseUrl}}/social/connections
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Test Twitter post (to verify reveal posting works)
+POST {{baseUrl}}/social/post-tweet
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "text": "🔓 Test reveal post! My time capsule has been unlocked! #TimeCapsule #Revealed #Solana"
+}
+
+### ========================================
+### MONITORING & DEBUGGING
+### ========================================
+
+### Check application health
+GET {{baseUrl}}/../health
+
+### Get user's capsules to see their reveal dates
+GET {{baseUrl}}/capsules/my-capsules
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Get revealed capsules (public endpoint)
+GET {{baseUrl}}/capsules/revealed?limit=10
+
+### ========================================
+### DIRECT DATABASE TESTING (if needed)
+### ========================================
+
+### NOTE: These require direct database access via SQL client
+### Example SQL to insert test reveal queue items:
+
+# INSERT INTO reveal_queue (capsule_id, scheduled_for, status, attempts, max_attempts)
+# VALUES 
+#   ('test-capsule-past', '2024-01-01 10:00:00+00', 'pending', 0, 3),
+#   ('test-capsule-future', NOW() + INTERVAL '5 minutes', 'pending', 0, 3),
+#   ('test-capsule-failed', '2024-01-01 10:00:00+00', 'pending', 2, 3);
+
+### Example SQL to check reveal queue:
+# SELECT * FROM reveal_queue ORDER BY scheduled_for;
+
+### Example SQL to check capsules:
+# SELECT capsule_id, reveal_date, status, created_at FROM capsules ORDER BY created_at DESC LIMIT 10;

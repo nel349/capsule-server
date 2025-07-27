@@ -9,11 +9,13 @@ import { CreateSocialConnectionRequest, ApiResponse, AuthenticatedRequest } from
 import { supabase } from "../utils/supabase";
 import axios from "axios";
 import FormData from "form-data";
-
+import { TwitterTokenService } from "../services/twitterTokenService";
 
 // if DEV use localhost:3000, otherwise use capsulex.xyz
-const BASE_BLINK_URL = process.env.NODE_ENV === 'development' ?
- 'https://capsulex-blink-production.up.railway.app' : process.env.CAPSULEX_BLINK_BASE_URL || 'https://capsulex-blink-production.up.railway.app';
+const BASE_BLINK_URL =
+  process.env.NODE_ENV === "development"
+    ? "https://capsulex-blink-production.up.railway.app"
+    : process.env.CAPSULEX_BLINK_BASE_URL || "https://capsulex-blink-production.up.railway.app";
 
 const router = express.Router();
 
@@ -218,7 +220,9 @@ router.post(
 // Helper function to shorten a URL using is.gd API
 const shortenUrl = async (url: string): Promise<string> => {
   try {
-    const response = await axios.get(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`);
+    const response = await axios.get(
+      `https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`
+    );
     if (response.data.shorturl) {
       return response.data.shorturl;
     }
@@ -242,7 +246,8 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
       } as ApiResponse);
     }
 
-    if (text.length > 280) { // 280 is the limit for content in the onchain capsule content
+    if (text.length > 280) {
+      // 280 is the limit for content in the onchain capsule content
       return res.status(400).json({
         success: false,
         error: "Tweet text exceeds 280 character limit",
@@ -251,7 +256,25 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
 
     console.log("🐦 Posting tweet for user:", req.user!.user_id);
 
-    // Get user's Twitter connection
+    // Get fresh access token (handles refresh automatically if needed)
+    const tokenResult = await TwitterTokenService.getFreshAccessToken(req.user!.user_id);
+
+    if (!tokenResult.success) {
+      const statusCode = tokenResult.error?.includes("not found")
+        ? 404
+        : tokenResult.error?.includes("reconnect")
+          ? 401
+          : 500;
+
+      return res.status(statusCode).json({
+        success: false,
+        error: tokenResult.error,
+      } as ApiResponse);
+    }
+
+    const freshAccessToken = tokenResult.access_token!;
+
+    // Get connection details for username
     const { data: connections, error: connectionsError } = await getSocialConnections(
       req.user!.user_id
     );
@@ -274,14 +297,10 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
       } as ApiResponse);
     }
 
-    if (!twitterConnection.access_token) {
-      return res.status(400).json({
-        success: false,
-        error: "Twitter access token not found. Please reconnect your Twitter account.",
-      } as ApiResponse);
-    }
-
-    console.log("✅ Twitter connection found for user:", twitterConnection.platform_username);
+    console.log(
+      "✅ Fresh Twitter access token obtained for user:",
+      twitterConnection.platform_username
+    );
 
     // Check if we should mock Twitter API for development/demo
     const mockTwitterApi = process.env.MOCK_TWITTER_API === "true";
@@ -366,7 +385,7 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
             formData,
             {
               headers: {
-                Authorization: `Bearer ${twitterConnection.access_token}`,
+                Authorization: `Bearer ${freshAccessToken}`,
                 ...formData.getHeaders(),
               },
               maxContentLength: Infinity,
@@ -397,7 +416,7 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
                 `https://api.twitter.com/2/media/${mediaId}?media.fields=url,preview_image_url`,
                 {
                   headers: {
-                    Authorization: `Bearer ${twitterConnection.access_token}`,
+                    Authorization: `Bearer ${freshAccessToken}`,
                   },
                 }
               );
@@ -455,7 +474,7 @@ router.post("/post-tweet", authenticateToken, async (req: AuthenticatedRequest, 
     // Post tweet to Twitter API v2
     const tweetResponse = await axios.post("https://api.twitter.com/2/tweets", tweetData, {
       headers: {
-        Authorization: `Bearer ${twitterConnection.access_token}`,
+        Authorization: `Bearer ${freshAccessToken}`,
         "Content-Type": "application/json",
       },
     });
@@ -596,18 +615,16 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
 
     // Create audience notification text
     const baseText = hint_text || "🔮 I just created a time capsule that will be revealed on";
-    
+
     const shortAppDirectLink = await shortenUrl(`${BASE_BLINK_URL}/game/${capsule_id}`);
     // Direct link to the app via the blink service's web endpoint
     const appDirectLink = `\n📲 Open in app: ${shortAppDirectLink}`;
 
-
     // Add Blink action URL for gamified capsules
     const isGamified = capsuleDetails?.is_gamified || false;
-    const blinkActionUrl = isGamified 
+    const blinkActionUrl = isGamified
       ? `\n🎮 Play the guessing game: ${BASE_BLINK_URL}/api/guess/${capsule_id}`
       : "";
-    
 
     const fullText = `${baseText} ${formattedDate}! ⏰${appDirectLink}${blinkActionUrl}`;
 
@@ -615,7 +632,6 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
 
     // Check character limit
     if (fullText.length > 280) {
-
       console.log("🔍 Full text length:", fullText.length);
 
       // // this should not happen, but just in case
@@ -703,6 +719,138 @@ router.post("/notify-audience", authenticateToken, async (req: AuthenticatedRequ
     res.status(500).json({
       success: false,
       error: "Internal server error during audience notification",
+    } as ApiResponse);
+  }
+});
+
+// Refresh Twitter access token (requires authentication)
+router.post("/twitter/refresh-token", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log("🔄 Refreshing Twitter token for user:", req.user!.user_id);
+
+    const result = await TwitterTokenService.getFreshAccessToken(req.user!.user_id);
+
+    if (!result.success) {
+      const statusCode = result.error?.includes("not found")
+        ? 404
+        : result.error?.includes("reconnect")
+          ? 401
+          : 500;
+
+      return res.status(statusCode).json({
+        success: false,
+        error: result.error,
+      } as ApiResponse);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        access_token: "[REFRESHED_SUCCESSFULLY]",
+        message: "Twitter access token refreshed successfully",
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error("❌ Twitter token refresh endpoint error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during token refresh",
+    } as ApiResponse);
+  }
+});
+
+// Validate Twitter connection and token status (requires authentication)
+router.get("/twitter/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log("🔍 Checking Twitter connection status for user:", req.user!.user_id);
+
+    // Get current connection
+    const { data: connections, error: connectionsError } = await getSocialConnections(
+      req.user!.user_id
+    );
+
+    if (connectionsError || !connections) {
+      return res.status(500).json({
+        success: false,
+        error: "Failed to retrieve social connections",
+      } as ApiResponse);
+    }
+
+    const twitterConnection = connections.find(
+      conn => conn.platform === "twitter" && conn.is_active
+    );
+
+    if (!twitterConnection) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          connected: false,
+          message: "No active Twitter connection found",
+        },
+      } as ApiResponse);
+    }
+
+    if (!twitterConnection.access_token) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          connected: true,
+          valid: false,
+          message: "Twitter connected but no access token found",
+          username: twitterConnection.platform_username,
+        },
+      } as ApiResponse);
+    }
+
+    // Check if token is expired
+    const now = new Date();
+    const expiresAt = twitterConnection.expires_at ? new Date(twitterConnection.expires_at) : null;
+    const isExpired = expiresAt && expiresAt.getTime() < now.getTime();
+
+    // If expired, try to refresh
+    if (isExpired) {
+      console.log("⏰ Access token expired, attempting refresh...");
+
+      const refreshResult = await TwitterTokenService.getFreshAccessToken(req.user!.user_id);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          connected: true,
+          valid: refreshResult.success,
+          token_refreshed: refreshResult.success,
+          message: refreshResult.success
+            ? "Token was expired but successfully refreshed"
+            : "Token expired and refresh failed",
+          username: twitterConnection.platform_username,
+          expires_at: expiresAt?.toISOString(),
+        },
+      } as ApiResponse);
+    }
+
+    // Validate current token
+    const validationResult = await TwitterTokenService.validateAccessToken(
+      twitterConnection.access_token
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        connected: true,
+        valid: validationResult.valid,
+        message: validationResult.valid
+          ? "Twitter connection is active and valid"
+          : "Twitter token is invalid",
+        username: twitterConnection.platform_username,
+        expires_at: expiresAt?.toISOString(),
+        validation_error: validationResult.error,
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error("❌ Twitter status check error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during status check",
     } as ApiResponse);
   }
 });

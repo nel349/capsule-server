@@ -10,9 +10,11 @@ import capsulesRouter from './routes/capsules';
 import gamesRouter from './routes/games';
 import socialRouter from './routes/social';
 import transactionsRouter from './routes/transactions';
+import schedulerRouter from './routes/scheduler';
 
 // Import utilities
 import { testDatabaseConnection } from './utils/supabase';
+import { RevealSchedulerService } from './services/revealSchedulerService';
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +67,7 @@ app.use('/api/capsules', capsulesRouter);
 app.use('/api/games', gamesRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/transactions', transactionsRouter);
+app.use('/api/scheduler', schedulerRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -97,11 +100,20 @@ const startServer = async () => {
 
     console.log('✅ Database connection successful');
 
+    // Start the reveal scheduler service
+    try {
+      RevealSchedulerService.start();
+      console.log('✅ Reveal scheduler service started');
+    } catch (error) {
+      console.error('❌ Failed to start reveal scheduler:', error);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 CapsuleX Backend API running on port ${PORT}`);
       console.log(`📖 Health check: http://localhost:${PORT}/health`);
       console.log(`🔧 Solana cluster: ${process.env.SOLANA_CLUSTER || 'development'}`);
       console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`⏰ Reveal scheduler: ${RevealSchedulerService.getStatus().isRunning ? 'RUNNING' : 'STOPPED'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -112,11 +124,13 @@ const startServer = async () => {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Received SIGINT. Graceful shutdown...');
+  RevealSchedulerService.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Received SIGTERM. Graceful shutdown...');
+  RevealSchedulerService.stop();
   process.exit(0);
 });
 

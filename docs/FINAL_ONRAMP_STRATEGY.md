@@ -16,17 +16,14 @@
 ## 🔄 **User Flow Integration**
 
 ### **Just-in-Time SOL Checking**
-```
 User Experience Flow:
-1. User opens app → (No SOL check here)
-2. User fills out capsule form → (No SOL check here)  
-3. User clicks "Create Capsule" → CHECK SOL BALANCE
-   ├── If sufficient SOL (≥0.00005) → Proceed with creation
-   └── If insufficient SOL → Show onramp modal
-```
+1. User opens app
+2. User fills out capsule form
+3. User clicks "Create Capsule" → SOL BALANCE IS CHECKED
+   - If sufficient SOL → Proceed with creation
+   - If insufficient SOL → Show onramp modal
 
 ### **Onramp Modal Flow**
-```
 SOL Onramp Modal:
 ┌─────────────────────────────────────┐
 │ 🚀 Fuel Your Time Capsules         │
@@ -40,57 +37,24 @@ SOL Onramp Modal:
 │                                     │
 │ [Buy SOL - $20] [I Have SOL]       │
 └─────────────────────────────────────┘
-```
 
 ### **Post-Purchase Flow**
-```
 After Moonpay Success:
-1. Moonpay webhook → Backend confirms payment
-2. SOL appears in user wallet (via Moonpay)
+1. Moonpay confirms payment
+2. SOL appears in user wallet
 3. User returns to app → Auto-retry capsule creation
 4. Success! Capsule created
-```
 
-## 🛠 **Technical Implementation**
+## 🛠 **Implementation Notes**
 
 ### **Frontend Components (Mobile)**
-```typescript
-// Adapt from Cultivest's FundingModal.tsx
-const SOLOnrampModal = {
-  trigger: 'Insufficient SOL balance',
-  currency: 'SOL only (not multi-currency)',
-  minimum: '$20 USD',
-  messaging: 'One-time setup theme',
-  integration: '@moonpay/react-native-moonpay-sdk'
-};
-```
+We will adapt existing components for the SOL Onramp Modal, focusing on messaging and integrating the Moonpay SDK.
 
 ### **Backend Integration**
-```typescript
-// Adapt from Cultivest's utils/moonpay.ts
-const moonpayConfig = {
-  currency: 'sol', // Fixed to SOL only
-  sandbox: true,   // Switch to production later
-  webhook: '/api/v1/moonpay/webhook',
-  signing: '/api/v1/moonpay/sign-url'
-};
-```
+The backend will integrate with Moonpay's systems to handle currency conversion and webhook notifications.
 
 ### **Balance Checking Logic**
-```typescript
-const checkSOLBalance = async (walletAddress: string) => {
-  const connection = new Connection(SOLANA_RPC_URL);
-  const balance = await connection.getBalance(new PublicKey(walletAddress));
-  const solBalance = balance / LAMPORTS_PER_SOL;
-  
-  const requiredSOL = 0.00005; // Capsule creation fee
-  return {
-    current: solBalance,
-    required: requiredSOL,
-    sufficient: solBalance >= requiredSOL
-  };
-};
-```
+The system will check the user's SOL balance against the required amount for capsule creation.
 
 ## 📱 **UX Messaging Strategy**
 
@@ -99,52 +63,25 @@ const checkSOLBalance = async (walletAddress: string) => {
 - ✅ **Do say**: "One-time setup for unlimited future posting"
 
 ### **Value Proposition**
-```typescript
-const messaging = {
-  headline: "Fuel Your Time Capsules",
-  subtext: "One-time $20 SOL setup",
-  benefit: "Good for 2000+ time capsules", 
-  value: "Less than $0.01 per future tweet",
-  comparison: "Cheaper than a coffee for years of scheduled tweets",
-  urgency: "Required to secure your content on blockchain"
-};
-```
+- Headline: "Fuel Your Time Capsules"
+- Subtext: "One-time $20 SOL setup"
+- Benefit: "Good for 2000+ time capsules"
+- Value: "Less than $0.01 per future tweet"
+- Comparison: "Cheaper than a coffee for years of scheduled tweets"
+- Urgency: "Required to secure your content on blockchain"
 
 ### **Alternative Option**
-```typescript
-const fallback = {
-  button: "I already have SOL",
-  action: "Skip to manual wallet funding instructions",
-  target: "Existing crypto users who prefer self-funding"
-};
-```
+- Button: "I already have SOL"
+- Action: "Skip to manual wallet funding instructions"
+- Target: "Existing crypto users who prefer self-funding"
 
 ## 🔧 **Environment Configuration**
 
 ### **Moonpay Environment Variables**
-```env
-# Moonpay Configuration (from Cultivest)
-MOONPAY_API_KEY=pk_test_...         # Sandbox key initially
-MOONPAY_SECRET_KEY=sk_test_...      # For URL signing
-MOONPAY_WEBHOOK_SECRET=whsec_...    # For webhook verification
-MOONPAY_BASE_URL=https://buy-sandbox.moonpay.com  # Sandbox initially
-
-# SOL-specific settings
-MOONPAY_DEFAULT_CURRENCY=sol        # Always SOL for CapsuleX
-MOONPAY_MIN_AMOUNT=20              # $20 minimum
-```
+Necessary API keys and secrets for Moonpay will be configured as environment variables, with initial settings for a sandbox environment.
 
 ### **Integration with Existing Systems**
-```typescript
-// Wallet Management (Privy + Direct Wallet)
-const getWalletForOnramp = (user) => {
-  if (user.authType === 'privy') {
-    return user.privyEmbeddedWallet.solanaAddress;
-  } else {
-    return user.connectedWallet.publicKey.toString();
-  }
-};
-```
+Wallet management will integrate with existing systems to identify the user's Solana address for the onramp process.
 
 ## 🎲 **Edge Cases & Error Handling**
 
@@ -156,43 +93,40 @@ const getWalletForOnramp = (user) => {
 
 ### **Balance Edge Cases**
 1. **SOL price volatility** → Always check fresh balance before capsule creation
-2. **Concurrent capsule creation** → Check balance in smart contract, not just frontend
-3. **Testnet vs mainnet** → Different SOL amounts, different Moonpay behavior
+2. **Concurrent capsule creation** → Balance will be checked in the smart contract, not just the frontend
+3. **Testnet vs mainnet** → Different SOL amounts and Moonpay behavior for different networks
 
 ## 📊 **Success Metrics**
 
 ### **Onramp Conversion Tracking**
-```typescript
-const onrampMetrics = {
-  'onramp_modal_shown': 'User sees SOL funding modal',
-  'onramp_started': 'User clicks Buy SOL button',
-  'onramp_completed': 'Moonpay webhook confirms payment',
-  'onramp_to_capsule': 'User creates capsule after funding',
-  'onramp_abandonment': 'User closes modal without purchasing'
-};
-```
+We will track key metrics related to the onramp process, including:
+- When the onramp modal is shown
+- When a user starts the purchase process
+- When a Moonpay payment is completed
+- When a user successfully creates a capsule after funding
+- When a user abandons the onramp process
 
 ### **Expected Conversion Rates**
-- **Modal shown → Started**: 60-70% (good UX messaging)
+- **Modal shown → Started**: 60-70% (due to good UX messaging)
 - **Started → Completed**: 70-80% (Moonpay conversion rate)
 - **Completed → Capsule created**: 90%+ (should be immediate)
 
 ## 🚀 **Implementation Priority**
 
 ### **Phase 1: Basic Integration**
-1. Adapt Cultivest's Moonpay components
-2. Add SOL balance checking to capsule creation
-3. Simple onramp modal with fixed $20 messaging
+1. Adapt existing Moonpay components.
+2. Add SOL balance checking to capsule creation.
+3. Implement a simple onramp modal with fixed $20 messaging.
 
 ### **Phase 2: UX Polish**
-1. Optimize onramp messaging and design
-2. Add progress indicators for payment processing
-3. Implement retry logic and error handling
+1. Optimize onramp messaging and design.
+2. Add progress indicators for payment processing.
+3. Implement retry logic and enhanced error handling.
 
 ### **Phase 3: Advanced Features**
-1. Smart amount suggestions based on user behavior
-2. Alternative onramp providers (if needed)
-3. SOL gifting between users
+1. Smart amount suggestions based on user behavior.
+2. Explore alternative onramp providers if needed.
+3. Implement SOL gifting functionality between users.
 
 ## ✅ **Ready for Implementation**
 

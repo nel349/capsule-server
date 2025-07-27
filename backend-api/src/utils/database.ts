@@ -321,3 +321,169 @@ export const updateSOLTransaction = async (
     return { data: null, error: handleDatabaseError(error) };
   }
 };
+
+// ===== Reveal Queue Management Functions =====
+
+export const addToRevealQueue = async (
+  capsule_id: string,
+  scheduled_for: string
+): Promise<{ data: any | null; error: any }> => {
+  try {
+    const { data, error } = await supabase
+      .from("reveal_queue")
+      .insert({
+        capsule_id,
+        scheduled_for,
+        status: "pending",
+        attempts: 0,
+        max_attempts: 3,
+      })
+      .select()
+      .single();
+
+    return { data, error: error ? handleDatabaseError(error) : null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
+export const getPendingReveals = async (
+  limit: number = 10
+): Promise<{ data: any[] | null; error: any }> => {
+  try {
+    const now = new Date().toISOString();
+
+    // Use a raw SQL query for column-to-column comparison
+    const { data, error } = await supabase.rpc("get_pending_reveals", {
+      current_time: now,
+      query_limit: limit,
+    });
+
+    if (error) {
+      // If RPC doesn't exist, fall back to fetching all and filtering in JS
+      console.log("RPC function not found, using fallback query...");
+
+      const { data: allPending, error: fallbackError } = await supabase
+        .from("reveal_queue")
+        .select(
+          `
+          *,
+          capsules:capsule_id (
+            capsule_id,
+            user_id,
+            content_encrypted,
+            reveal_date,
+            status,
+            is_gamified,
+            on_chain_tx
+          )
+        `
+        )
+        .eq("status", "pending")
+        .lte("scheduled_for", now)
+        .order("scheduled_for", { ascending: true })
+        .limit(limit * 2); // Get more to filter client-side
+
+      if (fallbackError) {
+        return { data: null, error: handleDatabaseError(fallbackError) };
+      }
+
+      // Filter client-side where attempts < max_attempts
+      const filtered = (allPending || [])
+        .filter(item => item.attempts < item.max_attempts)
+        .slice(0, limit);
+
+      return { data: filtered, error: null };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
+export const updateRevealQueueStatus = async (
+  queue_id: string,
+  updateData: {
+    status?: "pending" | "processing" | "completed" | "failed";
+    attempts?: number;
+    last_attempt?: string;
+    next_attempt?: string;
+    error_message?: string;
+  }
+): Promise<{ data: any | null; error: any }> => {
+  try {
+    const { data, error } = await supabase
+      .from("reveal_queue")
+      .update({
+        ...updateData,
+        last_attempt: updateData.last_attempt || new Date().toISOString(),
+      })
+      .eq("queue_id", queue_id)
+      .select()
+      .single();
+
+    return { data, error: error ? handleDatabaseError(error) : null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
+export const getFailedReveals = async (
+  limit: number = 50
+): Promise<{ data: any[] | null; error: any }> => {
+  try {
+    const { data, error } = await supabase
+      .from("reveal_queue")
+      .select(
+        `
+        *,
+        capsules:capsule_id (
+          capsule_id,
+          user_id,
+          reveal_date,
+          status
+        )
+      `
+      )
+      .eq("status", "failed")
+      .order("last_attempt", { ascending: false })
+      .limit(limit * 2); // Get more to filter client-side
+
+    if (error) {
+      return { data: null, error: handleDatabaseError(error) };
+    }
+
+    // Filter client-side where attempts >= max_attempts
+    const filtered = (data || [])
+      .filter(item => item.attempts >= item.max_attempts)
+      .slice(0, limit);
+
+    return { data: filtered, error: null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};
+
+export const retryFailedReveal = async (
+  queue_id: string
+): Promise<{ data: any | null; error: any }> => {
+  try {
+    const nextAttempt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // Retry in 5 minutes
+
+    const { data, error } = await supabase
+      .from("reveal_queue")
+      .update({
+        status: "pending",
+        next_attempt: nextAttempt,
+        error_message: null,
+      })
+      .eq("queue_id", queue_id)
+      .select()
+      .single();
+
+    return { data, error: error ? handleDatabaseError(error) : null };
+  } catch (error) {
+    return { data: null, error: handleDatabaseError(error) };
+  }
+};

@@ -4,6 +4,7 @@ import {
   getCapsulesByUser,
   getRevealedCapsules,
   updateCapsuleStatus,
+  addToRevealQueue,
 } from "../utils/database";
 import { authenticateToken } from "../middleware/auth";
 import { CreateCapsuleRequest, ApiResponse, AuthenticatedRequest } from "../types";
@@ -137,6 +138,25 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
         success: false,
         error: error.error,
       } as ApiResponse);
+    }
+
+    // Add capsule to reveal queue for automated processing
+    if (capsule) {
+      try {
+        console.log(`📅 Adding capsule ${capsule.capsule_id} to reveal queue for ${reveal_date}`);
+
+        const { error: queueError } = await addToRevealQueue(capsule.capsule_id, reveal_date);
+
+        if (queueError) {
+          console.error("⚠️ Failed to add capsule to reveal queue:", queueError);
+          // Don't fail the whole request, just log the error
+        } else {
+          console.log(`✅ Capsule ${capsule.capsule_id} added to reveal queue successfully`);
+        }
+      } catch (queueError) {
+        console.error("⚠️ Error adding capsule to reveal queue:", queueError);
+        // Don't fail the whole request, just log the error
+      }
     }
 
     res.status(201).json({
