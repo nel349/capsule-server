@@ -306,10 +306,10 @@ Authorization: Bearer your_jwt_token_here
 GET http://localhost:3001/api/capsules/wallet/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
 
 ### 🆕 Get capsules ready for reveal (all wallets)
-GET http://localhost:3001/api/capsules/check-reveals
+GET http://localhost:3001/api/capsules/ready-to-reveal
 
 ### 🆕 Get capsules ready for reveal (specific wallet)
-GET http://localhost:3001/api/capsules/check-reveals?wallet=5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
+GET http://localhost:3001/api/capsules/ready-to-reveal?wallet=5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
 
 
 ### lets use the wallet address from the auth token

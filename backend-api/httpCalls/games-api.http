@@ -151,9 +151,11 @@ GET {{baseUrl}}/api/games/GAME_CAPSULE_ID_FROM_ACTIVE_LIST/guesses?limit=10
 GET {{baseUrl}}/api/games/my-participation
 Authorization: Bearer {{authToken}}
 
+### 23. User Game Participation Flow
 # Step 2: Get user's leaderboard stats
 GET {{baseUrl}}/api/leaderboard/user/5a5oRpqxktYct9dzDSsMYChkj6hCJxBAehHfxJfcY3cd
 
+### 24. User Game Participation Flow
 # Step 3: Get specific game user is participating in
 GET {{baseUrl}}/api/games/USER_PARTICIPATED_GAME_ID
 

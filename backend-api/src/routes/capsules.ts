@@ -202,24 +202,44 @@ router.get("/my-capsules", authenticateToken, async (req: AuthenticatedRequest, 
 router.get("/revealed", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const { data: capsules, error } = await getRevealedCapsules(limit);
+    
+    // Initialize with a dummy keypair for read-only operations
+    const dummyKeypair = Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
 
-    if (error) {
-      return res.status(500).json({
-        success: false,
-        error: error.error,
-      } as ApiResponse);
-    }
+    // Get all revealed capsules from blockchain
+    const program = solanaService.getProgram();
+    const allCapsules = await program.account.capsule.all();
+    
+    // Filter for revealed capsules and take the requested limit
+    const revealedCapsules = allCapsules
+      .filter((capsule: any) => capsule.account.isRevealed === true)
+      .slice(0, limit)
+      .map((capsule: any) => ({
+        id: capsule.publicKey.toString(),
+        content: capsule.account.encryptedContent,
+        content_hash: capsule.account.contentIntegrityHash,
+        reveal_date_timestamp: capsule.account.revealDate.toNumber(),
+        revealed_at_timestamp: capsule.account.revealDate.toNumber(), // Use reveal date as revealed timestamp
+        creator: capsule.account.creator.toString(),
+        creator_display_name: null, // TODO: Get from database if needed
+        twitter_username: null, // TODO: Get from database if needed
+        is_public: true,
+        is_game: capsule.account.isGamified,
+        revealed: true, // All filtered capsules are revealed
+        on_chain_id: capsule.publicKey.toString(),
+      }));
 
     res.json({
       success: true,
-      data: capsules || [],
+      data: revealedCapsules,
     } as ApiResponse);
   } catch (error) {
     console.error("Get revealed capsules error:", error);
     res.status(500).json({
       success: false,
       error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error",
     } as ApiResponse);
   }
 });
@@ -322,6 +342,48 @@ router.get("/wallet/:address", async (req, res) => {
   }
 });
 
+// Get capsules ready for reveal (can be filtered by wallet)
+router.get("/ready-to-reveal", async (req, res) => {
+  try {
+    const { wallet } = req.query;
+
+    // Validate wallet address if provided
+    let ownerPublicKey: PublicKey | undefined;
+    if (wallet) {
+      if (!solanaService.isValidPublicKey(wallet as string)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid wallet address format",
+        } as ApiResponse);
+      }
+      ownerPublicKey = new PublicKey(wallet as string);
+    }
+
+    // Initialize with a dummy keypair for read-only operations
+    const dummyKeypair = Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+
+    // Fetch revealable capsules
+    const revealableCapsules = await solanaService.getRevealableCapsules(ownerPublicKey);
+
+    res.json({
+      success: true,
+      data: {
+        total_ready: revealableCapsules.length,
+        wallet_filter: wallet || "all",
+        capsules: revealableCapsules,
+      },
+    } as ApiResponse);
+  } catch (error) {
+    console.error("Check reveals error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error",
+    } as ApiResponse);
+  }
+});
+
 // Get single capsule by ID (public endpoint for Blinks)
 router.get("/:id", async (req, res) => {
   try {
@@ -373,48 +435,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Internal server error",
-    } as ApiResponse);
-  }
-});
-
-// Get capsules ready for reveal (can be filtered by wallet)
-router.get("/check-reveals", async (req, res) => {
-  try {
-    const { wallet } = req.query;
-
-    // Validate wallet address if provided
-    let ownerPublicKey: PublicKey | undefined;
-    if (wallet) {
-      if (!solanaService.isValidPublicKey(wallet as string)) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid wallet address format",
-        } as ApiResponse);
-      }
-      ownerPublicKey = new PublicKey(wallet as string);
-    }
-
-    // Initialize with a dummy keypair for read-only operations
-    const dummyKeypair = Keypair.generate();
-    await solanaService.initializeProgram(dummyKeypair);
-
-    // Fetch revealable capsules
-    const revealableCapsules = await solanaService.getRevealableCapsules(ownerPublicKey);
-
-    res.json({
-      success: true,
-      data: {
-        total_ready: revealableCapsules.length,
-        wallet_filter: wallet || "all",
-        capsules: revealableCapsules,
-      },
-    } as ApiResponse);
-  } catch (error) {
-    console.error("Check reveals error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : "Unknown error",
     } as ApiResponse);
   }
 });
