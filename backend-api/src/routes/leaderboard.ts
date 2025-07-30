@@ -1,11 +1,99 @@
 import express from "express";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { ApiResponse } from "../types";
 import { getUserByWallet } from "../utils/database";
 import { supabase } from "../utils/supabase";
 import { ActionGetResponse, createActionHeaders, ACTIONS_CORS_HEADERS } from "@solana/actions";
+import { SolanaService } from "../services/solana";
+import { CAPSULEX_PROGRAM_CONFIG } from "../config/solana";
 
 const router = express.Router();
+
+// Initialize SolanaService
+const solanaService = new SolanaService(
+  process.env.SOLANA_RPC_URL || CAPSULEX_PROGRAM_CONFIG.cluster,
+  "confirmed"
+);
+
+// Generate leaderboard from blockchain data
+async function generateLeaderboardFromBlockchain(limit: number, offset: number) {
+  try {
+    console.log("📊 Generating leaderboard from blockchain data...");
+
+    // Initialize Solana service
+    const dummyKeypair = Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+
+    // Get all capsules and guesses to calculate stats
+    const program = solanaService.getProgram();
+    const allCapsules = await program.account.capsule.all();
+    const allGuesses = await program.account.guess.all();
+
+    // Calculate stats per user
+    const userStats = new Map();
+
+    // Count capsules created per user
+    allCapsules.forEach((capsule: any) => {
+      const creator = capsule.account.creator.toString();
+      if (!userStats.has(creator)) {
+        userStats.set(creator, {
+          wallet_address: creator,
+          capsules_created: 0,
+          games_participated: 0,
+          games_won: 0,
+          total_points: 0,
+        });
+      }
+      const stats = userStats.get(creator);
+      stats.capsules_created += 1;
+      if (capsule.account.isGamified) {
+        stats.total_points += 10; // Points for creating a game capsule
+      } else {
+        stats.total_points += 5; // Points for creating a regular capsule
+      }
+    });
+
+    // Count guesses and wins per user
+    allGuesses.forEach((guess: any) => {
+      const guesser = guess.account.guesser.toString();
+      if (!userStats.has(guesser)) {
+        userStats.set(guesser, {
+          wallet_address: guesser,
+          capsules_created: 0,
+          games_participated: 0,
+          games_won: 0,
+          total_points: 0,
+        });
+      }
+      const stats = userStats.get(guesser);
+      stats.games_participated += 1;
+      stats.total_points += 1; // Points for participating
+      if (guess.account.isWinning) {
+        stats.games_won += 1;
+        stats.total_points += 50; // Bonus points for winning
+      }
+    });
+
+    // Convert to array and sort by points
+    const leaderboardData = Array.from(userStats.values())
+      .sort((a: any, b: any) => b.total_points - a.total_points)
+      .slice(offset, offset + limit)
+      .map((user: any, index: number) => ({
+        wallet_address: user.wallet_address,
+        display_name: `${user.wallet_address.slice(0, 4)}...${user.wallet_address.slice(-4)}`,
+        total_points: user.total_points,
+        games_participated: user.games_participated,
+        games_won: user.games_won,
+        capsules_created: user.capsules_created,
+        global_rank: index + 1 + offset,
+      }));
+
+    return leaderboardData;
+  } catch (error) {
+    console.error("Error generating blockchain leaderboard:", error);
+    return [];
+  }
+}
 
 // Helper function to calculate user stats from database and blockchain
 async function calculateUserStatsFromDatabase(walletAddress: string) {
@@ -151,12 +239,11 @@ async function generateLeaderboardFromDatabase(limit: number = 50, offset: numbe
 // Global leaderboard endpoint
 router.get("/global", async (req, res) => {
   try {
-    const { timeframe = "all-time", limit = 50, offset = 0 } = req.query;
+    const { timeframe = "all_time", limit = 50, offset = 0 } = req.query;
 
-    console.log("🏆 Fetching global leaderboard from database...");
+    console.log("🏆 Fetching global leaderboard from blockchain...");
 
-    // Generate leaderboard from actual database data
-    const leaderboard = await generateLeaderboardFromDatabase(Number(limit), Number(offset));
+    const leaderboard = await generateLeaderboardFromBlockchain(Number(limit), Number(offset));
 
     console.log(`🎯 Generated leaderboard with ${leaderboard.length} entries`);
 
@@ -167,7 +254,7 @@ router.get("/global", async (req, res) => {
         timeframe,
         limit: Number(limit),
         offset: Number(offset),
-        data_source: "database_activity",
+        data_source: "blockchain_activity",
       },
     } as ApiResponse);
   } catch (error) {

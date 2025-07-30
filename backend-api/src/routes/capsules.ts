@@ -2,7 +2,6 @@ import express from "express";
 import {
   createCapsule,
   getCapsulesByUser,
-  getRevealedCapsules,
   updateCapsuleStatus,
   addToRevealQueue,
 } from "../utils/database";

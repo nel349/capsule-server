@@ -35,26 +35,19 @@ router.get("/active", async (req, res) => {
 
     console.log("Fetching active games with params:", { limit, excludeCreator });
 
-    // Build the database query for gamified capsules that are active
-    let query = supabase
-      .from("capsules")
-      .select(
-        `
-        *,
-        users!inner(wallet_address)
-      `
-      )
-      .eq("is_gamified", true)
-      .eq("status", "pending") // Only pending capsules (not yet revealed)
-      .order("created_at", { ascending: false })
-      .limit(limit);
+    // Initialize Solana service for blockchain queries
+    const dummyKeypair = require("@solana/web3.js").Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
 
-    // Add creator exclusion if specified
+    // Get all capsules from blockchain
+    const program = solanaService.getProgram();
+    const allCapsules = await program.account.capsule.all();
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    // Validate exclude_creator if provided
     if (excludeCreator) {
-      // Validate wallet address format
       try {
         new PublicKey(excludeCreator);
-        query = query.neq("users.wallet_address", excludeCreator);
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -63,17 +56,17 @@ router.get("/active", async (req, res) => {
       }
     }
 
-    const { data: capsulesData, error: capsulesError } = await query;
+    // Filter for active gamified capsules that are not revealed
+    const activeCapsules = allCapsules
+      .filter((capsule: any) => {
+        const account = capsule.account;
+        const isActive = account.isActive && account.isGamified && !account.isRevealed;
+        const creatorMatch = !excludeCreator || account.creator.toString() !== excludeCreator;
+        return isActive && creatorMatch;
+      })
+      .slice(0, limit);
 
-    if (capsulesError) {
-      console.error("Database error:", capsulesError);
-      return res.status(500).json({
-        success: false,
-        error: "Failed to fetch active games",
-      } as ApiResponse);
-    }
-
-    if (!capsulesData || capsulesData.length === 0) {
+    if (activeCapsules.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -87,59 +80,60 @@ router.get("/active", async (req, res) => {
       } as ApiResponse);
     }
 
-    console.log(`Found ${capsulesData.length} gamified capsules`);
-
-    // Initialize Solana service for read-only operations
-    await solanaService.initializeProgramReadOnly();
+    console.log(`Found ${activeCapsules.length} active gamified capsules`);
 
     // Process each capsule to get game data from blockchain
     const activeGames = [];
-    const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
 
-    for (const capsule of capsulesData) {
+    // Use Promise.all to batch the game data requests for better performance
+    const gamePromises = activeCapsules.map(async (capsule) => {
       try {
-        // Derive the capsule PDA
-        const creator = new PublicKey(capsule.users.wallet_address);
-        const revealDate = new anchor.BN(
-          Math.floor(new Date(capsule.reveal_date).getTime() / 1000)
-        );
-        const capsulePda = getCapsulePda(creator, revealDate, programId);
+        const capsulePda = capsule.publicKey;
+        const account = capsule.account;
 
-        // Get game data from blockchain
-        const gameData = await solanaService.getGameData(capsulePda);
+        // Get game data and guesses in parallel
+        const gamePda = solanaService.getGamePda(capsulePda);
+        const [gameData, guesses] = await Promise.all([
+          solanaService.getGameData(capsulePda).catch(() => null),
+          solanaService.getGuessesForGame(gamePda).catch(() => [])
+        ]);
 
         if (gameData && gameData.isActive) {
-          // Only include games that are still active
-          const gameResponse = {
-            game_id: solanaService.getGamePda(capsulePda).toBase58(),
-            capsule_id: capsule.capsule_id,
+          return {
+            game_id: gamePda.toBase58(),
+            capsule_id: capsulePda.toBase58(),
             capsule_pda: capsulePda.toBase58(),
-            creator: gameData.creator.toBase58(),
+            creator: account.creator.toString(),
+            creator_display_name: null,
+            twitter_username: null,
             max_guesses: gameData.maxGuesses,
             max_winners: gameData.maxWinners,
-            current_guesses: gameData.currentGuesses,
+            current_guesses: guesses.length,
             winners_found: gameData.winnersFound || 0,
             is_active: gameData.isActive,
-            total_participants: gameData.totalParticipants || 0,
-            reveal_date: capsule.reveal_date,
-            created_at: capsule.created_at,
-            content_hint: capsule.has_media ? "Contains media content" : "Text content",
+            total_participants: new Set(guesses.map((g: any) => g.account?.guesser?.toString()).filter(Boolean)).size,
+            reveal_date: new Date(account.revealDate.toNumber() * 1000).toISOString(),
+            created_at: new Date(account.createdAt.toNumber() * 1000).toISOString(),
+            content_hint: "Text content",
             time_until_reveal: Math.max(
               0,
-              Math.floor((new Date(capsule.reveal_date).getTime() - Date.now()) / 1000)
+              account.revealDate.toNumber() - currentTime
             ),
           };
-
-          activeGames.push(gameResponse);
         }
+        return null;
       } catch (error) {
         console.warn(
-          `Failed to process capsule ${capsule.capsule_id}:`,
+          `Failed to process capsule ${capsule.publicKey.toString()}:`,
           error instanceof Error ? error.message : "Unknown error"
         );
-        // Continue processing other capsules
+        return null;
       }
-    }
+    });
+
+    // Wait for all games to be processed and filter out nulls
+    const gameResults = await Promise.all(gamePromises);
+    activeGames.push(...gameResults.filter(game => game !== null));
 
     // Sort by most recent first
     activeGames.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
