@@ -9,8 +9,9 @@ export interface SemanticValidationResult {
   method: string;
   confidence: number;
   oracle_signature?: string;
-  timestamp?: number;
-  nonce?: string;
+  oracle_timestamp?: number;
+  oracle_nonce?: string;
+  oracle_enabled?: boolean;
   processing_time_ms?: number;
 }
 

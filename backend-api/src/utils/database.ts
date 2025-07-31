@@ -146,8 +146,8 @@ export const getRevealedCapsules = async (
 
 export const updateCapsuleStatus = async (
   capsule_id: string,
-  status: "pending" | "revealed" | "posted" | "failed" | "cancelled",
-  additionalData?: { revealed_at?: string; social_post_id?: string; posted_to_social?: boolean }
+  status: "pending" | "ready_to_reveal" | "revealed" | "posted" | "failed" | "cancelled",
+  additionalData?: { revealed_at?: string; reveal_tx_signature?: string; social_post_id?: string; posted_to_social?: boolean }
 ): Promise<{ data: DatabaseCapsule | null; error: any }> => {
   try {
     const updateData = { status, ...additionalData };

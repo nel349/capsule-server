@@ -170,18 +170,97 @@ router.get("/:capsule_id", async (req, res) => {
       } as ApiResponse);
     }
 
-    // Get capsule info with creator's wallet address via join
-    console.log("Fetching capsule data for ID:", capsule_id);
-    const { data: capsuleData, error: capsuleError } = await supabase
-      .from("capsules")
-      .select(
+    // Check if capsule_id is a UUID or PDA address
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(capsule_id);
+    const isPDA = capsule_id.length >= 32 && capsule_id.length <= 44; // Base58 encoded addresses
+    
+    console.log("Fetching capsule data for ID:", capsule_id, "(type:", isUUID ? 'UUID' : isPDA ? 'PDA' : 'unknown', ")");
+    
+    let capsuleData;
+    let capsuleError;
+    
+    if (isUUID) {
+      // Standard UUID lookup
+      const result = await supabase
+        .from("capsules")
+        .select(
+          `
+          *,
+          users!inner(wallet_address)
         `
-        *,
-        users!inner(wallet_address)
-      `
-      )
-      .eq("capsule_id", capsule_id)
-      .single();
+        )
+        .eq("capsule_id", capsule_id)
+        .single();
+      capsuleData = result.data;
+      capsuleError = result.error;
+    } else if (isPDA) {
+      // PDA lookup - get data directly from blockchain
+      console.log("PDA-based lookup for:", capsule_id);
+      
+      try {
+        // Initialize Solana service for read-only operations
+        await solanaService.initializeProgramReadOnly();
+        
+        // Use the PDA as the capsule address
+        const capsulePDA = new PublicKey(capsule_id);
+        
+        // Get capsule data from blockchain
+        const program = solanaService.getProgram();
+        const capsuleAccount = await program.account.capsule.fetch(capsulePDA);
+        
+        // Get game data from blockchain  
+        const gameData = await solanaService.getGameData(capsulePDA);
+        
+        if (!gameData) {
+          return res.status(404).json({
+            success: false,
+            error: "Game not found on blockchain",
+          } as ApiResponse);
+        }
+        
+        // Format the response using blockchain data
+        const gameResponse = {
+          game_id: solanaService.getGamePda(capsulePDA).toBase58(),
+          capsule_id: capsule_id, // Keep the PDA as capsule_id for consistency
+          capsule_pda: capsulePDA.toBase58(),
+          creator: gameData.creator.toBase58(),
+          max_guesses: gameData.maxGuesses,
+          max_winners: gameData.maxWinners,
+          current_guesses: gameData.currentGuesses,
+          winners_found: gameData.winnersFound || 0,
+          is_active: gameData.isActive,
+          winner: gameData.winner ? gameData.winner.toBase58() : null,
+          total_participants: gameData.totalParticipants || 0,
+          reveal_date: new Date(capsuleAccount.revealDate.toNumber() * 1000).toISOString(),
+          created_at: new Date(capsuleAccount.createdAt.toNumber() * 1000).toISOString(),
+          content_hint: "Text content",
+          is_revealed: capsuleAccount.isRevealed,
+        };
+
+        return res.json({
+          success: true,
+          data: gameResponse,
+        } as ApiResponse);
+        
+      } catch (error: any) {
+        console.error("PDA lookup error:", error);
+        if (error instanceof Error && error.message.includes("Account does not exist")) {
+          return res.status(404).json({
+            success: false,
+            error: "Capsule not found on blockchain",
+          } as ApiResponse);
+        }
+        return res.status(500).json({
+          success: false,
+          error: "Failed to fetch capsule data from blockchain",
+        } as ApiResponse);
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid capsule_id format. Expected UUID or PDA address.",
+      } as ApiResponse);
+    }
 
     if (capsuleError) {
       console.error("Database error:", capsuleError);
@@ -321,25 +400,78 @@ router.get("/:capsule_id/guesses", async (req, res) => {
       }
     }
 
+    // Check if capsule_id is a UUID or PDA address
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(capsule_id);
+    const isPDA = capsule_id.length >= 32 && capsule_id.length <= 44; // Base58 encoded addresses
+
     console.log("Fetching guesses for capsule:", {
       capsule_id,
+      type: isUUID ? 'UUID' : isPDA ? 'PDA' : 'unknown',
       limit,
       offset,
       includeStats,
       walletAddress,
     });
 
-    // Get capsule info with creator's wallet address via join
-    const { data: capsuleData, error: capsuleError } = await supabase
-      .from("capsules")
-      .select(
+    let capsuleData;
+    let capsuleError;
+    let capsulePda;
+    let gamePda;
+
+    if (isUUID) {
+      // Standard UUID lookup
+      const result = await supabase
+        .from("capsules")
+        .select(
+          `
+          *,
+          users!inner(wallet_address)
         `
-        *,
-        users!inner(wallet_address)
-      `
-      )
-      .eq("capsule_id", capsule_id)
-      .single();
+        )
+        .eq("capsule_id", capsule_id)
+        .single();
+      capsuleData = result.data;
+      capsuleError = result.error;
+      
+      if (!capsuleError && capsuleData) {
+        // Derive the capsule PDA and game PDA from database data
+        const creator = new PublicKey(capsuleData.users.wallet_address);
+        const revealDate = new anchor.BN(
+          Math.floor(new Date(capsuleData.reveal_date).getTime() / 1000)
+        );
+        const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
+
+        capsulePda = getCapsulePda(creator, revealDate, programId);
+        gamePda = solanaService.getGamePda(capsulePda);
+      }
+    } else if (isPDA) {
+      // PDA lookup - use directly from blockchain
+      try {
+        capsulePda = new PublicKey(capsule_id);
+        gamePda = solanaService.getGamePda(capsulePda);
+        
+        // Get minimal capsule data from blockchain for validation
+        await solanaService.initializeProgramReadOnly();
+        const program = solanaService.getProgram();
+        const capsuleAccount = await program.account.capsule.fetch(capsulePda);
+        
+        // Create a minimal capsuleData object for compatibility
+        capsuleData = {
+          is_gamified: capsuleAccount.isGamified,
+          reveal_date: new Date(capsuleAccount.revealDate.toNumber() * 1000).toISOString(),
+        };
+        capsuleError = null;
+      } catch (error) {
+        console.error("PDA lookup error:", error);
+        capsuleError = error;
+        capsuleData = null;
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid capsule_id format. Expected UUID or PDA address.",
+      } as ApiResponse);
+    }
 
     if (capsuleError || !capsuleData) {
       console.error("Database error:", capsuleError);
@@ -357,29 +489,19 @@ router.get("/:capsule_id/guesses", async (req, res) => {
       } as ApiResponse);
     }
 
-    // Derive the capsule PDA and game PDA
-    let capsulePda: PublicKey;
-    let gamePda: PublicKey;
-    try {
-      const creator = new PublicKey(capsuleData.users.wallet_address);
-      const revealDate = new anchor.BN(
-        Math.floor(new Date(capsuleData.reveal_date).getTime() / 1000)
-      );
-      const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
-
-      capsulePda = getCapsulePda(creator, revealDate, programId);
-      gamePda = solanaService.getGamePda(capsulePda);
-      console.log("Derived PDAs:", {
-        capsulePda: capsulePda.toBase58(),
-        gamePda: gamePda.toBase58(),
-      });
-    } catch (error: any) {
-      console.error("PDA derivation error:", error);
+    // Ensure we have PDAs (already derived above)
+    if (!capsulePda || !gamePda) {
+      console.error("Missing PDA derivation");
       return res.status(500).json({
         success: false,
         error: "Unable to determine game address",
       } as ApiResponse);
     }
+
+    console.log("Using PDAs:", {
+      capsulePda: capsulePda.toBase58(),
+      gamePda: gamePda.toBase58(),
+    });
 
     // Initialize Solana service for read-only operations
     await solanaService.initializeProgramReadOnly();
@@ -684,16 +806,40 @@ router.get("/creator/:creatorWallet/pending-validations", async (req, res) => {
       } as ApiResponse);
     }
 
-    // Return capsules with pending validation needed (no blockchain lookup here)
-    const pendingValidations = creatorCapsules.map(capsule => ({
+    // Filter capsules that are actually ready for validation
+    // (reveal date has passed so they can be revealed on-chain)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const readyForValidation = creatorCapsules.filter(capsule => {
+      const revealTime = Math.floor(new Date(capsule.reveal_date).getTime() / 1000);
+      // Allow 10 seconds before reveal_date to account for timing (same as on-chain logic)
+      return (currentTime + 10) >= revealTime;
+    });
+
+    console.log(`Found ${creatorCapsules.length} revealed capsules, ${readyForValidation.length} ready for validation`);
+
+    if (readyForValidation.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          pending_validations: [],
+          total_capsules: 0,
+          total_guesses: 0,
+          message: creatorCapsules.length > 0 
+            ? "Some capsules are revealed but their reveal dates haven't passed yet. Please wait until the reveal time."
+            : "No revealed gamified capsules found."
+        },
+      } as ApiResponse);
+    }
+
+    // Return capsules with pending validation needed
+    const pendingValidations = readyForValidation.map(capsule => ({
       capsule_id: capsule.capsule_id,
       reveal_date: capsule.reveal_date,
       content_encrypted: capsule.content_encrypted,
       estimated_validation_cost: 0, // Will be calculated when creator selects specific game
     }));
 
-    console.log(`Found ${pendingValidations.length} pending validations for creator ${creatorWallet}`);
-    console.log(pendingValidations);
+    console.log(`Returning ${pendingValidations.length} capsules ready for validation`);
 
     res.json({
       success: true,
@@ -755,7 +901,7 @@ router.get("/creator/:creatorWallet/game/:gamePda/pending-guesses", async (req, 
           guess_pda: guess.publicKey.toBase58(),
           guesser: guess.account.guesser.toBase58(),
           guess_content: guess.account.guessContent,
-          timestamp: guess.account.timestamp.toNumber(),
+          timestamp: guess.account.timestamp,
           is_anonymous: guess.account.isAnonymous,
         })),
         total_guesses: pendingGuesses.length,
@@ -819,10 +965,14 @@ router.get("/capsule/:capsuleId/pending-guesses", async (req, res) => {
     // Get guesses for the specific game from blockchain
     const guesses = await solanaService.getGuessesForGame(gamePDA);
     
+    console.log(`Found ${guesses.length} guesses for game ${gamePDA.toBase58()}`);
+    console.log(`guesses: ${guesses}`);
     // Filter for unvalidated guesses
     const pendingGuesses = guesses.filter(guess => 
       !guess.account.isCorrect && guess.account.guessContent.trim().length > 0
     );
+
+    console.log(`pending guesses: ${pendingGuesses}`);
 
     console.log(`Found ${pendingGuesses.length} pending guesses for capsule ${capsuleId}`);
 
@@ -835,7 +985,7 @@ router.get("/capsule/:capsuleId/pending-guesses", async (req, res) => {
           guess_pda: guess.publicKey.toBase58(),
           guesser: guess.account.guesser.toBase58(),
           guess_content: guess.account.guessContent,
-          timestamp: guess.account.timestamp.toNumber(),
+          timestamp: guess.account.timestamp,
           is_anonymous: guess.account.isAnonymous,
         })),
         total_guesses: pendingGuesses.length,
@@ -891,39 +1041,30 @@ router.post("/creator/validate-batch", async (req, res) => {
     }
 
     // Prepare guesses for semantic validation
+    // NOTE: The semantic service uses 'id' as a pass-through identifier
+    // We pass the guess_pda as 'id' so we can correlate results back to specific on-chain guesses
     const guessAnswerPairs = validations.map((validation: any) => ({
-      id: validation.guess_pda,
+      id: validation.guess_pda, // Pass guess PDA as ID for correlation
       guess: validation.guess_content,
       answer: decrypted_content.trim(),
     }));
 
     console.log(`Validating ${guessAnswerPairs.length} guesses via semantic service`);
 
-    // Process semantic validation batch (Creator pays for this)
+    // Call semantic service to validate all guesses (following semantic-integration-tests.ts pattern)
     const semanticResults = await SemanticService.validateGuessesBatch(guessAnswerPairs);
-
-    // Track validation costs for creator billing
-    const validationCost = guessAnswerPairs.length * 0.003; // $0.003 per guess
-    console.log(`💰 Creator will be charged: $${validationCost.toFixed(3)} for ${guessAnswerPairs.length} validations`);
-
-    // Creator billing implementation - track the cost
-    // In production, this would integrate with payment processor (Stripe, etc.)
-    console.log(`📋 Billing record: Creator ${creator_wallet} owes $${validationCost.toFixed(3)} for semantic validation`);
-
-    // Initialize Solana service for blockchain updates
-    const dummyKeypair = require("@solana/web3.js").Keypair.generate();
-    await solanaService.initializeProgram(dummyKeypair);
 
     const results = [];
     let successCount = 0;
     let errorCount = 0;
 
-    // Process each semantic result and update blockchain
+    // Process each semantic result (semanticResult.id === original guess_pda)
     for (const semanticResult of semanticResults) {
       try {
+        // Find the original validation request (semanticResult.id is the guess_pda we passed in)
         const validation = validations.find((v: any) => v.guess_pda === semanticResult.id);
         if (!validation) {
-          console.error(`Validation not found for guess: ${semanticResult.id}`);
+          console.error(`Validation not found for guess PDA: ${semanticResult.id}`);
           errorCount++;
           continue;
         }
@@ -932,7 +1073,9 @@ router.post("/creator/validate-batch", async (req, res) => {
         if ('error' in semanticResult.result) {
           console.error(`Semantic validation failed for ${semanticResult.id}:`, semanticResult.result.error);
           results.push({
-            guess_pda: semanticResult.id,
+            guess_pda: semanticResult.id, // semanticResult.id IS the guess_pda
+            guess_content: validation.guess_content,
+            guesser: validation.guesser,
             success: false,
             error: semanticResult.result.error,
           });
@@ -941,21 +1084,72 @@ router.post("/creator/validate-batch", async (req, res) => {
         }
 
         const isCorrect = semanticResult.result.is_correct;
-        console.log(`Guess ${semanticResult.id}: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (similarity: ${semanticResult.result.similarity})`);
+        console.log(`Guess ${validation.guess_content}: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (similarity: ${semanticResult.result.similarity})`);
 
-        // Update blockchain with verification result
-        // Note: In production, this would be called by the creator's wallet with proper signatures
-        // For now, we'll log the blockchain update that needs to happen
-        console.log(`🔗 Blockchain update needed: verifyGuess(${semanticResult.id}, ${isCorrect})`);
+        // Store semantic validation result in database for audit trail
+        try {
+          const { error: dbError } = await supabase
+            .from("semantic_validations")
+            .insert({
+              guess_pda: semanticResult.id, // semanticResult.id is the guess_pda
+              capsule_id,
+              creator_wallet,
+              guess_content: validation.guess_content,
+              answer_content: decrypted_content.trim(),
+              is_correct: isCorrect,
+              similarity: semanticResult.result.similarity,
+              method: semanticResult.result.method,
+              confidence: semanticResult.result.confidence,
+              oracle_timestamp: semanticResult.result.oracle_timestamp,
+              oracle_nonce: semanticResult.result.oracle_nonce,
+              oracle_signature: semanticResult.result.oracle_signature,
+              oracle_enabled: semanticResult.result.oracle_enabled,
+              processed_at: new Date().toISOString(),
+            });
 
+          if (dbError) {
+            console.warn(`Failed to store validation result for ${semanticResult.id}:`, dbError);
+          }
+        } catch (dbError) {
+          console.warn(`Database error storing validation for ${semanticResult.id}:`, dbError);
+        }
+
+        // Update the original guesses table with semantic validation results
+        try {
+          const { error: updateError } = await supabase
+            .from("guesses")
+            .update({
+              semantic_result: isCorrect,
+              semantic_similarity: semanticResult.result.similarity,
+              semantic_method: semanticResult.result.method,
+              oracle_signature: semanticResult.result.oracle_signature,
+              validated_at: new Date().toISOString(),
+            })
+            .eq("guess_pda", semanticResult.id);
+
+          if (updateError) {
+            console.warn(`Failed to update guess record ${semanticResult.id}:`, updateError);
+          } else {
+            console.log(`✅ Updated guess ${semanticResult.id} with semantic validation result: ${isCorrect}`);
+          }
+        } catch (updateError) {
+          console.warn(`Database error updating guess ${semanticResult.id}:`, updateError);
+        }
+
+        // Prepare result for client-side on-chain verification (following semantic-integration-tests.ts pattern)
         results.push({
-          guess_pda: semanticResult.id,
+          guess_pda: semanticResult.id, // semanticResult.id is the guess_pda
           guess_content: validation.guess_content,
           guesser: validation.guesser,
           is_correct: isCorrect,
           similarity: semanticResult.result.similarity,
           method: semanticResult.result.method,
           confidence: semanticResult.result.confidence,
+          // Oracle data for on-chain verification (like in callSemanticService from tests)
+          oracle_timestamp: semanticResult.result.oracle_timestamp,
+          oracle_nonce: semanticResult.result.oracle_nonce,
+          oracle_signature: semanticResult.result.oracle_signature,
+          oracle_enabled: semanticResult.result.oracle_enabled,
           success: true,
         });
 
@@ -964,7 +1158,7 @@ router.post("/creator/validate-batch", async (req, res) => {
       } catch (error) {
         console.error(`Error processing guess ${semanticResult.id}:`, error);
         results.push({
-          guess_pda: semanticResult.id,
+          guess_pda: semanticResult.id, // semanticResult.id is the guess_pda
           success: false,
           error: error instanceof Error ? error.message : "Unknown error",
         });
@@ -972,27 +1166,9 @@ router.post("/creator/validate-batch", async (req, res) => {
       }
     }
 
-    // Store creator billing record
-    try {
-      const { error: billingError } = await supabase
-        .from("creator_validation_billing")
-        .insert({
-          creator_wallet,
-          capsule_id,
-          guesses_validated: guessAnswerPairs.length,
-          validation_cost_usd: validationCost,
-          processed_at: new Date().toISOString(),
-          semantic_service_cost: validationCost,
-          status: "completed",
-        });
-
-      if (billingError) {
-        console.error("Failed to store billing record:", billingError);
-        // Don't fail the request, just log the error
-      }
-    } catch (billingError) {
-      console.error("Error storing billing record:", billingError);
-    }
+    console.log(`✅ Semantic validation completed: ${successCount} successful, ${errorCount} failed`);
+    console.log(`📋 Results stored in database for audit trail`);
+    console.log(`🔗 Client should now call program.methods.verifyGuess() on-chain for each result`);
 
     res.json({
       success: true,
@@ -1002,7 +1178,13 @@ router.post("/creator/validate-batch", async (req, res) => {
           total_processed: validations.length,
           successful: successCount,
           failed: errorCount,
-          validation_cost_usd: validationCost,
+        },
+        // Instructions for client-side on-chain verification (following semantic-integration-tests.ts pattern)
+        next_steps: {
+          action: "verify_on_chain",
+          description: "Call program.methods.verifyGuess() for each successful validation result",
+          decrypted_content: decrypted_content.trim(),
+          example: "await program.methods.verifyGuess(decrypted_content, null, result.is_correct, oracle_timestamp, oracle_nonce, oracle_signature)",
         },
       },
     } as ApiResponse);

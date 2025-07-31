@@ -41,10 +41,11 @@ export interface RevealProcessingResult {
 }
 
 /**
- * Background Scheduler Service for Processing Reveal Queue
- * Handles automated reveal processing and Twitter posting
+ * Background Scheduler Service for Processing Capsule Readiness
+ * Handles marking capsules as ready_to_reveal when their time arrives
+ * Does NOT actually reveal capsules - that only happens via frontend transactions
  */
-export class RevealSchedulerService {
+export class CapsuleReadinessScheduler {
   private static isRunning = false;
   private static intervalId: NodeJS.Timeout | null = null;
   private static readonly PROCESSING_INTERVAL = 60 * 1000; // 1 minute
@@ -154,7 +155,7 @@ export class RevealSchedulerService {
       }
 
       if (!pendingReveals || pendingReveals.length === 0) {
-        console.log("✅ No pending reveals found");
+        console.log("✅ No pending capsules ready to reveal found");
         return;
       }
 
@@ -209,8 +210,8 @@ export class RevealSchedulerService {
         // Handle social post
         result = await this.processSocialPost(reveal);
       } else {
-        // Handle capsule reveal (default)
-        result = await this.processCapsuleReveal(reveal);
+        // Handle capsule readiness (default)
+        result = await this.processCapsuleReadiness(reveal);
       }
 
       if (!result.success) {
@@ -245,9 +246,10 @@ export class RevealSchedulerService {
   }
 
   /**
-   * Process a capsule reveal (update database status and post reveal announcement)
+   * Process a capsule readiness (mark as ready_to_reveal when time arrives)
+   * Does NOT actually reveal the capsule - that only happens via frontend transactions
    */
-  private static async processCapsuleReveal(
+  private static async processCapsuleReadiness(
     reveal: RevealQueueItem
   ): Promise<RevealProcessingResult> {
     const { capsules: capsule } = reveal;
@@ -260,19 +262,20 @@ export class RevealSchedulerService {
     }
 
     try {
-      console.log(`📤 Revealing capsule: ${capsule.capsule_id}`);
+      console.log(`⏰ Time arrived for capsule: ${capsule.capsule_id}`);
 
-      // Step 1: Update capsule status to revealed
-      const { error } = await updateCapsuleStatus(capsule.capsule_id, "revealed");
+      // Step 1: Update capsule status to ready_to_reveal (NOT revealed!)
+      // Actual revealing only happens when user clicks reveal in frontend
+      const { error } = await updateCapsuleStatus(capsule.capsule_id, "ready_to_reveal");
 
       if (error) {
         return {
           success: false,
-          error: `Failed to update capsule status: ${error}`,
+          error: `Failed to update capsule status to ready_to_reveal: ${error}`,
         };
       }
 
-      console.log(`✅ Capsule revealed: ${capsule.capsule_id}`);
+      console.log(`✅ Capsule ready to reveal: ${capsule.capsule_id}`);
 
       // Step 2: Check if this is a gamified capsule with pending guesses FROM BLOCKCHAIN
       let guessValidationTriggered = false;

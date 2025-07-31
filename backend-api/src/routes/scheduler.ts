@@ -1,7 +1,7 @@
 import express from "express";
 import { authenticateToken } from "../middleware/auth";
 import { ApiResponse, AuthenticatedRequest } from "../types";
-import { RevealSchedulerService } from "../services/revealSchedulerService";
+import { CapsuleReadinessScheduler } from "../services/revealSchedulerService";
 import {
   getPendingReveals,
   getFailedReveals,
@@ -15,8 +15,8 @@ const router = express.Router();
 // Get scheduler status (requires authentication)
 router.get("/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const status = RevealSchedulerService.getStatus();
-    const stats = await RevealSchedulerService.getStats();
+    const status = CapsuleReadinessScheduler.getStatus();
+    const stats = await CapsuleReadinessScheduler.getStats();
 
     res.json({
       success: true,
@@ -37,13 +37,13 @@ router.get("/status", authenticateToken, async (req: AuthenticatedRequest, res) 
 // Start the scheduler (requires authentication)
 router.post("/start", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    RevealSchedulerService.start();
+    CapsuleReadinessScheduler.start();
 
     res.json({
       success: true,
       data: {
         message: "Reveal scheduler started successfully",
-        status: RevealSchedulerService.getStatus(),
+        status: CapsuleReadinessScheduler.getStatus(),
       },
     } as ApiResponse);
   } catch (error) {
@@ -58,13 +58,13 @@ router.post("/start", authenticateToken, async (req: AuthenticatedRequest, res) 
 // Stop the scheduler (requires authentication)
 router.post("/stop", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    RevealSchedulerService.stop();
+    CapsuleReadinessScheduler.stop();
 
     res.json({
       success: true,
       data: {
         message: "Reveal scheduler stopped successfully",
-        status: RevealSchedulerService.getStatus(),
+        status: CapsuleReadinessScheduler.getStatus(),
       },
     } as ApiResponse);
   } catch (error) {
@@ -79,7 +79,7 @@ router.post("/stop", authenticateToken, async (req: AuthenticatedRequest, res) =
 // Manually trigger processing (requires authentication)
 router.post("/trigger", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    await RevealSchedulerService.triggerProcessing();
+    await CapsuleReadinessScheduler.triggerProcessing();
 
     res.json({
       success: true,

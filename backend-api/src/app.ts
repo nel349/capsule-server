@@ -15,7 +15,7 @@ import leaderboardRouter from './routes/leaderboard';
 
 // Import utilities
 import { testDatabaseConnection } from './utils/supabase';
-import { RevealSchedulerService } from './services/revealSchedulerService';
+import { CapsuleReadinessScheduler } from './services/revealSchedulerService';
 
 // Load environment variables
 dotenv.config();
@@ -107,7 +107,7 @@ const startServer = async () => {
 
     // Start the reveal scheduler service
     try {
-      RevealSchedulerService.start();
+      CapsuleReadinessScheduler.start();
       console.log('✅ Reveal scheduler service started');
     } catch (error) {
       console.error('❌ Failed to start reveal scheduler:', error);
@@ -118,7 +118,7 @@ const startServer = async () => {
       console.log(`📖 Health check: http://localhost:${PORT}/health`);
       console.log(`🔧 Solana cluster: ${process.env.SOLANA_CLUSTER || 'development'}`);
       console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`⏰ Reveal scheduler: ${RevealSchedulerService.getStatus().isRunning ? 'RUNNING' : 'STOPPED'}`);
+      console.log(`⏰ Reveal scheduler: ${CapsuleReadinessScheduler.getStatus().isRunning ? 'RUNNING' : 'STOPPED'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -129,13 +129,13 @@ const startServer = async () => {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Received SIGINT. Graceful shutdown...');
-  RevealSchedulerService.stop();
+  CapsuleReadinessScheduler.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Received SIGTERM. Graceful shutdown...');
-  RevealSchedulerService.stop();
+  CapsuleReadinessScheduler.stop();
   process.exit(0);
 });
 

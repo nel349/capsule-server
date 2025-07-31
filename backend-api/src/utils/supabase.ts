@@ -65,6 +65,7 @@ export interface DatabaseCapsule {
   media_urls?: string[];
   reveal_date: string;
   revealed_at?: string;
+  reveal_tx_signature?: string;
   posted_to_social: boolean;
   social_post_id?: string;
   social_platform: string;
@@ -73,7 +74,7 @@ export interface DatabaseCapsule {
   can_edit: boolean;
   is_gamified: boolean;
   created_at: string;
-  status: "pending" | "revealed" | "posted" | "failed" | "cancelled";
+  status: "pending" | "ready_to_reveal" | "revealed" | "posted" | "failed" | "cancelled";
 }
 
 export interface DatabaseSOLTransaction {

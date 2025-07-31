@@ -247,7 +247,7 @@ router.get("/revealed", async (req, res) => {
 router.patch("/:capsule_id/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { capsule_id } = req.params;
-    const { status, revealed_at, social_post_id, posted_to_social } = req.body;
+    const { status, revealed_at, reveal_tx_signature, social_post_id, posted_to_social } = req.body;
 
     if (!status) {
       return res.status(400).json({
@@ -258,6 +258,7 @@ router.patch("/:capsule_id/status", authenticateToken, async (req: Authenticated
 
     const additionalData: any = {};
     if (revealed_at) additionalData.revealed_at = revealed_at;
+    if (reveal_tx_signature) additionalData.reveal_tx_signature = reveal_tx_signature;
     if (social_post_id) additionalData.social_post_id = social_post_id;
     if (posted_to_social !== undefined) additionalData.posted_to_social = posted_to_social;
 
