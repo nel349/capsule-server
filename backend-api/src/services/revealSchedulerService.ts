@@ -1,7 +1,15 @@
 /// <reference types="node" />
-import { getPendingReveals, updateRevealQueueStatus, updateCapsuleStatus } from "../utils/database";
+import {
+  getPendingReveals,
+  updateRevealQueueStatus,
+  updateCapsuleStatus,
+} from "../utils/database";
 import { TwitterTokenService } from "./twitterTokenService";
 import { supabase } from "../utils/supabase";
+import { SolanaService } from "./solana";
+import { PublicKey } from "@solana/web3.js";
+import { CAPSULEX_PROGRAM_CONFIG } from "../config/solana";
+import * as anchor from "@coral-xyz/anchor";
 
 export interface RevealQueueItem {
   queue_id: string;
@@ -29,6 +37,7 @@ export interface RevealProcessingResult {
   error?: string;
   twitterPosted?: boolean;
   revealProcessed?: boolean;
+  guessValidationTriggered?: boolean;
 }
 
 /**
@@ -40,6 +49,40 @@ export class RevealSchedulerService {
   private static intervalId: NodeJS.Timeout | null = null;
   private static readonly PROCESSING_INTERVAL = 60 * 1000; // 1 minute
   private static readonly MAX_CONCURRENT_JOBS = 5;
+  
+  // Solana service for blockchain operations
+  private static solanaService = new SolanaService(
+    process.env.SOLANA_RPC_URL || CAPSULEX_PROGRAM_CONFIG.cluster,
+    "confirmed"
+  );
+
+  /**
+   * Derive Capsule PDA (matching useCapsulexProgram.ts logic)
+   */
+  private static deriveCapsulePDA(creator: PublicKey, revealDate: anchor.BN): PublicKey {
+    const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
+    const [capsulePDA] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode('capsule'),
+        creator.toBuffer(),
+        revealDate.toArrayLike(Buffer, 'le', 8), // i64 is 8 bytes, little-endian
+      ],
+      programId
+    );
+    return capsulePDA;
+  }
+
+  /**
+   * Derive Game PDA from Capsule PDA (matching useCapsulexProgram.ts logic)
+   */
+  private static deriveGamePDA(capsulePDA: PublicKey): PublicKey {
+    const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
+    const [gamePDA] = PublicKey.findProgramAddressSync(
+      [anchor.utils.bytes.utf8.encode('game'), capsulePDA.toBuffer()],
+      programId
+    );
+    return gamePDA;
+  }
 
   /**
    * Start the background scheduler
@@ -231,13 +274,74 @@ export class RevealSchedulerService {
 
       console.log(`✅ Capsule revealed: ${capsule.capsule_id}`);
 
-      // Step 2: Post reveal announcement to Twitter if user has connected account
+      // Step 2: Check if this is a gamified capsule with pending guesses FROM BLOCKCHAIN
+      let guessValidationTriggered = false;
+      if (capsule.is_gamified) {
+        console.log(`🎮 Checking for pending guesses on blockchain for gamified capsule: ${capsule.capsule_id}`);
+
+        try {
+          // Get creator wallet address from capsule data
+          const { data: capsuleWithUser, error: userError } = await supabase
+            .from("capsules")
+            .select(`
+              *,
+              users!inner(wallet_address)
+            `)
+            .eq("capsule_id", capsule.capsule_id)
+            .single();
+
+          if (userError || !capsuleWithUser?.users?.wallet_address) {
+            console.error(`❌ Error fetching capsule creator wallet: ${userError}`);
+          } else {
+            // Derive PDAs using the same logic as useCapsulexProgram.ts
+            const creator = new PublicKey(capsuleWithUser.users.wallet_address);
+            const revealDate = new anchor.BN(
+              Math.floor(new Date(capsule.reveal_date).getTime() / 1000)
+            );
+            
+            const capsulePDA = this.deriveCapsulePDA(creator, revealDate);
+            const gamePDA = this.deriveGamePDA(capsulePDA);
+
+            console.log(`🔍 Derived PDAs for semantic validation:`, {
+              capsule_id: capsule.capsule_id,
+              creator: creator.toBase58(),
+              capsulePDA: capsulePDA.toBase58(),
+              gamePDA: gamePDA.toBase58(),
+            });
+
+            // Initialize Solana service and get guesses from blockchain
+            await this.solanaService.initializeProgramReadOnly();
+            const allGuesses = await this.solanaService.getGuessesForGame(gamePDA);
+
+            // Filter for guesses that need semantic validation (not yet marked as correct/incorrect)
+            const pendingGuesses = allGuesses.filter(guess => 
+              !guess.account.isCorrect // Not yet validated as correct
+            );
+
+            if (pendingGuesses.length > 0) {
+              console.log(`📝 Found ${pendingGuesses.length} pending guesses for semantic validation on blockchain`);
+
+              // Trigger semantic validation notification for the creator
+              await this.triggerSemanticValidationNotification(capsule, pendingGuesses.length);
+              guessValidationTriggered = true;
+            } else {
+              console.log(`✅ No pending guesses found on blockchain for gamified capsule: ${capsule.capsule_id}`);
+            }
+          }
+        } catch (blockchainError) {
+          console.error(`❌ Error fetching guesses from blockchain:`, blockchainError);
+          // Continue with reveal process even if blockchain query fails
+        }
+      }
+
+      // Step 3: Post reveal announcement to Twitter if user has connected account
       const twitterResult = await this.postRevealToTwitter(capsule);
 
       return {
         success: true,
         revealProcessed: true,
         twitterPosted: twitterResult.success,
+        guessValidationTriggered,
       };
     } catch (error) {
       return {
@@ -301,6 +405,70 @@ export class RevealSchedulerService {
         twitterPosted: true,
       };
     } catch (error) {
+      return {
+        success: false,
+        error: `Network error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  /**
+   * Trigger semantic validation notification for the capsule creator
+   * This sends a notification (push notification, email, or in-app) to the creator
+   * informing them that their gamified capsule has been revealed and needs semantic validation
+   */
+  private static async triggerSemanticValidationNotification(
+    capsule: {
+      capsule_id: string;
+      user_id: string;
+      is_gamified: boolean;
+    },
+    pendingGuessCount: number
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log(
+        `📱 Triggering semantic validation notification for capsule: ${capsule.capsule_id}`
+      );
+
+      // For now, we'll create a special Twitter post to notify the creator
+      // In the future, this could be push notifications, email, or in-app notifications
+      const notificationContent = `🎮 Your time capsule game has been revealed! 
+
+${pendingGuessCount} players submitted guesses. Open CapsuleX to validate guesses and determine winners.
+
+⏰ You have 24 hours to complete validation.
+
+#CapsuleXGaming #TimeReveal`;
+
+      // Schedule this as a social post notification
+      const scheduledFor = new Date(Date.now() + 60 * 1000).toISOString(); // 1 minute from now
+
+      const { data, error } = await supabase
+        .from("reveal_queue")
+        .insert({
+          scheduled_for: scheduledFor,
+          status: "pending",
+          attempts: 0,
+          max_attempts: 3,
+          post_type: "social_post",
+          post_content: notificationContent,
+          user_id: capsule.user_id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`❌ Failed to schedule semantic validation notification:`, error);
+        return {
+          success: false,
+          error: `Failed to schedule notification: ${error.message}`,
+        };
+      }
+
+      console.log(`✅ Scheduled semantic validation notification for user ${capsule.user_id}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Error triggering semantic validation notification:`, error);
       return {
         success: false,
         error: `Network error: ${error instanceof Error ? error.message : "Unknown error"}`,

@@ -201,7 +201,7 @@ router.get("/my-capsules", authenticateToken, async (req: AuthenticatedRequest, 
 router.get("/revealed", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    
+
     // Initialize with a dummy keypair for read-only operations
     const dummyKeypair = Keypair.generate();
     await solanaService.initializeProgram(dummyKeypair);
@@ -209,7 +209,7 @@ router.get("/revealed", async (req, res) => {
     // Get all revealed capsules from blockchain
     const program = solanaService.getProgram();
     const allCapsules = await program.account.capsule.all();
-    
+
     // Filter for revealed capsules and take the requested limit
     const revealedCapsules = allCapsules
       .filter((capsule: any) => capsule.account.isRevealed === true)

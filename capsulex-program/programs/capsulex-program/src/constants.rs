@@ -6,12 +6,18 @@ use anchor_lang::prelude::*;
 // In production, this would be the team's authority wallet
 pub const APP_AUTHORITY: Pubkey = anchor_lang::solana_program::pubkey!("FnnLFxD5jZh9dhMbPBYvon3nBWm2gmJDaQnXJhYD2G12");
 
-// Program constants based on Helius fee analysis
-pub const SOLANA_BASE_FEE: u64 = 5000; // 0.000005 SOL in lamports
+// Program constants based on proper monetization strategy
+pub const SOLANA_BASE_FEE: u64 = 5000; // 0.000005 SOL in lamports (network fee reference)
 
-// Fee structure (multipliers of base fee) - Service fees only, no gambling
-pub const CAPSULE_CREATION_FEE: u64 = SOLANA_BASE_FEE * 10; // 0.00005 SOL
-pub const SERVICE_FEE: u64 = SOLANA_BASE_FEE * 1; // 0.000005 SOL - Small service fee per guess
+// V2 Target Fee Structure - USD-based pricing (calculated at $180/SOL)
+// Capsule creation: $0.25 service fee = 1,388,889 lamports at $180/SOL
+pub const CAPSULE_CREATION_FEE: u64 = 1_388_889; // ~$0.25 at $180/SOL
+// Guess submission: $0.01 service fee = 55,556 lamports at $180/SOL  
+pub const SERVICE_FEE: u64 = 55_556; // ~$0.01 at $180/SOL
+
+// V1 Legacy (Under-priced) - for reference/rollback:
+// pub const CAPSULE_CREATION_FEE: u64 = SOLANA_BASE_FEE * 10; // 0.00005 SOL (~$0.009)
+// pub const SERVICE_FEE: u64 = SOLANA_BASE_FEE * 1; // 0.000005 SOL (~$0.0009)
 pub const PREMIUM_FEATURE_FEE: u64 = SOLANA_BASE_FEE * 5; // 0.000025 SOL
 pub const BADGE_MINT_FEE: u64 = SOLANA_BASE_FEE * 5; // 0.000025 SOL
 pub const TROPHY_MINT_FEE: u64 = SOLANA_BASE_FEE * 2; // 0.00001 SOL

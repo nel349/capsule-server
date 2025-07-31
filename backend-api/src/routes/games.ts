@@ -4,6 +4,7 @@ import { SolanaService } from "../services/solana";
 import { PublicKey } from "@solana/web3.js";
 import { CAPSULEX_PROGRAM_CONFIG } from "../config/solana";
 import { supabase } from "../utils/supabase";
+import { SemanticService } from "../services/semanticService";
 import * as anchor from "@coral-xyz/anchor";
 
 const router = express.Router();
@@ -86,7 +87,7 @@ router.get("/active", async (req, res) => {
     const activeGames = [];
 
     // Use Promise.all to batch the game data requests for better performance
-    const gamePromises = activeCapsules.map(async (capsule) => {
+    const gamePromises = activeCapsules.map(async capsule => {
       try {
         const capsulePda = capsule.publicKey;
         const account = capsule.account;
@@ -95,7 +96,7 @@ router.get("/active", async (req, res) => {
         const gamePda = solanaService.getGamePda(capsulePda);
         const [gameData, guesses] = await Promise.all([
           solanaService.getGameData(capsulePda).catch(() => null),
-          solanaService.getGuessesForGame(gamePda).catch(() => [])
+          solanaService.getGuessesForGame(gamePda).catch(() => []),
         ]);
 
         if (gameData && gameData.isActive) {
@@ -111,14 +112,13 @@ router.get("/active", async (req, res) => {
             current_guesses: guesses.length,
             winners_found: gameData.winnersFound || 0,
             is_active: gameData.isActive,
-            total_participants: new Set(guesses.map((g: any) => g.account?.guesser?.toString()).filter(Boolean)).size,
+            total_participants: new Set(
+              guesses.map((g: any) => g.account?.guesser?.toString()).filter(Boolean)
+            ).size,
             reveal_date: new Date(account.revealDate.toNumber() * 1000).toISOString(),
             created_at: new Date(account.createdAt.toNumber() * 1000).toISOString(),
             content_hint: "Text content",
-            time_until_reveal: Math.max(
-              0,
-              account.revealDate.toNumber() - currentTime
-            ),
+            time_until_reveal: Math.max(0, account.revealDate.toNumber() - currentTime),
           };
         }
         return null;
@@ -629,6 +629,386 @@ router.post("/:capsule_id/guess", async (req, res) => {
     } as ApiResponse);
   } catch (error: any) {
     console.error("Register guess error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
+// Get pending validations for a creator
+router.get("/creator/:creatorWallet/pending-validations", async (req, res) => {
+  try {
+    const { creatorWallet } = req.params;
+    
+    console.log(`Fetching pending validations for creator: ${creatorWallet}`);
+    
+    // Validate creator wallet address
+    try {
+      new PublicKey(creatorWallet);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid creator wallet address",
+      } as ApiResponse);
+    }
+
+    // Get creator's gamified capsules that are revealed from users and capsules table
+    const { data: creatorCapsules, error: capsulesError } = await supabase
+      .from("capsules")
+      .select(`
+        *,
+        users!inner(wallet_address)
+      `)
+      .eq("users.wallet_address", creatorWallet)
+      .eq("is_gamified", true)
+      .eq("status", "revealed")
+      .order("created_at", { ascending: false });
+
+    if (capsulesError) {
+      console.error("Error fetching creator capsules:", capsulesError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to fetch creator capsules",
+      } as ApiResponse);
+    }
+
+    if (!creatorCapsules || creatorCapsules.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          pending_validations: [],
+          total_capsules: 0,
+          total_guesses: 0,
+        },
+      } as ApiResponse);
+    }
+
+    // Return capsules with pending validation needed (no blockchain lookup here)
+    const pendingValidations = creatorCapsules.map(capsule => ({
+      capsule_id: capsule.capsule_id,
+      reveal_date: capsule.reveal_date,
+      content_encrypted: capsule.content_encrypted,
+      estimated_validation_cost: 0, // Will be calculated when creator selects specific game
+    }));
+
+    console.log(`Found ${pendingValidations.length} pending validations for creator ${creatorWallet}`);
+    console.log(pendingValidations);
+
+    res.json({
+      success: true,
+      data: {
+        pending_validations: pendingValidations,
+        total_capsules: pendingValidations.length,
+        total_guesses: 0, // Unknown until creator selects specific game
+        estimated_total_cost: 0, // Unknown until creator selects specific game
+      },
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error("Error fetching pending validations:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
+// Get pending guesses for a specific game
+router.get("/creator/:creatorWallet/game/:gamePda/pending-guesses", async (req, res) => {
+  try {
+    const { creatorWallet, gamePda } = req.params;
+    
+    console.log(`Fetching pending guesses for creator: ${creatorWallet}, game: ${gamePda}`);
+    
+    // Validate parameters
+    try {
+      new PublicKey(creatorWallet);
+      new PublicKey(gamePda);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid wallet address or game PDA",
+      } as ApiResponse);
+    }
+
+    // Initialize Solana service
+    const dummyKeypair = require("@solana/web3.js").Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+
+    // Get guesses for the specific game from blockchain
+    const gamePublicKey = new PublicKey(gamePda);
+    const guesses = await solanaService.getGuessesForGame(gamePublicKey);
+    
+    // Filter for unvalidated guesses
+    const pendingGuesses = guesses.filter(guess => 
+      !guess.account.isCorrect && guess.account.guessContent.trim().length > 0
+    );
+
+    console.log(`Found ${pendingGuesses.length} pending guesses for game ${gamePda}`);
+
+    res.json({
+      success: true,
+      data: {
+        game_pda: gamePda,
+        pending_guesses: pendingGuesses.map(guess => ({
+          guess_pda: guess.publicKey.toBase58(),
+          guesser: guess.account.guesser.toBase58(),
+          guess_content: guess.account.guessContent,
+          timestamp: guess.account.timestamp.toNumber(),
+          is_anonymous: guess.account.isAnonymous,
+        })),
+        total_guesses: pendingGuesses.length,
+        estimated_validation_cost: pendingGuesses.length * 0.003,
+      },
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error("Error fetching pending guesses:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
+// Get pending guesses for a specific capsule (derives game PDA automatically)
+router.get("/capsule/:capsuleId/pending-guesses", async (req, res) => {
+  try {
+    const { capsuleId } = req.params;
+    
+    console.log(`Fetching pending guesses for capsule: ${capsuleId}`);
+
+    // Get capsule data from database to derive game PDA
+    const { data: capsule, error: capsuleError } = await supabase
+      .from("capsules")
+      .select(`
+        *,
+        users!inner(wallet_address)
+      `)
+      .eq("capsule_id", capsuleId)
+      .eq("is_gamified", true)
+      .eq("status", "revealed")
+      .single();
+
+    if (capsuleError || !capsule) {
+      return res.status(404).json({
+        success: false,
+        error: "Capsule not found or not a revealed gamified capsule",
+      } as ApiResponse);
+    }
+
+    // Derive game PDA using capsule data
+    const creator = new PublicKey(capsule.users.wallet_address);
+    const revealDate = new anchor.BN(
+      Math.floor(new Date(capsule.reveal_date).getTime() / 1000)
+    );
+    const programId = new PublicKey(CAPSULEX_PROGRAM_CONFIG.programId);
+    const capsulePDA = getCapsulePda(creator, revealDate, programId);
+
+    // Derive game PDA
+    const [gamePDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("game"), capsulePDA.toBuffer()],
+      programId
+    );
+
+    // Initialize Solana service
+    const dummyKeypair = require("@solana/web3.js").Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+
+    // Get guesses for the specific game from blockchain
+    const guesses = await solanaService.getGuessesForGame(gamePDA);
+    
+    // Filter for unvalidated guesses
+    const pendingGuesses = guesses.filter(guess => 
+      !guess.account.isCorrect && guess.account.guessContent.trim().length > 0
+    );
+
+    console.log(`Found ${pendingGuesses.length} pending guesses for capsule ${capsuleId}`);
+
+    res.json({
+      success: true,
+      data: {
+        game_pda: gamePDA.toBase58(),
+        capsule_id: capsuleId,
+        pending_guesses: pendingGuesses.map(guess => ({
+          guess_pda: guess.publicKey.toBase58(),
+          guesser: guess.account.guesser.toBase58(),
+          guess_content: guess.account.guessContent,
+          timestamp: guess.account.timestamp.toNumber(),
+          is_anonymous: guess.account.isAnonymous,
+        })),
+        total_guesses: pendingGuesses.length,
+        estimated_validation_cost: pendingGuesses.length * 0.003,
+      },
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error("Error fetching pending guesses for capsule:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    } as ApiResponse);
+  }
+});
+
+// Submit batch validation results
+router.post("/creator/validate-batch", async (req, res) => {
+  try {
+    const { 
+      creator_wallet,
+      capsule_id,
+      validations,
+      decrypted_content 
+    } = req.body;
+
+    console.log(`Processing batch validation for creator: ${creator_wallet}, capsule: ${capsule_id}`);
+
+    // Validate required fields
+    if (!creator_wallet || !capsule_id || !validations || !decrypted_content) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: creator_wallet, capsule_id, validations, decrypted_content",
+      } as ApiResponse);
+    }
+
+    // Validate creator wallet
+    try {
+      const creatorPubkey = new PublicKey(creator_wallet);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid creator wallet address",
+      } as ApiResponse);
+    }
+
+    // Validate validations array
+    if (!Array.isArray(validations) || validations.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Validations must be a non-empty array",
+      } as ApiResponse);
+    }
+
+    // Prepare guesses for semantic validation
+    const guessAnswerPairs = validations.map((validation: any) => ({
+      id: validation.guess_pda,
+      guess: validation.guess_content,
+      answer: decrypted_content.trim(),
+    }));
+
+    console.log(`Validating ${guessAnswerPairs.length} guesses via semantic service`);
+
+    // Process semantic validation batch (Creator pays for this)
+    const semanticResults = await SemanticService.validateGuessesBatch(guessAnswerPairs);
+
+    // Track validation costs for creator billing
+    const validationCost = guessAnswerPairs.length * 0.003; // $0.003 per guess
+    console.log(`💰 Creator will be charged: $${validationCost.toFixed(3)} for ${guessAnswerPairs.length} validations`);
+
+    // Creator billing implementation - track the cost
+    // In production, this would integrate with payment processor (Stripe, etc.)
+    console.log(`📋 Billing record: Creator ${creator_wallet} owes $${validationCost.toFixed(3)} for semantic validation`);
+
+    // Initialize Solana service for blockchain updates
+    const dummyKeypair = require("@solana/web3.js").Keypair.generate();
+    await solanaService.initializeProgram(dummyKeypair);
+
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process each semantic result and update blockchain
+    for (const semanticResult of semanticResults) {
+      try {
+        const validation = validations.find((v: any) => v.guess_pda === semanticResult.id);
+        if (!validation) {
+          console.error(`Validation not found for guess: ${semanticResult.id}`);
+          errorCount++;
+          continue;
+        }
+
+        // Check if semantic validation was successful
+        if ('error' in semanticResult.result) {
+          console.error(`Semantic validation failed for ${semanticResult.id}:`, semanticResult.result.error);
+          results.push({
+            guess_pda: semanticResult.id,
+            success: false,
+            error: semanticResult.result.error,
+          });
+          errorCount++;
+          continue;
+        }
+
+        const isCorrect = semanticResult.result.is_correct;
+        console.log(`Guess ${semanticResult.id}: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (similarity: ${semanticResult.result.similarity})`);
+
+        // Update blockchain with verification result
+        // Note: In production, this would be called by the creator's wallet with proper signatures
+        // For now, we'll log the blockchain update that needs to happen
+        console.log(`🔗 Blockchain update needed: verifyGuess(${semanticResult.id}, ${isCorrect})`);
+
+        results.push({
+          guess_pda: semanticResult.id,
+          guess_content: validation.guess_content,
+          guesser: validation.guesser,
+          is_correct: isCorrect,
+          similarity: semanticResult.result.similarity,
+          method: semanticResult.result.method,
+          confidence: semanticResult.result.confidence,
+          success: true,
+        });
+
+        successCount++;
+
+      } catch (error) {
+        console.error(`Error processing guess ${semanticResult.id}:`, error);
+        results.push({
+          guess_pda: semanticResult.id,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        errorCount++;
+      }
+    }
+
+    // Store creator billing record
+    try {
+      const { error: billingError } = await supabase
+        .from("creator_validation_billing")
+        .insert({
+          creator_wallet,
+          capsule_id,
+          guesses_validated: guessAnswerPairs.length,
+          validation_cost_usd: validationCost,
+          processed_at: new Date().toISOString(),
+          semantic_service_cost: validationCost,
+          status: "completed",
+        });
+
+      if (billingError) {
+        console.error("Failed to store billing record:", billingError);
+        // Don't fail the request, just log the error
+      }
+    } catch (billingError) {
+      console.error("Error storing billing record:", billingError);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        results,
+        summary: {
+          total_processed: validations.length,
+          successful: successCount,
+          failed: errorCount,
+          validation_cost_usd: validationCost,
+        },
+      },
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error("Error processing batch validation:", error);
     res.status(500).json({
       success: false,
       error: "Internal server error",

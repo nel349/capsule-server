@@ -38,32 +38,66 @@ Similar mainstream successes:
 
 ## Revenue Model: Triple-Stream Architecture
 
-### **Primary Revenue: "Quarter" Model (Gaming)**
-**Philosophy**: Impulse purchase pricing familiar to mobile gamers
+### **Primary Revenue: Affordable Gaming Model**
+**Philosophy**: Accessible gaming with sustainable creator economy
 
 ```
-Guess Fee: $0.25 per guess
-Revenue Split: 60% creator ($0.15) / 40% platform ($0.10)
-Psychology: Cost of arcade game or candy bar
-Target: High-volume, low-friction participation
+CORRECTED STRATEGY (Affordable Gaming Market):
+Service Fee Structure:
+- Guess Service Fee: $0.01 per guess (CapsuleX platform fee)
+- Network Fee: ~$0.003 per guess (Solana transaction fee)
+- Total Player Cost: ~$0.013 per guess
+
+Revenue Split from $0.01 Service Fee:
+- Creator Share: 25% = $0.0025 per guess
+- Prize Pool: 60% = $0.006 per guess  
+- Platform: 15% = $0.0015 per guess
+
+CURRENT V1 IMPLEMENTATION (Under-priced):
+Service Fee: $0.0009 per guess (SERVICE_FEE = 5000 lamports)
+Revenue Split: 0% creator / 100% platform
+Total Player Cost: ~$0.004 per guess (service + network)
+
+V2 TARGET IMPLEMENTATION (Properly Priced):
+Service Fee: $0.01 per guess (55,556 lamports at $180/SOL)
+Revenue Split: 25% creator / 60% prize pool / 15% platform
+Total Player Cost: ~$0.013 per guess (service + network)
 ```
 
-**Why $0.25 Works for Mainstream:**
-- Impulse purchase threshold
-- No crypto complexity (just "pay to play")
-- Familiar mobile game micro-transaction pricing
-- Low enough for repeated engagement
+**Why $0.01 Works for Affordable Gaming:**
+- Impulse purchase threshold (like mobile game energy)
+- 10x increase from current pricing creates sustainable revenue
+- Low enough for repeated engagement (players can afford multiple guesses)
+- Creates meaningful creator revenue without being prohibitive
 
 ### **Secondary Revenue: Time Capsules + Social Scheduler (Dual-Mode Platform)**
 **Philosophy**: Premium blockchain experiences + accessible social scheduling
 
 ```
-Time Capsules: Blockchain storage + encryption + automatic real content posting
-- Regular: $0.35 (blockchain + encryption + automated posting of actual content)
-- Gamified: $0.50 (everything above + AI gaming + semantic validation)
+CORRECTED STRATEGY (Service Fee Structure):
+Service Fee Structure:
+- Capsule Service Fee: $0.25 per capsule (CapsuleX platform fee)
+- Network Fee: ~$0.003 per capsule (Solana transaction fee)
+- Total Creator Cost: ~$0.253 per capsule
 
-Social Scheduler: Simple Twitter scheduling without blockchain
-- Basic: $0.25 (direct Twitter posting + API optimization)
+Pricing Tiers:
+- Regular Capsule: $0.25 service fee (basic blockchain storage + encryption)
+- Gamified Capsule: $0.25 service fee + bond deposit (gaming infrastructure included)
+
+CURRENT V1 IMPLEMENTATION (Under-priced):
+Capsule Creation: $0.009 (CAPSULE_CREATION_FEE = 50,000 lamports)
+Total Creator Cost: ~$0.012 per capsule (service + network)
+Problem: 96% under-priced vs target
+
+V2 TARGET IMPLEMENTATION (Properly Priced):
+Capsule Service Fee: $0.25 (1,388,889 lamports at $180/SOL)
+Total Creator Cost: ~$0.253 per capsule (service + network)
+Additional: Bond deposit for gamified capsules ($0.60 refundable)
+
+IMPLEMENTATION REQUIREMENTS:
+- Dynamic fee adjustment instruction based on SOL market price
+- Bond system integration for gamified capsules (V2)
+- Revenue sharing system for guess fees (V2)
 ```
 
 **Phase 1: Basic Tier Implementation (100-150 Users)**
@@ -130,12 +164,84 @@ Market Positioning: Competitive with gaming NFT standards
 - Trophy/milestone NFTs: $5-$25 for significant achievements
 - **Result**: 1000x revenue increase over previous micro-fees
 
-### **Quaternary Revenue: Service Fees**
+### **Quaternary Revenue: Dynamic Fee System**
 ```
-Capsule Creation: $0.008 (operational cost coverage)
-Premium Features: $0.004 (minimal service fees)
-Impact: <1% of total revenue (operational only)
+CURRENT V1 FIXED FEES (Under-priced):
+Capsule Creation: 50,000 lamports (fixed) = $0.009 at $180/SOL
+Guess Submission: 5,000 lamports (fixed) = $0.0009 at $180/SOL
+Problem: Fees too low to support creator economy and platform growth
+
+V2 DYNAMIC FEE SYSTEM (Market-Responsive):
+Target USD Values:
+- Capsule Service Fee: $0.25 (regardless of SOL price)
+- Guess Service Fee: $0.01 (regardless of SOL price)
+
+Dynamic Calculation:
+fee_in_lamports = (target_usd_amount / sol_price_usd) * 1_000_000_000
+
+Example at Different SOL Prices:
+SOL = $180: 
+  - Capsule fee = 1,388,889 lamports ($0.25)
+  - Guess fee = 55,556 lamports ($0.01)
+SOL = $300: 
+  - Capsule fee = 833,333 lamports ($0.25)
+  - Guess fee = 33,333 lamports ($0.01)
+SOL = $100: 
+  - Capsule fee = 2,500,000 lamports ($0.25)
+  - Guess fee = 100,000 lamports ($0.01)
+
+IMPLEMENTATION REQUIREMENTS:
+1. Oracle price feed integration (Pyth Network)
+2. Admin instruction to update fees based on market conditions
+3. Reasonable bounds (min/max lamports to prevent extreme swings)
+4. Smooth transition mechanism for fee updates
 ```
+
+---
+
+## V2 Implementation Plan: Bridging Crypto to Mainstream
+
+### **Phase 1: Dynamic Fee System (Immediate)**
+```rust
+// New V2 program instructions needed:
+
+pub fn update_fee_parameters(
+    ctx: Context<UpdateFeeParameters>, 
+    capsule_creation_fee_usd: f64,      // Target USD amount
+    guess_submission_fee_usd: f64,      // Target USD amount
+    sol_price_usd: f64,                 // Current SOL price from oracle
+) -> Result<()>
+
+pub fn update_revenue_split(
+    ctx: Context<UpdateRevenueSplit>,
+    creator_share_bps: u16,             // Basis points (2500 = 25%)
+    prize_pool_bps: u16,                // Basis points (6000 = 60%)
+    platform_bps: u16,                  // Basis points (1500 = 15%)
+) -> Result<()>
+```
+
+**Benefits:**
+- Maintains consistent USD pricing regardless of SOL volatility
+- Enables gradual transition from crypto micro-fees to mainstream pricing
+- Creates foundation for creator revenue sharing
+
+### **Phase 2: Creator Economy Integration (Month 2-3)**
+- Implement creator revenue sharing from V2 bond system
+- Launch creator premium tiers (20%, 25%, 30% revenue shares)
+- Add creator earnings withdrawal functionality
+- Creator dashboard with revenue analytics
+
+### **Phase 3: Mainstream Market Transition (Month 4-6)**
+- Gradually increase fees toward $0.25 target (market testing)
+- Launch mainstream marketing campaigns
+- Hide crypto complexity behind familiar gaming UX
+- A/B test pricing tiers for optimal conversion
+
+### **Phase 4: Full Mainstream Launch (Month 6-12)**
+- Achieve $0.25 guess fee target (mainstream gaming price)
+- 60/40 creator/platform revenue split
+- Credit card → crypto conversion (invisible to users)
+- App store marketing with mainstream positioning
 
 ---
 
@@ -480,6 +586,84 @@ Year 3: 1,500 users → $69,300/month → $831,600 annual
 - **Ultra-low break-even** at just 25 users (vs 600 single-stream models)
 
 This creates a sustainable path from startup to unicorn through **API optimization**, **gaming innovation**, and **mainstream crypto adoption** - serving entertainment, utility, and achievement needs in a single integrated platform.
+
+---
+
+## Technical Implementation Requirements Summary
+
+### **Critical V2 Program Updates Needed:**
+
+#### **1. Dynamic Fee Management System**
+```rust
+#[account]
+pub struct FeeParameters {
+    pub authority: Pubkey,                    // Admin authority
+    pub capsule_creation_fee_usd: f64,        // Target USD amount
+    pub guess_submission_fee_usd: f64,        // Target USD amount  
+    pub current_sol_price_usd: f64,           // Latest SOL price
+    pub last_price_update: i64,               // Timestamp of price update
+    pub min_fee_lamports: u64,                // Minimum fee (safety bound)
+    pub max_fee_lamports: u64,                // Maximum fee (safety bound)
+    pub bump: u8,
+}
+
+// Instructions:
+- update_fee_parameters() // Admin updates based on SOL price
+- calculate_current_fees() // Calculate lamports from USD targets
+```
+
+#### **2. Revenue Sharing Infrastructure**
+```rust
+#[account] 
+pub struct RevenueParameters {
+    pub creator_share_bps: u16,               // Creator revenue share
+    pub prize_pool_bps: u16,                  // Prize pool allocation
+    pub platform_share_bps: u16,             // Platform revenue share
+    pub last_updated: i64,                    // When shares were updated
+    pub bump: u8,
+}
+
+// Instructions:
+- update_revenue_split() // Admin adjusts revenue distribution
+- distribute_guess_fees() // Split fees according to parameters
+```
+
+#### **3. Oracle Price Feed Integration**
+```rust
+// Pyth Network integration for SOL/USD price feeds
+pub fn get_sol_price_from_oracle() -> Result<f64>
+pub fn update_fees_from_oracle() -> Result<()>
+
+// Scheduled updates (via backend service):
+- Check SOL price every 6 hours
+- Update fees if price change > 10%
+- Bounded adjustments to prevent extreme swings
+```
+
+### **Migration Path: V1 → V2 → Mainstream**
+
+**Current State (V1):**
+- Fixed micro-fees (5,000-50,000 lamports)
+- No creator revenue sharing
+- Crypto-native market only
+
+**Bridge State (V2):**
+- Dynamic USD-based fees ($0.003-0.08)
+- 25% creator revenue sharing
+- Foundation for mainstream transition
+
+**Target State (Mainstream):**
+- Gaming-appropriate fees ($0.25 guess)
+- 60% creator / 40% platform split
+- Hidden crypto complexity
+
+### **Implementation Priority:**
+1. **Week 1-2**: Dynamic fee system + revenue sharing
+2. **Week 3-4**: Creator earnings accounts + withdrawal
+3. **Week 5-6**: Oracle price feed integration
+4. **Week 7-8**: Backend automation for fee adjustments
+5. **Month 2-3**: Creator economy tools + dashboard
+6. **Month 4-6**: Mainstream pricing transition + UX improvements
 
 ---
 
