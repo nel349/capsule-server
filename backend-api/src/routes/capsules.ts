@@ -34,20 +34,22 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       test_mode = false, // Add test mode flag
     }: CreateCapsuleRequest & { is_gamified?: boolean; test_mode?: boolean } = req.body;
 
-    if (!content_encrypted || !content_hash || !reveal_date) {
+    if (!content_encrypted || !content_hash) {
       return res.status(400).json({
         success: false,
-        error: "content_encrypted, content_hash, and reveal_date are required",
+        error: "content_encrypted and content_hash are required",
       } as ApiResponse);
     }
 
-    // Validate reveal_date is in the future
-    const revealDateTime = new Date(reveal_date);
-    if (revealDateTime <= new Date()) {
-      return res.status(400).json({
-        success: false,
-        error: "reveal_date must be in the future",
-      } as ApiResponse);
+    // Validate reveal_date is in the future (only if provided)
+    if (reveal_date) {
+      const revealDateTime = new Date(reveal_date);
+      if (revealDateTime <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          error: "reveal_date must be in the future",
+        } as ApiResponse);
+      }
     }
 
     const onChainTx = on_chain_tx;
@@ -139,8 +141,8 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       } as ApiResponse);
     }
 
-    // Add capsule to reveal queue for automated processing
-    if (capsule) {
+    // Add capsule to reveal queue for automated processing (only if reveal_date is provided)
+    if (capsule && reveal_date) {
       try {
         console.log(`📅 Adding capsule ${capsule.capsule_id} to reveal queue for ${reveal_date}`);
 
@@ -156,6 +158,10 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
         console.error("⚠️ Error adding capsule to reveal queue:", queueError);
         // Don't fail the whole request, just log the error
       }
+    } else if (capsule && !reveal_date) {
+      console.log(
+        `📦 Capsule ${capsule.capsule_id} created without reveal_date - will be set when revealed`
+      );
     }
 
     res.status(201).json({
@@ -219,7 +225,7 @@ router.get("/revealed", async (req, res) => {
         content: capsule.account.encryptedContent,
         content_hash: capsule.account.contentIntegrityHash,
         reveal_date_timestamp: capsule.account.revealDate.toNumber(),
-        revealed_at_timestamp: capsule.account.revealDate.toNumber(), // Use reveal date as revealed timestamp
+        revealed_at_timestamp: capsule.account.revealDate.toNumber(), // Blockchain reveal date timestamp
         creator: capsule.account.creator.toString(),
         creator_display_name: null, // TODO: Get from database if needed
         twitter_username: null, // TODO: Get from database if needed
@@ -247,7 +253,7 @@ router.get("/revealed", async (req, res) => {
 router.patch("/:capsule_id/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { capsule_id } = req.params;
-    const { status, revealed_at, reveal_tx_signature, social_post_id, posted_to_social } = req.body;
+    const { status, reveal_tx_signature, social_post_id, posted_to_social } = req.body;
 
     if (!status) {
       return res.status(400).json({
@@ -257,7 +263,6 @@ router.patch("/:capsule_id/status", authenticateToken, async (req: Authenticated
     }
 
     const additionalData: any = {};
-    if (revealed_at) additionalData.revealed_at = revealed_at;
     if (reveal_tx_signature) additionalData.reveal_tx_signature = reveal_tx_signature;
     if (social_post_id) additionalData.social_post_id = social_post_id;
     if (posted_to_social !== undefined) additionalData.posted_to_social = posted_to_social;

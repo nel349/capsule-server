@@ -63,8 +63,7 @@ export interface DatabaseCapsule {
   content_hash: string;
   has_media: boolean;
   media_urls?: string[];
-  reveal_date: string;
-  revealed_at?: string;
+  reveal_date: string | null;
   reveal_tx_signature?: string;
   posted_to_social: boolean;
   social_post_id?: string;

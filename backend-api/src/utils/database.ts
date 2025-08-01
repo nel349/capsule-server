@@ -71,7 +71,7 @@ export const createCapsule = async (capsuleData: {
   content_hash: string;
   has_media?: boolean;
   media_urls?: string[];
-  reveal_date: string;
+  reveal_date?: string;
   created_at?: string; // Frontend timestamp for consistency
   on_chain_tx: string;
   sol_fee_amount?: number;
@@ -134,8 +134,8 @@ export const getRevealedCapsules = async (
       .from("capsules")
       .select("*")
       .in("status", ["revealed", "posted"])
-      .not("revealed_at", "is", null)
-      .order("revealed_at", { ascending: false })
+      .not("reveal_date", "is", null)
+      .order("reveal_date", { ascending: false })
       .limit(limit);
 
     return { data, error: error ? handleDatabaseError(error) : null };
@@ -147,7 +147,7 @@ export const getRevealedCapsules = async (
 export const updateCapsuleStatus = async (
   capsule_id: string,
   status: "pending" | "ready_to_reveal" | "revealed" | "posted" | "failed" | "cancelled",
-  additionalData?: { revealed_at?: string; reveal_tx_signature?: string; social_post_id?: string; posted_to_social?: boolean }
+  additionalData?: { reveal_tx_signature?: string; social_post_id?: string; posted_to_social?: boolean }
 ): Promise<{ data: DatabaseCapsule | null; error: any }> => {
   try {
     const updateData = { status, ...additionalData };

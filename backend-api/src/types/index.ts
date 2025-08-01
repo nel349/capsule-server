@@ -20,7 +20,7 @@ export interface CreateCapsuleRequest {
   content_hash: string;
   has_media?: boolean;
   media_urls?: string[];
-  reveal_date: string; // ISO string
+  reveal_date?: string; // ISO string - optional on creation, set when revealed
   created_at?: string; // Frontend timestamp for consistency
   on_chain_tx: string;
   sol_fee_amount?: number;
