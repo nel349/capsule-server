@@ -117,7 +117,7 @@ router.get("/active", async (req, res) => {
             ).size,
             reveal_date: new Date(account.revealDate.toNumber() * 1000).toISOString(),
             created_at: new Date(account.createdAt.toNumber() * 1000).toISOString(),
-            content_hint: "Text content",
+            content_hint: "",
             time_until_reveal: Math.max(0, account.revealDate.toNumber() - currentTime),
           };
         }
@@ -233,7 +233,7 @@ router.get("/:capsule_id", async (req, res) => {
           total_participants: gameData.totalParticipants || 0,
           reveal_date: new Date(capsuleAccount.revealDate.toNumber() * 1000).toISOString(),
           created_at: new Date(capsuleAccount.createdAt.toNumber() * 1000).toISOString(),
-          content_hint: "Text content",
+          content_hint: "",
           is_revealed: capsuleAccount.isRevealed,
         };
 
@@ -346,7 +346,7 @@ router.get("/:capsule_id", async (req, res) => {
       reveal_date: capsuleData.reveal_date,
       created_at: capsuleData.created_at,
       // Additional helpful info from database
-      content_hint: capsuleData.has_media ? "Contains media content" : "Text content",
+      content_hint: capsuleData.has_media ? "Contains media content" : "",
       is_revealed: capsuleData.status === "revealed" || capsuleData.status === "posted",
     };
 
