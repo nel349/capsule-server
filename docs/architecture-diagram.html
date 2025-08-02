@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CapsuleX Architecture Diagram</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 100%);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .layer {
+            margin-bottom: 30px;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid;
+            position: relative;
+        }
+        
+        .layer-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .components {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .component {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .component-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .component-subtitle {
+            font-size: 12px;
+            color: #cccccc;
+            margin-bottom: 12px;
+        }
+        
+        .feature-list {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+        .feature-list li {
+            margin-bottom: 3px;
+        }
+        
+        /* Layer-specific styling */
+        .users {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+        }
+        
+        .frontend {
+            border-color: #4ecdc4;
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(78, 205, 196, 0.05) 100%);
+        }
+        
+        .backend {
+            border-color: #45b7d1;
+            background: linear-gradient(135deg, rgba(69, 183, 209, 0.1) 0%, rgba(69, 183, 209, 0.05) 100%);
+        }
+        
+        .ai-blockchain {
+            border-color: #96ceb4;
+            background: linear-gradient(135deg, rgba(150, 206, 180, 0.1) 0%, rgba(150, 206, 180, 0.05) 100%);
+        }
+        
+        .infrastructure {
+            border-color: #feca57;
+            background: linear-gradient(135deg, rgba(254, 202, 87, 0.1) 0%, rgba(254, 202, 87, 0.05) 100%);
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #00ffff;
+            margin: 10px 0;
+        }
+        
+        .stats {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .emoji {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">CapsuleX Platform Architecture</div>
+        
+        <div class="layer users">
+            <div class="layer-title" style="color: #ff6b6b;">👥 USERS</div>
+            <div style="text-align: center; font-size: 16px;">
+                📱 Mobile Creators • 🎮 Gamers • 🐦 X Users
+            </div>
+        </div>
+        
+        <div class="arrow">↓</div>
+        
+        <div class="layer frontend">
+            <div class="layer-title" style="color: #4ecdc4;">📱 FRONTEND LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">📱 MOBILE APP</div>
+                    <div class="component-subtitle">React Native</div>
+                    <ul class="feature-list">
+                        <li>• Dual Auth Provider</li>
+                        <li>• Mobile Wallet Adapter</li>
+                        <li>• Seed Vault Integration</li>
+                        <li>• Cross-platform Encryption</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">🌐 BLINK ACTIONS</div>
+                    <div class="component-subtitle">Next.js Web</div>
+                    <ul class="feature-list">
+                        <li>• Public Capsules</li>
+                        <li>• Leaderboards</li>
+                        <li>• Shareable Actions</li>
+                        <li>• Social Virality</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">🐦 TWITTER API</div>
+                    <div class="component-subtitle">OAuth 2.0</div>
+                    <ul class="feature-list">
+                        <li>• Auto Posting</li>
+                        <li>• Token Refresh</li>
+                        <li>• Background Scheduler</li>
+                        <li>• API Optimization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">↓</div>
+        
+        <div class="layer backend">
+            <div class="layer-title" style="color: #45b7d1;">🏗️ BACKEND API LAYER</div>
+            <div style="text-align: center; margin-bottom: 20px; color: #cccccc;">Node.js + Express</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">🏗️ CORE API</div>
+                    <ul class="feature-list">
+                        <li>• Capsule CRUD</li>
+                        <li>• User Management</li>
+                        <li>• Social Auth</li>
+                        <li>• Payment Processing</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">🎮 GAMING API</div>
+                    <ul class="feature-list">
+                        <li>• Guess Validation</li>
+                        <li>• Leaderboards</li>
+                        <li>• NFT Achievements</li>
+                        <li>• Reward Distribution</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">📅 SCHEDULER</div>
+                    <ul class="feature-list">
+                        <li>• Reveal Queue</li>
+                        <li>• Background Jobs</li>
+                        <li>• Auto Posting</li>
+                        <li>• Retry Logic</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">↓</div>
+        
+        <div class="layer ai-blockchain">
+            <div class="layer-title" style="color: #96ceb4;">🧠 AI & BLOCKCHAIN LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">🧠 SEMANTIC AI</div>
+                    <div class="component-subtitle">Python Flask</div>
+                    <ul class="feature-list">
+                        <li>• 4-Tier Validation</li>
+                        <li>• Local Model</li>
+                        <li>• GPT-3.5 Turbo</li>
+                        <li>• GPT-4 Premium</li>
+                        <li>• Human Fallback</li>
+                        <li>• Crypto Signatures</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">⚡ SOLANA PROGRAM</div>
+                    <div class="component-subtitle">Rust Anchor</div>
+                    <ul class="feature-list">
+                        <li>• Capsule Storage</li>
+                        <li>• Game Logic</li>
+                        <li>• NFT Minting</li>
+                        <li>• Oracle Security</li>
+                        <li>• SPL Tokens</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">🗄️ DATABASE</div>
+                    <div class="component-subtitle">Supabase</div>
+                    <ul class="feature-list">
+                        <li>• User Data</li>
+                        <li>• Reveal Queue</li>
+                        <li>• Social Auth</li>
+                        <li>• Encrypted Content</li>
+                        <li>• Analytics</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">↓</div>
+        
+        <div class="layer infrastructure">
+            <div class="layer-title" style="color: #feca57;">🔐 INFRASTRUCTURE & SECURITY</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">🔐 ENCRYPTION</div>
+                    <ul class="feature-list">
+                        <li>• Android SeedVault</li>
+                        <li>• iOS VaultKey</li>
+                        <li>• Automatic Failover</li>
+                        <li>• Hardware Security</li>
+                    </ul>
+                </div>
+                <div class="component">
+                    <div class="component-title">🌐 CLOUD HOSTING</div>
+                    <ul class="feature-list">
+                        <li>• Railway (Semantic)</li>
+                        <li>• Supabase (DB)</li>
+                        <li>• Railway (Blinks)</li>
+                        <li>• Solana Mainnet</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+                🏗️ Total: 10 Integrated Components
+            </div>
+            <div style="font-size: 14px; color: #cccccc;">
+                Creating one seamless social + gaming + crypto platform
+            </div>
+        </div>
+    </div>
+</body>
+</html>
