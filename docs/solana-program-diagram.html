@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CapsuleX Solana Program Architecture</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 100%);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid;
+            position: relative;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .instructions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .instruction-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .instruction-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            margin: 10px 0;
+            border-left: 3px solid #00ffff;
+        }
+        
+        .account-struct {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-around;
+        }
+        
+        .struct-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .struct-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #feca57;
+        }
+        
+        .field-list {
+            font-size: 11px;
+            line-height: 1.5;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .flow-step {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #4ecdc4;
+        }
+        
+        .flow-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #4ecdc4;
+        }
+        
+        .security-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .security-card {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        /* Section-specific styling */
+        .accounts {
+            border-color: #feca57;
+            background: linear-gradient(135deg, rgba(254, 202, 87, 0.1) 0%, rgba(254, 202, 87, 0.05) 100%);
+        }
+        
+        .instructions {
+            border-color: #4ecdc4;
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(78, 205, 196, 0.05) 100%);
+        }
+        
+        .flow {
+            border-color: #96ceb4;
+            background: linear-gradient(135deg, rgba(150, 206, 180, 0.1) 0%, rgba(150, 206, 180, 0.05) 100%);
+        }
+        
+        .security {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+        }
+        
+        .stats {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .fee-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .fee-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .highlight {
+            color: #00ffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">🛡️ CapsuleX Solana Program Architecture</div>
+        
+        <div class="section accounts">
+            <div class="section-title" style="color: #feca57;">📋 CORE ACCOUNT STRUCTURES</div>
+            <div class="account-struct">
+                <div class="struct-card">
+                    <div class="struct-title">🏺 Capsule Account</div>
+                    <div class="field-list">
+                        pub creator: Pubkey<br>
+                        pub nft_mint: Pubkey<br>
+                        pub encrypted_content: String<br>
+                        pub content_storage: ContentStorage<br>
+                        pub content_integrity_hash: String<br>
+                        pub reveal_date: i64<br>
+                        pub created_at: i64<br>
+                        pub is_gamified: bool<br>
+                        pub is_revealed: bool<br>
+                        pub is_active: bool
+                    </div>
+                </div>
+                <div class="struct-card">
+                    <div class="struct-title">🎮 Game Account</div>
+                    <div class="field-list">
+                        pub capsule_id: Pubkey<br>
+                        pub creator: Pubkey<br>
+                        pub max_guesses: u32<br>
+                        pub max_winners: u32<br>
+                        pub current_guesses: u32<br>
+                        pub winners_found: u32<br>
+                        pub total_participants: u32<br>
+                        pub is_active: bool<br>
+                        pub winners: Vec&lt;Pubkey&gt;
+                    </div>
+                </div>
+                <div class="struct-card">
+                    <div class="struct-title">📊 LeaderboardEntry</div>
+                    <div class="field-list">
+                        pub user: Pubkey<br>
+                        pub total_points: u64<br>
+                        pub games_won: u32<br>
+                        pub games_played: u32<br>
+                        pub capsules_created: u32<br>
+                        pub total_rewards_earned: u64
+                    </div>
+                </div>
+                <div class="struct-card">
+                    <div class="struct-title">🎯 Guess Account</div>
+                    <div class="field-list">
+                        pub game_id: Pubkey<br>
+                        pub guesser: Pubkey<br>
+                        pub guess_content: String<br>
+                        pub timestamp: i64<br>
+                        pub is_paid: bool<br>
+                        pub is_correct: bool<br>
+                        pub is_anonymous: bool
+                    </div>
+                </div>
+                <div class="struct-card">
+                    <div class="struct-title">🏛️ ProgramVault</div>
+                    <div class="field-list">
+                        pub authority: Pubkey<br>
+                        pub total_fees_collected: u64<br>
+                        pub total_rewards_distributed: u64
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section instructions">
+            <div class="section-title" style="color: #4ecdc4;">⚙️ PROGRAM INSTRUCTIONS</div>
+            <div class="instructions-grid">
+                <div class="instruction-card">
+                    <div class="instruction-title">🏺 Capsule Operations</div>
+                    <div class="code-block">
+                        create_capsule()<br>
+                        • Device-encrypted content<br>
+                        • Fee: ~$0.25 USD (V2)<br>
+                        • OnChain or IPFS storage<br>
+                        • ContentStorage enum types<br><br>
+                        
+                        reveal_capsule()<br>
+                        • Time-lock enforcement<br>
+                        • Integrity hash verification<br><br>
+                        
+                        mint_capsule_nft()<br>
+                        • SPL Token NFT creation<br>
+                        • Ownership proof
+                    </div>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-title">🎮 Game Operations</div>
+                    <div class="code-block">
+                        initialize_game()<br>
+                        • Set max_guesses & max_winners<br>
+                        • Points-based (no gambling)<br><br>
+                        
+                        submit_guess()<br>
+                        • Service fee: ~$0.01 USD (V2)<br>
+                        • Anonymous option<br>
+                        • Multiple winners supported<br><br>
+                        
+                        complete_game()<br>
+                        • Award points system<br>
+                        • 100pts winner, 5pts participation
+                    </div>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-title">🏆 NFT Operations</div>
+                    <div class="code-block">
+                        mint_winner_badge()<br>
+                        • Game victory NFT<br>
+                        • $1.00 market rate<br><br>
+                        
+                        mint_trophy_nft()<br>
+                        • Milestone rewards<br>
+                        • $5-$10 market rate<br><br>
+                        
+                        update_leaderboard()<br>
+                        • Track user stats<br>
+                        • Points accumulation
+                    </div>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-title">🔐 Security Operations</div>
+                    <div class="code-block">
+                        validate_time_lock()<br>
+                        • Enforce reveal dates<br>
+                        • Prevent early access<br><br>
+                        
+                        verify_authorization()<br>
+                        • Creator permissions<br>
+                        • PDA validation<br><br>
+                        
+                        semantic_validation()<br>
+                        • AI Oracle integration<br>
+                        • Cryptographic signatures
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section flow">
+            <div class="section-title" style="color: #96ceb4;">🔄 PROGRAM EXECUTION FLOWS</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div>
+                    <h3 style="color: #96ceb4; margin-bottom: 15px;">📝 Capsule Creation Flow</h3>
+                    <div class="flow-step">
+                        <div class="flow-title">1. Device Encryption</div>
+                        Content encrypted with secure device key (TEEPIN/Keychain)
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">2. Payment & Storage</div>
+                        User pays ~$0.25 USD → Creates Capsule account
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">3. NFT Minting</div>
+                        Creates NFT Mint account using anchor-spl
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">4. Game Initialization</div>
+                        Optional: Initialize guessing game with limits
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="color: #96ceb4; margin-bottom: 15px;">🎯 Gaming Flow</h3>
+                    <div class="flow-step">
+                        <div class="flow-title">1. Game Setup</div>
+                        Creator sets participant limits, no gambling fees
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">2. Guess Submission</div>
+                        Users submit guesses (~0.01 USD service fee)
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">3. AI Validation</div>
+                        Semantic Oracle verifies guess correctness
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-title">4. Reward Distribution</div>
+                        Points awarded + Winner NFT badge minting
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section security">
+            <div class="section-title" style="color: #ff6b6b;">🛡️ SECURITY & ARCHITECTURE FEATURES</div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #ff6b6b; margin-bottom: 15px;">🔐 Device-Side Encryption & ContentStorage</h3>
+                <div class="code-block">
+                    • <span class="highlight">ContentStorage Enum:</span> Text, Document{cid}, SocialArchive, MediaBundle, ExternalWithBackup<br>
+                    • <span class="highlight">Security First:</span> Encryption keys never leave device (TEEPIN/Keychain)<br>
+                    • <span class="highlight">OnChain Storage:</span> Encrypted content (≤280 chars) in capsule account<br>
+                    • <span class="highlight">IPFS Storage:</span> Large content → IPFS CID stored onchain<br>
+                    • <span class="highlight">Integrity Hash:</span> SHA256 verification for content authenticity<br>
+                    • <span class="highlight">Time-Lock:</span> Program enforces reveal date, decryption on device
+                </div>
+            </div>
+            
+            <div class="security-features">
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">🔒 PDA Security</div>
+                    Account generation with Program Derived Addresses
+                </div>
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">⏰ Time Validation</div>
+                    Blockchain-enforced reveal scheduling
+                </div>
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">✅ Authorization</div>
+                    Creator permissions and access control
+                </div>
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">🔢 Overflow Protection</div>
+                    Safe arithmetic operations
+                </div>
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">⚡ Oracle Integration</div>
+                    Cryptographic AI validation signatures
+                </div>
+                <div class="security-card">
+                    <div style="font-weight: bold; margin-bottom: 8px;">🚫 Error Handling</div>
+                    Comprehensive failure management
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div>
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #feca57;">
+                        💰 Fee Structure (SOL)
+                    </div>
+                    <div class="fee-table">
+                        <div class="fee-item">
+                            <div class="highlight">CURRENT Capsule Creation</div>
+                            1,388,889 lamports (~$0.25)
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">CURRENT Guess Submission</div>
+                            55,556 lamports (~$0.01)
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">Legacy V1 (Commented)</div>
+                            50k/5k lamports (~$0.009/$0.0009)
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">Badge/Trophy Mint</div>
+                            25k/10k lamports (~$0.005/$0.002)
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #4ecdc4;">
+                        🎯 Points Reward System
+                    </div>
+                    <div class="fee-table">
+                        <div class="fee-item">
+                            <div class="highlight">Game Winner</div>
+                            100 Points + NFT Badge ($1)
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">All Participants</div>
+                            5 Points Each
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">Creator Bonus</div>
+                            50 Points × Participants
+                        </div>
+                        <div class="fee-item">
+                            <div class="highlight">Trophy NFTs</div>
+                            $5-$10 Market Rate
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 25px; font-size: 16px;">
+                <div style="font-weight: bold; margin-bottom: 10px;">
+                    🏗️ Program Architecture: <span class="highlight">5 Account Types</span> • <span class="highlight">ContentStorage Enum</span> • <span class="highlight">Dynamic USD Fees</span>
+                </div>
+                <div style="font-size: 14px; color: #cccccc;">
+                    CURRENT: Mainstream USD pricing ($0.25/$0.01) • NEXT: Creator economy revenue sharing system
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
