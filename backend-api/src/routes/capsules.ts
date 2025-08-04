@@ -32,6 +32,12 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       sol_fee_amount,
       is_gamified = false,
       test_mode = false, // Add test mode flag
+      // Encryption metadata fields
+      encryption_version,
+      encryption_platform,
+      encryption_key_id,
+      encryption_seed_name,
+      encryption_derivation_path,
     }: CreateCapsuleRequest & { is_gamified?: boolean; test_mode?: boolean } = req.body;
 
     if (!content_encrypted || !content_hash) {
@@ -132,6 +138,12 @@ router.post("/create", authenticateToken, async (req: AuthenticatedRequest, res)
       on_chain_tx: onChainTx,
       sol_fee_amount: solFeeAmount,
       is_gamified,
+      // Pass encryption metadata
+      encryption_version,
+      encryption_platform,
+      encryption_key_id,
+      encryption_seed_name,
+      encryption_derivation_path,
     });
 
     if (error) {

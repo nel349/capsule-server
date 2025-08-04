@@ -74,6 +74,12 @@ export interface DatabaseCapsule {
   is_gamified: boolean;
   created_at: string;
   status: "pending" | "ready_to_reveal" | "revealed" | "posted" | "failed" | "cancelled";
+  // Encryption metadata fields
+  encryption_version?: string; // '2.0' for new unified encryption
+  encryption_platform?: "android" | "ios";
+  encryption_key_id?: string; // For iOS vault key
+  encryption_seed_name?: string; // For Android seed vault
+  encryption_derivation_path?: string; // For Android seed vault
 }
 
 export interface DatabaseSOLTransaction {

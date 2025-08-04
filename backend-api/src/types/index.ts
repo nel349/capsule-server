@@ -24,6 +24,12 @@ export interface CreateCapsuleRequest {
   created_at?: string; // Frontend timestamp for consistency
   on_chain_tx: string;
   sol_fee_amount?: number;
+  is_gamified?: boolean;
+  encryption_version?: string;
+  encryption_platform?: "android" | "ios";
+  encryption_key_id?: string;
+  encryption_seed_name?: string;
+  encryption_derivation_path?: string;
 }
 
 export interface CreateSocialConnectionRequest {
